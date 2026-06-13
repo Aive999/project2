@@ -167,9 +167,117 @@
           <div class="panel-header">
             <div>Data Dictionary</div>
           </div>
-          <p>Placeholder page for Data Dictionary.</p>
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px">
+            <button id="dd-add" class="primary-button">+ Add</button>
+            <button id="dd-delete" class="secondary-button">Delete</button>
+            <button id="dd-download" class="secondary-button">Download</button>
+            <button id="dd-query" class="secondary-button">Query</button>
+            <button id="dd-table-control" class="secondary-button">Table Control</button>
+          </div>
+
+          <div style="background:#fff; padding:12px; border-radius:8px; border:1px solid #e5e7eb">
+            <div style="display:flex; gap:12px; margin-bottom:8px">
+              <label style="flex:1">Coding : <input id="filter-coding" style="width:100%" /></label>
+              <label style="flex:2">Name : <input id="filter-name" style="width:100%" /></label>
+            </div>
+
+            <table class="account-table" style="width:100%; border-collapse:collapse">
+              <thead>
+                <tr>
+                  <th style="width:32px"><input id="dd-select-all" type="checkbox" /></th>
+                  <th>Coding</th>
+                  <th>Name</th>
+                  <th>Remark</th>
+                  <th>Updater</th>
+                  <th>Update Time</th>
+                  <th>operation</th>
+                </tr>
+              </thead>
+              <tbody id="dd-body"></tbody>
+            </table>
+            <div style="margin-top:12px; color:#6b7280">1 - <span id="dd-count">0</span> of <span id="dd-total">0</span></div>
+          </div>
         </section>
       </main>
+  <script>
+    const DD_KEY = 'adminDataDictionary';
+    const sample = [
+      { id:'D1', coding:'web_page_config', name:'Front-end page data configuration', remark:'', updater:'erupted', updated:'2023-05-23 10:32:17' },
+      { id:'D2', coding:'sms_config', name:'SMS channel configuration', remark:'', updater:'erupted', updated:'2023-05-26 10:18:07' },
+      { id:'D3', coding:'aliyun_email_config', name:'Alibaba Cloud Mailbox Configuration', remark:'', updater:'erupted', updated:'2023-05-31 00:57:20' },
+      { id:'D4', coding:'system_config', name:'System Configuration', remark:'', updater:'erupted', updated:'2023-09-01 18:37:12' },
+      { id:'D5', coding:'recharge_address_config', name:'Top-up address settings', remark:'', updater:'admin', updated:'2025-02-23 19:39:32' },
+    ];
+
+    let dict = JSON.parse(localStorage.getItem(DD_KEY)) || sample.slice();
+
+    function saveDict(){ localStorage.setItem(DD_KEY, JSON.stringify(dict)); }
+
+    function renderDict(){
+      const tbody = document.getElementById('dd-body');
+      const coding = document.getElementById('filter-coding').value.trim();
+      const name = document.getElementById('filter-name').value.trim();
+      const rows = dict.filter(d=>{
+        if (coding && !d.coding.includes(coding)) return false;
+        if (name && !d.name.includes(name)) return false;
+        return true;
+      });
+      document.getElementById('dd-count').textContent = rows.length;
+      document.getElementById('dd-total').textContent = dict.length;
+      tbody.innerHTML = rows.map(d=>`<tr data-id="${d.id}">`+
+        `<td><input class="dd-check" type="checkbox" data-id="${d.id}" /></td>`+
+        `<td>${d.coding}</td><td>${d.name}</td><td>${d.remark||''}</td><td>${d.updater||''}</td><td>${d.updated||''}</td>`+
+        `<td style="white-space:nowrap"><button class="icon-button" data-action="view" data-id="${d.id}">👁️</button> <button class="icon-button" data-action="edit" data-id="${d.id}">✏️</button> <button class="icon-button" data-action="delete" data-id="${d.id}">🗑️</button></td>`+
+        `</tr>`).join('') || '<tr><td colspan="7" style="color:#9ca3af">(no data)</td></tr>';
+      attachDDRowEvents();
+    }
+
+    function attachDDRowEvents(){
+      document.querySelectorAll('[data-action]').forEach(btn=>btn.onclick = ()=>{
+        const id = btn.getAttribute('data-id'); const action = btn.getAttribute('data-action');
+        if (action==='view' || action==='edit') editEntry(id);
+        if (action==='delete') deleteEntry(id);
+      });
+      document.getElementById('dd-select-all').onchange = e=> document.querySelectorAll('.dd-check').forEach(cb=>cb.checked = e.target.checked);
+    }
+
+    function addEntry(){
+      const coding = prompt('Coding') || 'coding_'+Math.floor(Math.random()*9000);
+      const name = prompt('Name') || coding;
+      const remark = prompt('Remark')||'';
+      const id='D'+Math.floor(1000+Math.random()*9000);
+      const now = new Date().toLocaleString();
+      dict.push({ id, coding, name, remark, updater:'admin', updated: now }); saveDict(); renderDict();
+    }
+
+    function editEntry(id){
+      const d = dict.find(x=>x.id===id); if (!d) return alert('Not found');
+      const coding = prompt('Coding', d.coding) || d.coding;
+      const name = prompt('Name', d.name) || d.name;
+      const remark = prompt('Remark', d.remark) || d.remark;
+      d.coding=coding; d.name=name; d.remark=remark; d.updater='admin'; d.updated=new Date().toLocaleString(); saveDict(); renderDict();
+    }
+
+    function deleteEntry(id){ if (!confirm('Delete?')) return; dict = dict.filter(x=>x.id!==id); saveDict(); renderDict(); }
+
+    function deleteSelected(){ const ids = Array.from(document.querySelectorAll('.dd-check:checked')).map(cb=>cb.getAttribute('data-id')); if (!ids.length) return alert('No selection'); if (!confirm('Delete selected?')) return; dict = dict.filter(d=>!ids.includes(d.id)); saveDict(); renderDict(); }
+
+    function downloadCSV(){
+      const rows = [['coding','name','remark','updater','updated']].concat(dict.map(d=>[d.coding,d.name,d.remark||'',d.updater||'',d.updated||'']));
+      const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='data-dictionary.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('dd-add').addEventListener('click', addEntry);
+    document.getElementById('dd-delete').addEventListener('click', deleteSelected);
+    document.getElementById('dd-download').addEventListener('click', downloadCSV);
+    document.getElementById('dd-query').addEventListener('click', renderDict);
+    document.getElementById('filter-coding').addEventListener('input', renderDict);
+    document.getElementById('filter-name').addEventListener('input', renderDict);
+
+    renderDict();
+  </script>
     </div>
   </div>
 </body>
