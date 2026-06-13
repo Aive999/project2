@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Task Management</title>
+  <title>Send Email</title>
   <link rel="stylesheet" href="../styles.css" />
 </head>
 <body>
@@ -13,7 +13,7 @@
         <div class="admin-logo">K</div>
         <a href="admin.html" class="admin-title">Coinbase Backstage Management System</a>
       </div>
-                                                                  <nav class="admin-menu">
+      <nav class="admin-menu">
         <details class="admin-menu-group">
           <summary class="admin-menu-item">
             <a href="admin.html">System Management</a>
@@ -27,7 +27,7 @@
             <a href="user-configuration.html" class="admin-submenu-item">User Configuration</a>
             <a href="data-dictionary.html" class="admin-submenu-item">Data Dictionary</a>
             <a href="online-users.html" class="admin-submenu-item">Online Users</a>
-            <a href="login.html" class="admin-submenu-item">Log In</a>
+            <a href="login-log.html" class="admin-submenu-item">Login Log</a>
             <a href="operation-log.html" class="admin-submenu-item">Operation Log</a>
             <a href="kline-api-config.html" class="admin-submenu-item">K-line API Configuration</a>
           </div>
@@ -44,13 +44,13 @@
         </details>
         <details class="admin-menu-group" open>
           <summary class="admin-menu-item active">
-            <a href="task-management.html">Task Management</a>
+            <a href="job-config.html">Job Manager</a>
             <span class="menu-arrow"></span>
           </summary>
           <div class="admin-submenu">
-            <a href="#" class="admin-submenu-item">Task Queues</a>
-            <a href="#" class="admin-submenu-item">Scheduled Tasks</a>
-            <a href="#" class="admin-submenu-item">Task History</a>
+            <a href="job-config.html" class="admin-submenu-item">Job Config</a>
+            <a href="job-log.html" class="admin-submenu-item">Job Log</a>
+            <a href="send-email.html" class="admin-submenu-item active">Send Email</a>
           </div>
         </details>
         <details class="admin-menu-group">
@@ -158,19 +158,55 @@
       </header>
       <div class="admin-page-header">
         <div>
-          <div class="admin-page-title">Task Management</div>
-          <div class="admin-breadcrumb">Home / Task Management</div>
+          <div class="admin-page-title">Send Email</div>
+          <div class="admin-breadcrumb">Home / Job Manager / Send Email</div>
         </div>
       </div>
       <main class="admin-dashboard admin-menu-management">
-        <div class="admin-layout-grid">
-          <section class="admin-panel">
-            <div class="panel-header">
-              <div>Task Management</div>
+        <section class="admin-panel">
+          <div class="panel-header"><div>Send Email</div></div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-bottom:16px;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+              <button class="primary-button">+ Add</button>
+              <button class="secondary-button" style="border-color:#ef4444; color:#ef4444;">Delete</button>
+              <button class="secondary-button">Query</button>
+              <button class="secondary-button">Table Control</button>
             </div>
-            <p>Placeholder content for the Task Management admin page.</p>
-          </section>
-        </div>
+            <button class="secondary-button">Reset</button>
+          </div>
+          <div style="background:#fff; padding:16px; border-radius:12px; border:1px solid #e5e7eb; margin-bottom:16px;">
+            <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end;">
+              <label style="display:flex; flex:1; min-width:260px; gap:8px; align-items:center;">Receiver:
+                <input type="text" style="flex:1; min-width:120px; padding:10px; border:1px solid #d1d5db; border-radius:8px;" />
+              </label>
+              <label style="display:flex; flex:1; min-width:260px; gap:8px; align-items:center;">Theme:
+                <input type="text" style="flex:1; min-width:120px; padding:10px; border:1px solid #d1d5db; border-radius:8px;" />
+              </label>
+            </div>
+          </div>
+          <div class="account-table-wrapper" style="min-height:260px; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:24px; background:#fff; border-radius:12px; border:1px solid #e5e7eb;">
+            <table class="account-table" style="width:100%; border-collapse:collapse;">
+              <thead>
+                <tr>
+                  <th style="width:32px; padding:12px; text-align:left;"><input type="checkbox" /></th>
+                  <th style="padding:12px; text-align:left;">Receiver</th>
+                  <th style="padding:12px; text-align:left;">Cc</th>
+                  <th style="padding:12px; text-align:left;">Theme</th>
+                  <th style="padding:12px; text-align:left;">State</th>
+                  <th style="padding:12px; text-align:left;">Content</th>
+                  <th style="padding:12px; text-align:left;">Sent</th>
+                  <th style="padding:12px; text-align:left;">Sender</th>
+                  <th style="padding:12px; text-align:left;">Operation</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="9" style="padding:60px 12px; text-align:center; color:#9ca3af;">No Data</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
       </main>
     </div>
   </div>

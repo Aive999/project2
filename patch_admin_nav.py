@@ -14,7 +14,7 @@ nav_groups = [
             ('user-configuration.html', 'User Configuration'),
             ('data-dictionary.html', 'Data Dictionary'),
             ('online-users.html', 'Online Users'),
-            ('login.html', 'Log In'),
+            ('login-log.html', 'Login Log'),
             ('operation-log.html', 'Operation Log'),
             ('kline-api-config.html', 'K-line API Configuration'),
         ],
@@ -28,12 +28,12 @@ nav_groups = [
         ],
     },
     {
-        'label': 'Task Management',
-        'href': 'task-management.html',
+        'label': 'Job Manager',
+        'href': 'job-config.html',
         'children': [
-            ('#', 'Task Queues'),
-            ('#', 'Scheduled Tasks'),
-            ('#', 'Task History'),
+            ('job-config.html', 'Job Config'),
+            ('job-log.html', 'Job Log'),
+            ('send-email.html', 'Send Email'),
         ],
     },
     {

@@ -13,7 +13,7 @@
         <div class="admin-logo">K</div>
         <a href="admin.html" class="admin-title">Coinbase Backstage Management System</a>
       </div>
-                                                                  <nav class="admin-menu">
+                                                                        <nav class="admin-menu">
         <details class="admin-menu-group">
           <summary class="admin-menu-item">
             <a href="admin.html">System Management</a>
@@ -27,7 +27,7 @@
             <a href="user-configuration.html" class="admin-submenu-item">User Configuration</a>
             <a href="data-dictionary.html" class="admin-submenu-item">Data Dictionary</a>
             <a href="online-users.html" class="admin-submenu-item">Online Users</a>
-            <a href="login.html" class="admin-submenu-item">Log In</a>
+            <a href="login-log.html" class="admin-submenu-item">Login Log</a>
             <a href="operation-log.html" class="admin-submenu-item">Operation Log</a>
             <a href="kline-api-config.html" class="admin-submenu-item">K-line API Configuration</a>
           </div>
@@ -44,13 +44,13 @@
         </details>
         <details class="admin-menu-group">
           <summary class="admin-menu-item">
-            <a href="task-management.html">Task Management</a>
+            <a href="job-config.html">Job Manager</a>
             <span class="menu-arrow"></span>
           </summary>
           <div class="admin-submenu">
-            <a href="#" class="admin-submenu-item">Task Queues</a>
-            <a href="#" class="admin-submenu-item">Scheduled Tasks</a>
-            <a href="#" class="admin-submenu-item">Task History</a>
+            <a href="job-config.html" class="admin-submenu-item">Job Config</a>
+            <a href="job-log.html" class="admin-submenu-item">Job Log</a>
+            <a href="send-email.html" class="admin-submenu-item">Send Email</a>
           </div>
         </details>
         <details class="admin-menu-group">
@@ -163,16 +163,86 @@
         </div>
       </div>
       <main class="admin-dashboard admin-menu-management">
-        <div class="admin-layout-grid">
-          <section class="admin-panel">
-            <div class="panel-header">
-              <div>Server Monitor</div>
-            </div>
-            <p>Placeholder content for Server Monitor.</p>
-          </section>
-        </div>
+        <section class="admin-panel admin-panel-grid">
+          <div class="panel-card">
+            <div class="panel-header"><div>CPU Information</div></div>
+            <table class="info-table">
+              <tr><th>Attribute</th><th>value</th></tr>
+              <tr><td>Number of cores</td><td>1</td></tr>
+              <tr><td>Core Frequency</td><td>500.68MHz</td></tr>
+              <tr><td>System/User</td><td>1% / 4%</td></tr>
+              <tr><td>Usage rate</td><td>5%</td></tr>
+            </table>
+          </div>
+          <div class="panel-card">
+            <div class="panel-header"><div>ERUPT Application Information</div><span>1.11.3</span></div>
+            <table class="info-table">
+              <tr><th>Attribute</th><th>value</th></tr>
+              <tr><td>Number of erupt classes</td><td>55</td></tr>
+              <tr><td>number of erupt modules</td><td>7</td></tr>
+              <tr><td>Session Strategy</td><td>redis</td></tr>
+              <tr><td>File upload path</td><td>/data/upload</td></tr>
+            </table>
+          </div>
+          <div class="panel-card">
+            <div class="panel-header"><div>Memory information</div></div>
+            <table class="info-table">
+              <tr><th>Attribute</th><th>memory</th><th>JVM</th></tr>
+              <tr><td>Total memory</td><td>8GB</td><td>247.75MB</td></tr>
+              <tr><td>Used memory</td><td>1.85GB</td><td>169.35MB</td></tr>
+              <tr><td>Remaining memory</td><td>6.15GB</td><td>78.4MB</td></tr>
+              <tr><td>Usage rate</td><td>23.08%</td><td>68.36%</td></tr>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" style="margin-top:16px;">
+          <div class="panel-header"><div>Server Information</div></div>
+          <table class="info-table full-width">
+            <tr><th>Server Name</th><td>LEAOWANG</td><th>Operating System</th><td>Linux 5.14.0</td></tr>
+            <tr><th>Server time</th><td>2026-06-13 15:46:11</td><th>System Architecture</th><td>amd64</td></tr>
+          </table>
+        </section>
+
+        <section class="admin-panel" style="margin-top:16px;">
+          <div class="panel-header"><div>JVM Virtual Machine Information</div></div>
+          <table class="info-table full-width">
+            <tr><th>Java Name</th><td>OpenJDK 64-Bit Server VM</td><th>Java version</th><td>1.8.0_492</td></tr>
+            <tr><th>Startup time</th><td>2026-06-11 15:55:09</td><th>Runtime length</th><td>1 day, 23 hours, 51 minutes</td></tr>
+            <tr><th>Real-time threads</th><td>84</td><th>PID</th><td>253266</td></tr>
+            <tr><th>Installation path</th><td colspan="3">/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.492.b09-2.el9.alma.1.x86_64/jre</td></tr>
+            <tr><th>Project Path</th><td colspan="3">/opt/qkl</td></tr>
+            <tr><th>Running parameters</th><td colspan="3">[-Xms256m, -Xmx512m, -Djava.library.path=lib, -Dwrapper.key=G22m3eqTAJuvyzSi, -Dwrapper.port=32000, -Dwrapper.jvm.port.min=31000, -Dwrapper.jvm.port.max=31999, -Dwrapper.pid=253264, -Dwrapper.version=3.2.3, -Dwrapper.native_library=wrapper, -Dwrapper.service=TRUE, -Dwrapper.cpu.timeout=10, -Dwrapper.jvmid=1]</td></tr>
+          </table>
+        </section>
+
+        <section class="admin-panel" style="margin-top:16px;">
+          <div class="panel-header"><div>Disk information</div></div>
+          <table class="info-table full-width">
+            <tr>
+              <th>Disk character path</th>
+              <th>Plate type</th>
+              <th>File type</th>
+              <th>Total size</th>
+              <th>Remaining size</th>
+              <th>Already used</th>
+              <th>Usage rate</th>
+            </tr>
+            <tr>
+              <td>/</td>
+              <td>ext4</td>
+              <td>/</td>
+              <td>98.3GB</td>
+              <td>80.8GB</td>
+              <td>17.5GB</td>
+              <td>17.8%</td>
+            </tr>
+          </table>
+        </section>
       </main>
     </div>
   </div>
 </body>
 </html>
+
+

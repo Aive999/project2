@@ -13,7 +13,7 @@
         <div class="admin-logo">K</div>
         <a href="admin.html" class="admin-title">Coinbase Backstage Management System</a>
       </div>
-                                                                  <nav class="admin-menu">
+                                                                        <nav class="admin-menu">
         <details class="admin-menu-group">
           <summary class="admin-menu-item">
             <a href="admin.html">System Management</a>
@@ -27,7 +27,7 @@
             <a href="user-configuration.html" class="admin-submenu-item">User Configuration</a>
             <a href="data-dictionary.html" class="admin-submenu-item">Data Dictionary</a>
             <a href="online-users.html" class="admin-submenu-item">Online Users</a>
-            <a href="login.html" class="admin-submenu-item">Log In</a>
+            <a href="login-log.html" class="admin-submenu-item">Login Log</a>
             <a href="operation-log.html" class="admin-submenu-item">Operation Log</a>
             <a href="kline-api-config.html" class="admin-submenu-item">K-line API Configuration</a>
           </div>
@@ -44,13 +44,13 @@
         </details>
         <details class="admin-menu-group">
           <summary class="admin-menu-item">
-            <a href="task-management.html">Task Management</a>
+            <a href="job-config.html">Job Manager</a>
             <span class="menu-arrow"></span>
           </summary>
           <div class="admin-submenu">
-            <a href="#" class="admin-submenu-item">Task Queues</a>
-            <a href="#" class="admin-submenu-item">Scheduled Tasks</a>
-            <a href="#" class="admin-submenu-item">Task History</a>
+            <a href="job-config.html" class="admin-submenu-item">Job Config</a>
+            <a href="job-log.html" class="admin-submenu-item">Job Log</a>
+            <a href="send-email.html" class="admin-submenu-item">Send Email</a>
           </div>
         </details>
         <details class="admin-menu-group">
@@ -163,16 +163,60 @@
         </div>
       </div>
       <main class="admin-dashboard admin-menu-management">
-        <div class="admin-layout-grid">
-          <section class="admin-panel">
-            <div class="panel-header">
-              <div>Cache Monitor</div>
+        <section class="admin-panel" style="display:grid; gap:16px; grid-template-columns: 1fr 1.2fr; align-items:start;">
+          <div style="background:#fff; border-radius:12px; padding:18px; box-shadow:0 1px 4px rgba(0,0,0,.08);">
+            <div class="panel-header" style="margin-bottom:16px;"><div>Redis Information</div></div>
+            <table class="info-table" style="width:100%; border:none;">
+              <tr><th style="width:40%; text-align:left;">Version number:</th><td>8.0.5</td></tr>
+              <tr><th style="text-align:left;">Port number:</th><td>6379</td></tr>
+              <tr><th style="text-align:left;">Number of running days:</th><td>sky</td></tr>
+              <tr><th style="text-align:left;">Clusters or not:</th><td>No</td></tr>
+              <tr><th style="text-align:left;">Persistence method:</th><td>RDB</td></tr>
+              <tr><th style="text-align:left;">Connected clients:</th><td>1</td></tr>
+              <tr><th style="text-align:left;">Total memory:</th><td>8.00G</td></tr>
+              <tr><th style="text-align:left;">Used memory:</th><td>4.86M</td></tr>
+            </table>
+          </div>
+
+          <div style="background:#fff; border-radius:12px; padding:18px; box-shadow:0 1px 4px rgba(0,0,0,.08);">
+            <div class="panel-header" style="margin-bottom:16px;"><div>Command Statistics</div></div>
+            <div style="width:100%; height:320px; display:grid; place-items:center;">
+              <svg viewBox="0 0 320 320" style="width:100%; height:100%;">
+                <circle cx="160" cy="160" r="120" fill="#e5e7eb" />
+                <path d="M160 40 A120 120 0 0 1 270 150 L160 160 Z" fill="#10b981" />
+                <path d="M160 40 A120 120 0 0 1 230 80 L160 160 Z" fill="#8b5cf6" />
+                <path d="M160 40 A120 120 0 0 1 193 75 L160 160 Z" fill="#f97316" />
+                <path d="M160 40 A120 120 0 0 1 182 170 L160 160 Z" fill="#3b82f6" />
+                <path d="M160 40 A120 120 0 0 1 103 204 L160 160 Z" fill="#6366f1" />
+                <circle cx="160" cy="160" r="64" fill="#fff" />
+                <text x="160" y="165" text-anchor="middle" font-size="22" fill="#111827">get</text>
+              </svg>
             </div>
-            <p>Placeholder content for Cache Monitor.</p>
-          </section>
-        </div>
+          </div>
+        </section>
+
+        <section class="admin-panel" style="background:#fff; border-radius:12px; padding:18px; box-shadow:0 1px 4px rgba(0,0,0,.08); margin-top:16px;">
+          <div class="panel-header" style="margin-bottom:16px;"><div>Number of Redis Keys</div></div>
+          <div style="width:100%; height:280px; position:relative;">
+            <svg viewBox="0 0 800 280" style="width:100%; height:100%;">
+              <rect x="0" y="0" width="800" height="280" fill="#f8fafc" />
+              <line x1="60" y1="240" x2="760" y2="240" stroke="#e5e7eb" stroke-width="2" />
+              <line x1="60" y1="20" x2="60" y2="240" stroke="#e5e7eb" stroke-width="2" />
+              <text x="40" y="30" font-size="12" fill="#6b7280">150</text>
+              <text x="40" y="70" font-size="12" fill="#6b7280">120</text>
+              <text x="40" y="110" font-size="12" fill="#6b7280">90</text>
+              <text x="40" y="150" font-size="12" fill="#6b7280">60</text>
+              <text x="40" y="190" font-size="12" fill="#6b7280">30</text>
+              <path d="M60 220 L160 200 L260 130 L360 160 L460 120 L560 150 L660 110 L760 170" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" />
+              <circle cx="460" cy="120" r="6" fill="#3b82f6" />
+              <text x="780" y="260" font-size="12" fill="#6b7280">16:49:28</text>
+            </svg>
+          </div>
+        </section>
       </main>
     </div>
   </div>
 </body>
 </html>
+
+

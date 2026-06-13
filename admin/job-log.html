@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>User Level</title>
+  <title>Job Log</title>
   <link rel="stylesheet" href="../styles.css" />
 </head>
 <body>
@@ -42,14 +42,14 @@
             <a href="cache-monitor.html" class="admin-submenu-item">Cache Monitor</a>
           </div>
         </details>
-        <details class="admin-menu-group">
-          <summary class="admin-menu-item">
+        <details class="admin-menu-group" open>
+          <summary class="admin-menu-item active">
             <a href="job-config.html">Job Manager</a>
             <span class="menu-arrow"></span>
           </summary>
           <div class="admin-submenu">
             <a href="job-config.html" class="admin-submenu-item">Job Config</a>
-            <a href="job-log.html" class="admin-submenu-item">Job Log</a>
+            <a href="job-log.html" class="admin-submenu-item active">Job Log</a>
             <a href="send-email.html" class="admin-submenu-item">Send Email</a>
           </div>
         </details>
@@ -62,14 +62,14 @@
             <a href="erupt-code.html" class="admin-submenu-item">Erupt Code</a>
           </div>
         </details>
-        <details class="admin-menu-group" open>
-          <summary class="admin-menu-item active">
+        <details class="admin-menu-group">
+          <summary class="admin-menu-item">
             <a href="exchange.html">Exchange</a>
             <span class="menu-arrow"></span>
           </summary>
           <div class="admin-submenu">
             <a href="account-management.html" class="admin-submenu-item">Account Management</a>
-            <a href="user-level.html" class="admin-submenu-item active">User Level</a>
+            <a href="user-level.html" class="admin-submenu-item">User Level</a>
             <a href="withdrawal-records.html" class="admin-submenu-item">Withdrawal Records</a>
             <a href="recharge-review.html" class="admin-submenu-item">Recharge Review</a>
             <a href="top-up-records.html" class="admin-submenu-item">Top-up Records</a>
@@ -158,17 +158,17 @@
       </header>
       <div class="admin-page-header">
         <div>
-          <div class="admin-page-title">User Level</div>
-          <div class="admin-breadcrumb">Home / Exchange / User Level</div>
+          <div class="admin-page-title">Job Log</div>
+          <div class="admin-breadcrumb">Home / Job Manager / Job Log</div>
         </div>
       </div>
       <main class="admin-dashboard admin-menu-management">
         <section class="admin-panel">
-          <div class="panel-header"><div>User Level</div></div>
+          <div class="panel-header"><div>Job Execution Log</div></div>
           <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-bottom:16px;">
             <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-              <button class="primary-button">+ Add</button>
-              <button class="secondary-button" style="border-color:#ef4444; color:#ef4444;">Delete</button>
+              <button class="secondary-button">Delete</button>
+              <button class="secondary-button">Download</button>
               <button class="secondary-button">Query</button>
               <button class="secondary-button">Table Control</button>
             </div>
@@ -176,14 +176,19 @@
           </div>
           <div style="background:#fff; padding:16px; border-radius:12px; border:1px solid #e5e7eb; margin-bottom:16px;">
             <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end;">
-              <label style="display:flex; flex:1; min-width:220px; gap:8px; align-items:center;">Grade:
-                <input type="text" style="flex:1; min-width:140px; padding:10px; border:1px solid #d1d5db; border-radius:8px;" />
+              <label style="display:flex; flex:1; min-width:240px; gap:8px; align-items:center;">Task Name:
+                <input type="text" style="flex:1; min-width:120px; padding:8px; border:1px solid #d1d5db; border-radius:8px;" />
               </label>
-              <label style="display:flex; flex:1; min-width:220px; gap:8px; align-items:center;">Level Name:
-                <input type="text" style="flex:1; min-width:140px; padding:10px; border:1px solid #d1d5db; border-radius:8px;" />
+              <label style="display:flex; flex:1; min-width:240px; gap:8px; align-items:center;">Task Status:
+                <select style="flex:1; min-width:120px; padding:8px; border:1px solid #d1d5db; border-radius:8px;">
+                  <option value="">(any)</option>
+                  <option>Success</option>
+                  <option>Failed</option>
+                  <option>Running</option>
+                </select>
               </label>
-              <label style="display:flex; flex:1; min-width:220px; gap:8px; align-items:center;">Experience value:
-                <input type="text" style="flex:1; min-width:140px; padding:10px; border:1px solid #d1d5db; border-radius:8px;" />
+              <label style="display:flex; flex:1; min-width:240px; gap:8px; align-items:center;">Execution Date:
+                <input type="date" style="flex:1; min-width:120px; padding:8px; border:1px solid #d1d5db; border-radius:8px;" />
               </label>
             </div>
           </div>
@@ -192,101 +197,84 @@
               <thead>
                 <tr>
                   <th style="width:32px; padding:12px; text-align:left;"><input type="checkbox" /></th>
-                  <th style="padding:12px; text-align:left;">Grade</th>
-                  <th style="padding:12px; text-align:left;">Level Name</th>
-                  <th style="padding:12px; text-align:left;">Experience value</th>
-                  <th style="padding:12px; text-align:left;">Loan line</th>
-                  <th style="padding:12px; text-align:left;">Creation time</th>
-                  <th style="padding:12px; text-align:left;">operation</th>
+                  <th style="padding:12px; text-align:left;">Task Name</th>
+                  <th style="padding:12px; text-align:left;">Task Parameters</th>
+                  <th style="padding:12px; text-align:left;">Task Status</th>
+                  <th style="padding:12px; text-align:left;">Start time</th>
+                  <th style="padding:12px; text-align:left;">End time</th>
+                  <th style="padding:12px; text-align:left;">Execution results</th>
+                  <th style="padding:12px; text-align:left;">Error message</th>
+                  <th style="padding:12px; text-align:left;">Operation</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td style="padding:12px;"><input type="checkbox" /></td>
-                  <td style="padding:12px;">1</td>
-                  <td style="padding:12px;">Ordinary Members</td>
-                  <td style="padding:12px;">0</td>
-                  <td style="padding:12px;">5000</td>
-                  <td style="padding:12px;">2025-06-08 20:22:24</td>
-                  <td style="padding:12px; display:flex; gap:8px; align-items:center;">
-                    <button class="icon-button" style="font-size:1rem;">👁️</button>
-                    <button class="icon-button" style="font-size:1rem;">✏️</button>
-                    <button class="icon-button" style="font-size:1rem; color:#ef4444;">🗑️</button>
-                  </td>
+                  <td style="padding:12px;">Automatic matching of locked mining orders</td>
+                  <td style="padding:12px;">--</td>
+                  <td style="padding:12px;"><span style="display:inline-flex; padding:4px 10px; border-radius:999px; background:#d1fae5; color:#166534; font-size:12px;">Success</span></td>
+                  <td style="padding:12px;">2026-06-13 15:56:43</td>
+                  <td style="padding:12px;">2026-06-13 15:56:43</td>
+                  <td style="padding:12px;">Executed successfully</td>
+                  <td style="padding:12px;">—</td>
+                  <td style="padding:12px;"><button class="secondary-button" style="padding:6px 10px;">Delete</button></td>
                 </tr>
                 <tr>
                   <td style="padding:12px;"><input type="checkbox" /></td>
-                  <td style="padding:12px;">2</td>
-                  <td style="padding:12px;">Primary VIP</td>
-                  <td style="padding:12px;">1000</td>
-                  <td style="padding:12px;">10000</td>
-                  <td style="padding:12px;">2025-06-08 00:00:00</td>
-                  <td style="padding:12px; display:flex; gap:8px; align-items:center;">
-                    <button class="icon-button" style="font-size:1rem;">👁️</button>
-                    <button class="icon-button" style="font-size:1rem;">✏️</button>
-                    <button class="icon-button" style="font-size:1rem; color:#ef4444;">🗑️</button>
-                  </td>
+                  <td style="padding:12px;">Automatic matching of cycle contract orders</td>
+                  <td style="padding:12px;">--</td>
+                  <td style="padding:12px;"><span style="display:inline-flex; padding:4px 10px; border-radius:999px; background:#d1fae5; color:#166534; font-size:12px;">Success</span></td>
+                  <td style="padding:12px;">2026-06-13 15:56:43</td>
+                  <td style="padding:12px;">2026-06-13 15:56:43</td>
+                  <td style="padding:12px;">Executed successfully</td>
+                  <td style="padding:12px;">—</td>
+                  <td style="padding:12px;"><button class="secondary-button" style="padding:6px 10px;">Delete</button></td>
                 </tr>
                 <tr>
                   <td style="padding:12px;"><input type="checkbox" /></td>
-                  <td style="padding:12px;">3</td>
-                  <td style="padding:12px;">Intermediate VIP</td>
-                  <td style="padding:12px;">5000</td>
-                  <td style="padding:12px;">20000</td>
-                  <td style="padding:12px;">2025-07-08 00:00:00</td>
-                  <td style="padding:12px; display:flex; gap:8px; align-items:center;">
-                    <button class="icon-button" style="font-size:1rem;">👁️</button>
-                    <button class="icon-button" style="font-size:1rem;">✏️</button>
-                    <button class="icon-button" style="font-size:1rem; color:#ef4444;">🗑️</button>
-                  </td>
+                  <td style="padding:12px;">Automatic matchmaking for spot orders</td>
+                  <td style="padding:12px;">--</td>
+                  <td style="padding:12px;"><span style="display:inline-flex; padding:4px 10px; border-radius:999px; background:#d1fae5; color:#166534; font-size:12px;">Success</span></td>
+                  <td style="padding:12px;">2026-06-13 15:56:43</td>
+                  <td style="padding:12px;">2026-06-13 15:56:43</td>
+                  <td style="padding:12px;">Executed successfully</td>
+                  <td style="padding:12px;">—</td>
+                  <td style="padding:12px;"><button class="secondary-button" style="padding:6px 10px;">Delete</button></td>
                 </tr>
                 <tr>
                   <td style="padding:12px;"><input type="checkbox" /></td>
-                  <td style="padding:12px;">4</td>
-                  <td style="padding:12px;">Advanced VIP</td>
-                  <td style="padding:12px;">10000</td>
-                  <td style="padding:12px;">30000</td>
-                  <td style="padding:12px;">2025-09-08 21:03:14</td>
-                  <td style="padding:12px; display:flex; gap:8px; align-items:center;">
-                    <button class="icon-button" style="font-size:1rem;">👁️</button>
-                    <button class="icon-button" style="font-size:1rem;">✏️</button>
-                    <button class="icon-button" style="font-size:1rem; color:#ef4444;">🗑️</button>
-                  </td>
+                  <td style="padding:12px;">Automatic matchmaking of contract orders</td>
+                  <td style="padding:12px;">--</td>
+                  <td style="padding:12px;"><span style="display:inline-flex; padding:4px 10px; border-radius:999px; background:#d1fae5; color:#166534; font-size:12px;">Success</span></td>
+                  <td style="padding:12px;">2026-06-13 15:56:43</td>
+                  <td style="padding:12px;">2026-06-13 15:56:43</td>
+                  <td style="padding:12px;">Executed successfully</td>
+                  <td style="padding:12px;">—</td>
+                  <td style="padding:12px;"><button class="secondary-button" style="padding:6px 10px;">Delete</button></td>
                 </tr>
                 <tr>
                   <td style="padding:12px;"><input type="checkbox" /></td>
-                  <td style="padding:12px;">5</td>
-                  <td style="padding:12px;">Platinum Member</td>
-                  <td style="padding:12px;">20000</td>
-                  <td style="padding:12px;">50000</td>
-                  <td style="padding:12px;">2025-05-10 17:29:55</td>
-                  <td style="padding:12px; display:flex; gap:8px; align-items:center;">
-                    <button class="icon-button" style="font-size:1rem;">👁️</button>
-                    <button class="icon-button" style="font-size:1rem;">✏️</button>
-                    <button class="icon-button" style="font-size:1rem; color:#ef4444;">🗑️</button>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:12px;"><input type="checkbox" /></td>
-                  <td style="padding:12px;">6</td>
-                  <td style="padding:12px;">SVIP</td>
-                  <td style="padding:12px;">2147483647</td>
-                  <td style="padding:12px;">100000</td>
-                  <td style="padding:12px;">2025-12-02 16:34:34</td>
-                  <td style="padding:12px; display:flex; gap:8px; align-items:center;">
-                    <button class="icon-button" style="font-size:1rem;">👁️</button>
-                    <button class="icon-button" style="font-size:1rem;">✏️</button>
-                    <button class="icon-button" style="font-size:1rem; color:#ef4444;">🗑️</button>
-                  </td>
+                  <td style="padding:12px;">Websocket push broadcast homepage list and popular currency data</td>
+                  <td style="padding:12px;">--</td>
+                  <td style="padding:12px;"><span style="display:inline-flex; padding:4px 10px; border-radius:999px; background:#d1fae5; color:#166534; font-size:12px;">Success</span></td>
+                  <td style="padding:12px;">2026-06-13 15:56:43</td>
+                  <td style="padding:12px;">2026-06-13 15:56:43</td>
+                  <td style="padding:12px;">Executed successfully</td>
+                  <td style="padding:12px;">—</td>
+                  <td style="padding:12px;"><button class="secondary-button" style="padding:6px 10px;">Delete</button></td>
                 </tr>
               </tbody>
             </table>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:16px;">
-            <div style="color:#6b7280;">1 - 6 of 6</div>
+            <div style="color:#6b7280;">1 - 10 of 60975</div>
             <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
               <button class="secondary-button">◀</button>
               <button class="secondary-button">1</button>
+              <button class="secondary-button">2</button>
+              <button class="secondary-button">3</button>
+              <button class="secondary-button">…</button>
+              <button class="secondary-button">6098</button>
               <span>10 / page</span>
               <label style="display:flex; align-items:center; gap:8px;">
                 Goto
@@ -300,4 +288,3 @@
   </div>
 </body>
 </html>
-

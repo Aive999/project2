@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>K-line API configuration</title>
+  <title>K-line API Configuration</title>
   <link rel="stylesheet" href="../styles.css" />
 </head>
 <body>
@@ -13,7 +13,7 @@
         <div class="admin-logo">K</div>
         <a href="admin.html" class="admin-title">Coinbase Backstage Management System</a>
       </div>
-                                                                  <nav class="admin-menu">
+            <nav class="admin-menu">
         <details class="admin-menu-group" open>
           <summary class="admin-menu-item active">
             <a href="admin.html">System Management</a>
@@ -27,7 +27,7 @@
             <a href="user-configuration.html" class="admin-submenu-item">User Configuration</a>
             <a href="data-dictionary.html" class="admin-submenu-item">Data Dictionary</a>
             <a href="online-users.html" class="admin-submenu-item">Online Users</a>
-            <a href="login.html" class="admin-submenu-item">Log In</a>
+            <a href="login-log.html" class="admin-submenu-item">Login Log</a>
             <a href="operation-log.html" class="admin-submenu-item">Operation Log</a>
             <a href="kline-api-config.html" class="admin-submenu-item active">K-line API Configuration</a>
           </div>
@@ -44,13 +44,13 @@
         </details>
         <details class="admin-menu-group">
           <summary class="admin-menu-item">
-            <a href="task-management.html">Task Management</a>
+            <a href="job-config.html">Job Manager</a>
             <span class="menu-arrow"></span>
           </summary>
           <div class="admin-submenu">
-            <a href="#" class="admin-submenu-item">Task Queues</a>
-            <a href="#" class="admin-submenu-item">Scheduled Tasks</a>
-            <a href="#" class="admin-submenu-item">Task History</a>
+            <a href="job-config.html" class="admin-submenu-item">Job Config</a>
+            <a href="job-log.html" class="admin-submenu-item">Job Log</a>
+            <a href="send-email.html" class="admin-submenu-item">Send Email</a>
           </div>
         </details>
         <details class="admin-menu-group">
@@ -141,14 +141,6 @@
           <span class="search-icon">🔎</span>
           <input type="text" placeholder="Search Menu" aria-label="Search Menu" />
         </div>
-        <div class="admin-header-actions">
-          <button class="admin-pill">Start voice broadcast</button>
-          <button class="admin-pill">Primary certification audit (0)</button>
-          <button class="admin-pill">Advanced Certification Audit (0)</button>
-          <button class="admin-pill">Withdrawal Review (0)</button>
-          <button class="admin-pill">Cycle contracts (0)</button>
-          <button class="admin-pill">Recharge Review (0)</button>
-        </div>
         <div class="admin-profile">
           <button class="icon-button">🌐</button>
           <button class="icon-button">⚙️</button>
@@ -158,19 +150,135 @@
       </header>
       <div class="admin-page-header">
         <div>
-          <div class="admin-page-title">K-line API configuration</div>
-          <div class="admin-breadcrumb">Home / System Management / K-line API configuration</div>
+          <div class="admin-page-title">K-line API Configuration</div>
+          <div class="admin-breadcrumb">Home / System Management / K-line API Configuration</div>
         </div>
       </div>
+
       <main class="admin-dashboard admin-menu-management">
         <section class="admin-panel">
-          <div class="panel-header">
-            <div>K-line API configuration</div>
+          <div class="panel-header"><div>K-line API Configuration</div></div>
+
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px">
+            <button id="kline-add" class="primary-button">+ Add</button>
+            <button id="kline-delete" class="secondary-button">Delete</button>
+            <button id="kline-query" class="secondary-button">Query</button>
+            <button id="kline-table-control" class="secondary-button">Table Control</button>
           </div>
-          <p>Placeholder page for K-line API configuration.</p>
+
+          <div style="background:#fff; padding:12px; border-radius:8px; border:1px solid #e5e7eb; margin-bottom:12px">
+            <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+              <label style="flex:1; min-width:220px">ApiKey : <input id="filter-apikey" style="width:100%" /></label>
+              <label style="flex:1; min-width:220px">Register Account : <input id="filter-account" style="width:100%" /></label>
+              <label style="flex:1; min-width:220px">Enable Time : <input id="filter-enable" placeholder="from" style="width:47%" /> <span style="margin:0 4px;">~</span> <input id="filter-enable-to" placeholder="to" style="width:47%" /></label>
+              <label style="flex:1; min-width:220px">Deactivation time : <input id="filter-deactivate" placeholder="from" style="width:47%" /> <span style="margin:0 4px;">~</span> <input id="filter-deactivate-to" placeholder="to" style="width:47%" /></label>
+              <button id="kline-reset" class="secondary-button" style="margin-left:auto">Reset</button>
+            </div>
+          </div>
+
+          <div style="background:#fff; padding:12px; border-radius:8px; border:1px solid #e5e7eb">
+            <div class="account-table-wrapper">
+              <table class="account-table" style="width:100%; border-collapse:collapse">
+                <thead>
+                  <tr>
+                    <th style="width:32px"><input id="kline-select-all" type="checkbox" /></th>
+                    <th>ApiKey</th>
+                    <th>Register Account</th>
+                    <th>Registration password</th>
+                    <th>Enable Time</th>
+                    <th>Deactivation time</th>
+                    <th>operation</th>
+                  </tr>
+                </thead>
+                <tbody id="kline-body"></tbody>
+              </table>
+            </div>
+          </div>
         </section>
       </main>
     </div>
   </div>
+
+<script>
+  const KLINE_KEY = 'adminKlineApiConfig';
+  const sample = [
+    { id:'K1', apikey:'abc123xyz', account:'erupted', password:'P@ssw0rd!', enabled:'2026-06-01 09:00:00', deactivated:'2026-12-31 23:59:59' },
+    { id:'K2', apikey:'qwe456rty', account:'admin', password:'Admin#2026', enabled:'2025-11-10 14:30:00', deactivated:'2026-05-10 14:30:00' },
+    { id:'K3', apikey:'zxc789uio', account:'trader', password:'Trade!2026', enabled:'2026-01-15 08:15:00', deactivated:'2027-01-15 08:15:00' },
+  ];
+
+  let configs = JSON.parse(localStorage.getItem(KLINE_KEY)) || sample.slice();
+
+  function saveConfigs() { localStorage.setItem(KLINE_KEY, JSON.stringify(configs)); }
+
+  function renderConfigs() {
+    const tbody = document.getElementById('kline-body');
+    const filters = {
+      apikey: document.getElementById('filter-apikey').value.trim().toLowerCase(),
+      account: document.getElementById('filter-account').value.trim().toLowerCase(),
+      enabledFrom: document.getElementById('filter-enable').value.trim(),
+      enabledTo: document.getElementById('filter-enable-to').value.trim(),
+      disabledFrom: document.getElementById('filter-deactivate').value.trim(),
+      disabledTo: document.getElementById('filter-deactivate-to').value.trim(),
+    };
+
+    const rows = configs.filter(item => {
+      if (filters.apikey && !item.apikey.toLowerCase().includes(filters.apikey)) return false;
+      if (filters.account && !item.account.toLowerCase().includes(filters.account)) return false;
+      if (filters.enabledFrom && item.enabled < filters.enabledFrom) return false;
+      if (filters.enabledTo && item.enabled > filters.enabledTo) return false;
+      if (filters.disabledFrom && item.deactivated < filters.disabledFrom) return false;
+      if (filters.disabledTo && item.deactivated > filters.disabledTo) return false;
+      return true;
+    });
+
+    tbody.innerHTML = rows.map(item => `
+      <tr>
+        <td><input type="checkbox" data-id="${item.id}" /></td>
+        <td>${item.apikey}</td>
+        <td>${item.account}</td>
+        <td title="${item.password}">${item.password}</td>
+        <td>${item.enabled}</td>
+        <td>${item.deactivated}</td>
+        <td>
+          <button class="secondary-button" onclick="alert('Edit ${item.id}')">Edit</button>
+          <button class="secondary-button" onclick="removeConfig('${item.id}')">Delete</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function removeConfig(id) {
+    configs = configs.filter(item => item.id !== id);
+    saveConfigs();
+    renderConfigs();
+  }
+
+  function deleteSelected() {
+    const selected = Array.from(document.querySelectorAll('#kline-body input[type=checkbox]:checked'))
+      .map(input => input.dataset.id);
+    if (!selected.length) return alert('Please select at least one row.');
+    configs = configs.filter(item => !selected.includes(item.id));
+    saveConfigs();
+    renderConfigs();
+  }
+
+  function resetFilters() {
+    ['filter-apikey','filter-account','filter-enable','filter-enable-to','filter-deactivate','filter-deactivate-to']
+      .forEach(id => document.getElementById(id).value = '');
+    renderConfigs();
+  }
+
+  document.getElementById('kline-query').addEventListener('click', renderConfigs);
+  document.getElementById('kline-delete').addEventListener('click', deleteSelected);
+  document.getElementById('kline-reset').addEventListener('click', resetFilters);
+  document.getElementById('kline-select-all').addEventListener('change', function() {
+    document.querySelectorAll('#kline-body input[type=checkbox]').forEach(input => input.checked = this.checked);
+  });
+
+  renderConfigs();
+</script>
 </body>
 </html>
+
+

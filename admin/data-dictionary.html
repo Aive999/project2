@@ -13,7 +13,7 @@
         <div class="admin-logo">K</div>
         <a href="admin.html" class="admin-title">Coinbase Backstage Management System</a>
       </div>
-                                                                  <nav class="admin-menu">
+                                                                        <nav class="admin-menu">
         <details class="admin-menu-group" open>
           <summary class="admin-menu-item active">
             <a href="admin.html">System Management</a>
@@ -27,7 +27,7 @@
             <a href="user-configuration.html" class="admin-submenu-item">User Configuration</a>
             <a href="data-dictionary.html" class="admin-submenu-item active">Data Dictionary</a>
             <a href="online-users.html" class="admin-submenu-item">Online Users</a>
-            <a href="login.html" class="admin-submenu-item">Log In</a>
+            <a href="login-log.html" class="admin-submenu-item">Login Log</a>
             <a href="operation-log.html" class="admin-submenu-item">Operation Log</a>
             <a href="kline-api-config.html" class="admin-submenu-item">K-line API Configuration</a>
           </div>
@@ -44,13 +44,13 @@
         </details>
         <details class="admin-menu-group">
           <summary class="admin-menu-item">
-            <a href="task-management.html">Task Management</a>
+            <a href="job-config.html">Job Manager</a>
             <span class="menu-arrow"></span>
           </summary>
           <div class="admin-submenu">
-            <a href="#" class="admin-submenu-item">Task Queues</a>
-            <a href="#" class="admin-submenu-item">Scheduled Tasks</a>
-            <a href="#" class="admin-submenu-item">Task History</a>
+            <a href="job-config.html" class="admin-submenu-item">Job Config</a>
+            <a href="job-log.html" class="admin-submenu-item">Job Log</a>
+            <a href="send-email.html" class="admin-submenu-item">Send Email</a>
           </div>
         </details>
         <details class="admin-menu-group">
@@ -181,10 +181,11 @@
               <label style="flex:2">Name : <input id="filter-name" style="width:100%" /></label>
             </div>
 
-            <table class="account-table" style="width:100%; border-collapse:collapse">
-              <thead>
-                <tr>
-                  <th style="width:32px"><input id="dd-select-all" type="checkbox" /></th>
+            <div class="account-table-wrapper">
+              <table class="account-table" style="width:100%; border-collapse:collapse">
+                <thead>
+                  <tr>
+                    <th style="width:32px"><input id="dd-select-all" type="checkbox" /></th>
                   <th>Coding</th>
                   <th>Name</th>
                   <th>Remark</th>
@@ -282,3 +283,5 @@
   </div>
 </body>
 </html>
+
+

@@ -13,7 +13,7 @@
         <div class="admin-logo">K</div>
         <a href="admin.html" class="admin-title">Coinbase Backstage Management System</a>
       </div>
-                                                                  <nav class="admin-menu">
+            <nav class="admin-menu">
         <details class="admin-menu-group" open>
           <summary class="admin-menu-item active">
             <a href="admin.html">System Management</a>
@@ -27,7 +27,7 @@
             <a href="user-configuration.html" class="admin-submenu-item">User Configuration</a>
             <a href="data-dictionary.html" class="admin-submenu-item">Data Dictionary</a>
             <a href="online-users.html" class="admin-submenu-item">Online Users</a>
-            <a href="login.html" class="admin-submenu-item">Log In</a>
+            <a href="login-log.html" class="admin-submenu-item">Login Log</a>
             <a href="operation-log.html" class="admin-submenu-item active">Operation Log</a>
             <a href="kline-api-config.html" class="admin-submenu-item">K-line API Configuration</a>
           </div>
@@ -44,13 +44,13 @@
         </details>
         <details class="admin-menu-group">
           <summary class="admin-menu-item">
-            <a href="task-management.html">Task Management</a>
+            <a href="job-config.html">Job Manager</a>
             <span class="menu-arrow"></span>
           </summary>
           <div class="admin-submenu">
-            <a href="#" class="admin-submenu-item">Task Queues</a>
-            <a href="#" class="admin-submenu-item">Scheduled Tasks</a>
-            <a href="#" class="admin-submenu-item">Task History</a>
+            <a href="job-config.html" class="admin-submenu-item">Job Config</a>
+            <a href="job-log.html" class="admin-submenu-item">Job Log</a>
+            <a href="send-email.html" class="admin-submenu-item">Send Email</a>
           </div>
         </details>
         <details class="admin-menu-group">
@@ -141,14 +141,6 @@
           <span class="search-icon">🔎</span>
           <input type="text" placeholder="Search Menu" aria-label="Search Menu" />
         </div>
-        <div class="admin-header-actions">
-          <button class="admin-pill">Start voice broadcast</button>
-          <button class="admin-pill">Primary certification audit (0)</button>
-          <button class="admin-pill">Advanced Certification Audit (0)</button>
-          <button class="admin-pill">Withdrawal Review (0)</button>
-          <button class="admin-pill">Cycle contracts (0)</button>
-          <button class="admin-pill">Recharge Review (0)</button>
-        </div>
         <div class="admin-profile">
           <button class="icon-button">🌐</button>
           <button class="icon-button">⚙️</button>
@@ -162,15 +154,170 @@
           <div class="admin-breadcrumb">Home / System Management / Operation Log</div>
         </div>
       </div>
+
       <main class="admin-dashboard admin-menu-management">
         <section class="admin-panel">
-          <div class="panel-header">
-            <div>Operation Log</div>
+          <div class="panel-header"><div>Operation Log</div></div>
+
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px">
+            <button id="ol-delete" class="secondary-button" style="border-color:#f87171; color:#b91c1c">Delete</button>
+            <button id="ol-download" class="secondary-button">Download</button>
+            <button id="ol-query" class="secondary-button">Query</button>
+            <button id="ol-table-control" class="secondary-button">Table Control</button>
           </div>
-          <p>Placeholder page for Operation Log.</p>
+
+          <div style="background:#fff; padding:12px; border-radius:8px; border:1px solid #e5e7eb; margin-bottom:12px">
+            <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+              <label style="flex:1; min-width:220px">Operator : <input id="filter-operator" style="width:100%" /></label>
+              <label style="flex:1; min-width:220px">IP address : <input id="filter-ip" style="width:100%" /></label>
+              <label style="flex:1; min-width:220px">IP Source : <input id="filter-source" style="width:100%" /></label>
+              <label style="flex:1; min-width:220px">Function Name : <input id="filter-function" style="width:100%" /></label>
+              <label style="flex:1; min-width:220px">Whether it is successful : <select id="filter-success" style="width:100%"><option value="">(any)</option><option value="true">Yes</option><option value="false">No</option></select></label>
+              <label style="flex:1; min-width:220px">Request Time : <input id="filter-request-from" placeholder="from" style="width:47%" /> <span style="margin:0 4px;">~</span> <input id="filter-request-to" placeholder="to" style="width:47%" /></label>
+              <label style="flex:1; min-width:220px">Record time : <input id="filter-record-from" placeholder="from" style="width:47%" /> <span style="margin:0 4px;">~</span> <input id="filter-record-to" placeholder="to" style="width:47%" /></label>
+              <button id="ol-reset" class="secondary-button" style="margin-left:auto">Reset</button>
+            </div>
+          </div>
+
+          <div style="background:#fff; padding:12px; border-radius:8px; border:1px solid #e5e7eb">
+            <div class="account-table-wrapper">
+              <table class="account-table" style="width:100%; border-collapse:collapse">
+                <thead>
+                  <tr>
+                    <th style="width:32px"><input id="ol-select-all" type="checkbox" /></th>
+                    <th>Operator</th>
+                    <th>IP address</th>
+                    <th>IP Source</th>
+                    <th>Function Name</th>
+                    <th>Request Parameters</th>
+                    <th>Whether it is successful</th>
+                    <th>Error message</th>
+                    <th>Request Time</th>
+                    <th>Record time</th>
+                    <th>Request address</th>
+                    <th>Request Method</th>
+                    <th>operation</th>
+                  </tr>
+                </thead>
+                <tbody id="ol-body"></tbody>
+              </table>
+            </div>
+          </div>
         </section>
       </main>
     </div>
   </div>
+
+<script>
+  const OL_KEY = 'adminOperationLog';
+  const sample = [
+    { id:'O1', operator:'admin', ip:'103.60.171.139', source:'Philippines | Globe-Telecom', functionName:'CreateOrder', params:'{orderId:123}', success:true, error:'', requestTime:'2026-06-13 14:02:54', recordTime:'2026-06-13 14:03:01', requestAddress:'/api/order/create', requestMethod:'POST' },
+    { id:'O2', operator:'john', ip:'192.168.1.23', source:'United States | AT&T', functionName:'UpdateUser', params:'{userId:87}', success:false, error:'Permission denied', requestTime:'2026-06-12 09:45:12', recordTime:'2026-06-12 09:45:18', requestAddress:'/api/user/update', requestMethod:'PUT' },
+    { id:'O3', operator:'jane', ip:'172.16.10.5', source:'Germany | Deutsche Telekom', functionName:'Login', params:'{user:admin}', success:true, error:'', requestTime:'2026-06-11 18:20:30', recordTime:'2026-06-11 18:20:35', requestAddress:'/api/auth/login', requestMethod:'POST' },
+  ];
+
+  let logs = JSON.parse(localStorage.getItem(OL_KEY)) || sample.slice();
+
+  function saveLogs(){ localStorage.setItem(OL_KEY, JSON.stringify(logs)); }
+
+  function formatBool(value){ return value ? 'Yes' : 'No'; }
+
+  function renderLogs(){
+    const tbody = document.getElementById('ol-body');
+    const filters = {
+      operator: document.getElementById('filter-operator').value.trim().toLowerCase(),
+      ip: document.getElementById('filter-ip').value.trim(),
+      source: document.getElementById('filter-source').value.trim().toLowerCase(),
+      functionName: document.getElementById('filter-function').value.trim().toLowerCase(),
+      success: document.getElementById('filter-success').value,
+      requestFrom: document.getElementById('filter-request-from').value.trim(),
+      requestTo: document.getElementById('filter-request-to').value.trim(),
+      recordFrom: document.getElementById('filter-record-from').value.trim(),
+      recordTo: document.getElementById('filter-record-to').value.trim(),
+    };
+
+    const rows = logs.filter(log => {
+      if (filters.operator && !log.operator.toLowerCase().includes(filters.operator)) return false;
+      if (filters.ip && !log.ip.includes(filters.ip)) return false;
+      if (filters.source && !log.source.toLowerCase().includes(filters.source)) return false;
+      if (filters.functionName && !log.functionName.toLowerCase().includes(filters.functionName)) return false;
+      if (filters.success && String(log.success) !== filters.success) return false;
+      if (filters.requestFrom && log.requestTime < filters.requestFrom) return false;
+      if (filters.requestTo && log.requestTime > filters.requestTo) return false;
+      if (filters.recordFrom && log.recordTime < filters.recordFrom) return false;
+      if (filters.recordTo && log.recordTime > filters.recordTo) return false;
+      return true;
+    });
+
+    tbody.innerHTML = rows.map(log => `
+      <tr>
+        <td><input type="checkbox" data-id="${log.id}" /></td>
+        <td>${log.operator}</td>
+        <td>${log.ip}</td>
+        <td title="${log.source}">${log.source}</td>
+        <td>${log.functionName}</td>
+        <td title="${log.params}">${log.params}</td>
+        <td>${formatBool(log.success)}</td>
+        <td title="${log.error}">${log.error || '-'}</td>
+        <td>${log.requestTime}</td>
+        <td>${log.recordTime}</td>
+        <td>${log.requestAddress}</td>
+        <td>${log.requestMethod}</td>
+        <td><button class="secondary-button" onclick="alert('View ${log.id}')">View</button></td>
+      </tr>
+    `).join('');
+  }
+
+  function deleteSelected(){
+    const checked = Array.from(document.querySelectorAll('#ol-body input[type=checkbox]:checked'))
+      .map(input => input.dataset.id);
+    if (!checked.length) return alert('Select at least one entry to delete.');
+    logs = logs.filter(log => !checked.includes(log.id));
+    saveLogs();
+    renderLogs();
+  }
+
+  function downloadCSV(){
+    const rows = logs.map(log => [
+      log.operator,
+      log.ip,
+      log.source,
+      log.functionName,
+      log.params,
+      formatBool(log.success),
+      log.error,
+      log.requestTime,
+      log.recordTime,
+      log.requestAddress,
+      log.requestMethod
+    ]);
+    const csv = ['Operator,IP address,IP Source,Function Name,Request Parameters,Successful,Error message,Request Time,Record time,Request address,Request Method',
+      ...rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'operation-log.csv';
+    link.click();
+  }
+
+  function resetFilters(){
+    ['filter-operator','filter-ip','filter-source','filter-function','filter-success','filter-request-from','filter-request-to','filter-record-from','filter-record-to']
+      .forEach(id => document.getElementById(id).value = '');
+    renderLogs();
+  }
+
+  document.getElementById('ol-query').addEventListener('click', renderLogs);
+  document.getElementById('ol-delete').addEventListener('click', deleteSelected);
+  document.getElementById('ol-download').addEventListener('click', downloadCSV);
+  document.getElementById('ol-reset').addEventListener('click', resetFilters);
+  document.getElementById('ol-select-all').addEventListener('change', function(){
+    document.querySelectorAll('#ol-body input[type=checkbox]').forEach(input => input.checked = this.checked);
+  });
+
+  renderLogs();
+</script>
 </body>
 </html>
+
+

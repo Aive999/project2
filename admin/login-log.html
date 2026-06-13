@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>New Withdrawal Records</title>
+  <title>Login Log</title>
   <link rel="stylesheet" href="../styles.css" />
 </head>
 <body>
@@ -13,9 +13,9 @@
         <div class="admin-logo">K</div>
         <a href="admin.html" class="admin-title">Coinbase Backstage Management System</a>
       </div>
-                                                            <nav class="admin-menu">
-        <details class="admin-menu-group">
-          <summary class="admin-menu-item">
+            <nav class="admin-menu">
+        <details class="admin-menu-group" open>
+          <summary class="admin-menu-item active">
             <a href="admin.html">System Management</a>
             <span class="menu-arrow"></span>
           </summary>
@@ -27,7 +27,7 @@
             <a href="user-configuration.html" class="admin-submenu-item">User Configuration</a>
             <a href="data-dictionary.html" class="admin-submenu-item">Data Dictionary</a>
             <a href="online-users.html" class="admin-submenu-item">Online Users</a>
-            <a href="login-log.html" class="admin-submenu-item">Login Log</a>
+            <a href="login-log.html" class="admin-submenu-item active">Login Log</a>
             <a href="operation-log.html" class="admin-submenu-item">Operation Log</a>
             <a href="kline-api-config.html" class="admin-submenu-item">K-line API Configuration</a>
           </div>
@@ -62,8 +62,8 @@
             <a href="erupt-code.html" class="admin-submenu-item">Erupt Code</a>
           </div>
         </details>
-        <details class="admin-menu-group" open>
-          <summary class="admin-menu-item active">
+        <details class="admin-menu-group">
+          <summary class="admin-menu-item">
             <a href="exchange.html">Exchange</a>
             <span class="menu-arrow"></span>
           </summary>
@@ -75,7 +75,7 @@
             <a href="top-up-records.html" class="admin-submenu-item">Top-up Records</a>
             <a href="feedback.html" class="admin-submenu-item">Feedback</a>
             <a href="user-invitation-records.html" class="admin-submenu-item">User Invitation Records</a>
-            <a href="new-withdrawal-records.html" class="admin-submenu-item active">New Withdrawal Records</a>
+            <a href="new-withdrawal-records.html" class="admin-submenu-item">New Withdrawal Records</a>
             <a href="product-management.html" class="admin-submenu-item">Product Management</a>
           </div>
         </details>
@@ -134,20 +134,13 @@
           </div>
         </details>
       </nav>
+      </nav>
     </aside>
     <div class="admin-main">
       <header class="admin-header">
         <div class="admin-search">
           <span class="search-icon">🔎</span>
           <input type="text" placeholder="Search Menu" aria-label="Search Menu" />
-        </div>
-        <div class="admin-header-actions">
-          <button class="admin-pill">Start voice broadcast</button>
-          <button class="admin-pill">Primary certification audit (0)</button>
-          <button class="admin-pill">Advanced Certification Audit (0)</button>
-          <button class="admin-pill">Withdrawal Review (0)</button>
-          <button class="admin-pill">Cycle contracts (0)</button>
-          <button class="admin-pill">Recharge Review (0)</button>
         </div>
         <div class="admin-profile">
           <button class="icon-button">🌐</button>
@@ -158,22 +151,116 @@
       </header>
       <div class="admin-page-header">
         <div>
-          <div class="admin-page-title">New Withdrawal Records</div>
-          <div class="admin-breadcrumb">Home / Exchange / New Withdrawal Records</div>
+          <div class="admin-page-title">Login Log</div>
+          <div class="admin-breadcrumb">Home / System Management / Login Log</div>
         </div>
       </div>
+
       <main class="admin-dashboard admin-menu-management">
-        <div class="admin-layout-grid">
-          <section class="admin-panel">
-            <div class="panel-header">
-              <div>New Withdrawal Records</div>
+        <section class="admin-panel">
+          <div class="panel-header"><div>Login Log</div></div>
+
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px">
+            <button id="ll-delete" class="secondary-button" style="border-color:#f87171; color:#b91c1c">Delete</button>
+            <button id="ll-download" class="secondary-button">Download</button>
+            <button id="ll-query" class="secondary-button">Query</button>
+            <button id="ll-table-control" class="secondary-button">Table Control</button>
+          </div>
+
+          <div style="background:#fff; padding:12px; border-radius:8px; border:1px solid #e5e7eb; margin-bottom:12px">
+            <div style="display:flex; gap:12px; flex-wrap:wrap">
+              <label style="flex:1">User : <input id="filter-user" style="width:100%"/></label>
+              <label style="flex:1">Login Time : <input id="filter-login-from" placeholder="from" /> ~ <input id="filter-login-to" placeholder="to" /></label>
+              <label style="flex:1">IP address : <input id="filter-ip" style="width:100%"/></label>
+              <label style="flex:1">IP Source : <input id="filter-ip-source" style="width:100%"/></label>
+              <label style="flex:1">Operating syst... : <input id="filter-os" style="width:100%"/></label>
+              <label style="flex:1">Browser : <input id="filter-browser" style="width:100%"/></label>
+              <label style="flex:1">Type of equip... : <input id="filter-type" style="width:100%"/></label>
             </div>
-            <p>Placeholder content for New Withdrawal Records.</p>
-          </section>
-        </div>
+          </div>
+
+          <div style="background:#fff; padding:12px; border-radius:8px; border:1px solid #e5e7eb">
+            <div class="account-table-wrapper">
+              <table class="account-table" style="width:100%; border-collapse:collapse">
+                <thead>
+                  <tr>
+                    <th style="width:32px"><input id="ll-select-all" type="checkbox" /></th>
+                  <th>User</th>
+                  <th>Login Time</th>
+                  <th>IP address</th>
+                  <th>IP Source</th>
+                  <th>Operating system</th>
+                  <th>Browser</th>
+                  <th>Type of equipment</th>
+                  <th>operation</th>
+                </tr>
+              </thead>
+              <tbody id="ll-body"></tbody>
+            </table>
+          </div>
+        </section>
       </main>
     </div>
   </div>
+
+<script>
+  const LL_KEY = 'adminLoginLog';
+  const sample = [
+    { id:'L1', user:'admin', login:'2026-06-13 14:02:54', ip:'103.60.171.139', source:'Philippines | 0 | 0 | 0 | Globe-Telecom', os:'Windows 10', browser:'Chrome 14 149', type:'Computer' },
+    { id:'L2', user:'admin', login:'2026-06-13 11:12:07', ip:'103.60.171.139', source:'Philippines | 0 | 0 | 0 | Globe-Telecom', os:'Android 1.x', browser:'Chrome Mobile 149', type:'Mobile' },
+    { id:'L3', user:'admin', login:'2026-06-13 11:11:31', ip:'103.60.171.139', source:'Philippines | 0 | 0 | 0 | Globe-Telecom', os:'Android 1.x', browser:'Chrome Mobile 149', type:'Mobile' },
+  ];
+
+  let logs = JSON.parse(localStorage.getItem(LL_KEY)) || sample.slice();
+
+  function saveLogs(){ localStorage.setItem(LL_KEY, JSON.stringify(logs)); }
+
+  function renderLogs(){
+    const tbody = document.getElementById('ll-body');
+    const f = {
+      user: document.getElementById('filter-user').value.trim(),
+      ip: document.getElementById('filter-ip').value.trim(),
+      source: document.getElementById('filter-ip-source').value.trim(),
+      os: document.getElementById('filter-os').value.trim(),
+      browser: document.getElementById('filter-browser').value.trim(),
+      type: document.getElementById('filter-type').value.trim(),
+    };
+    const rows = logs.filter(o=>{
+      if (f.user && !o.user.includes(f.user)) return false;
+      if (f.ip && !o.ip.includes(f.ip)) return false;
+      if (f.source && !o.source.includes(f.source)) return false;
+      if (f.os && !o.os.includes(f.os)) return false;
+      if (f.browser && !o.browser.includes(f.browser)) return false;
+      if (f.type && !o.type.includes(f.type)) return false;
+      return true;
+    });
+    tbody.innerHTML = rows.map(r=>`<tr data-id="${r.id}">`+
+      `<td><input class="ll-check" type="checkbox" data-id="${r.id}" /></td>`+
+      `<td>${r.user}</td><td>${r.login}</td><td>${r.ip}</td><td>${r.source}</td><td>${r.os}</td><td>${r.browser}</td><td>${r.type}</td>`+
+      `<td style="white-space:nowrap"><button class="icon-button" data-action="delete" data-id="${r.id}" title="Delete">🗑️</button></td>`+
+      `</tr>`).join('') || '<tr><td colspan="9" style="color:#9ca3af">(no data)</td></tr>';
+    attachLL();
+  }
+
+  function attachLL(){
+    document.querySelectorAll('[data-action]').forEach(btn=>btn.onclick = ()=>{
+      const id = btn.getAttribute('data-id'); const action = btn.getAttribute('data-action');
+      if (action==='delete') deleteLog(id);
+    });
+    document.getElementById('ll-select-all').onchange = e=> document.querySelectorAll('.ll-check').forEach(cb=>cb.checked = e.target.checked);
+  }
+
+  function deleteLog(id){ if (!confirm('Delete log?')) return; logs = logs.filter(x=>x.id!==id); saveLogs(); renderLogs(); }
+  function deleteSelected(){ const ids = Array.from(document.querySelectorAll('.ll-check:checked')).map(cb=>cb.getAttribute('data-id')); if (!ids.length) return alert('No selection'); if (!confirm('Delete selected logs?')) return; logs = logs.filter(l=>!ids.includes(l.id)); saveLogs(); renderLogs(); }
+  function downloadCSV(){ const rows=[['user','login','ip','source','os','browser','type']].concat(logs.map(o=>[o.user,o.login,o.ip,o.source,o.os,o.browser,o.type])); const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='login-log.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
+
+  document.getElementById('ll-download').addEventListener('click', downloadCSV);
+  document.getElementById('ll-query').addEventListener('click', renderLogs);
+  document.getElementById('ll-delete').addEventListener('click', deleteSelected);
+  ['filter-user','filter-ip','filter-ip-source','filter-os','filter-browser','filter-type'].forEach(id=>document.getElementById(id).addEventListener('input', renderLogs));
+
+  renderLogs();
+</script>
 </body>
 </html>
 

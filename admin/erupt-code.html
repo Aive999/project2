@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Log in</title>
+  <title>Erupt Code</title>
   <link rel="stylesheet" href="../styles.css" />
 </head>
 <body>
@@ -13,9 +13,9 @@
         <div class="admin-logo">K</div>
         <a href="admin.html" class="admin-title">Coinbase Backstage Management System</a>
       </div>
-                                                                  <nav class="admin-menu">
-        <details class="admin-menu-group" open>
-          <summary class="admin-menu-item active">
+      <nav class="admin-menu">
+        <details class="admin-menu-group">
+          <summary class="admin-menu-item">
             <a href="admin.html">System Management</a>
             <span class="menu-arrow"></span>
           </summary>
@@ -27,7 +27,7 @@
             <a href="user-configuration.html" class="admin-submenu-item">User Configuration</a>
             <a href="data-dictionary.html" class="admin-submenu-item">Data Dictionary</a>
             <a href="online-users.html" class="admin-submenu-item">Online Users</a>
-            <a href="login.html" class="admin-submenu-item active">Log In</a>
+            <a href="login-log.html" class="admin-submenu-item">Login Log</a>
             <a href="operation-log.html" class="admin-submenu-item">Operation Log</a>
             <a href="kline-api-config.html" class="admin-submenu-item">K-line API Configuration</a>
           </div>
@@ -44,22 +44,22 @@
         </details>
         <details class="admin-menu-group">
           <summary class="admin-menu-item">
-            <a href="task-management.html">Task Management</a>
+            <a href="job-config.html">Job Manager</a>
             <span class="menu-arrow"></span>
           </summary>
           <div class="admin-submenu">
-            <a href="#" class="admin-submenu-item">Task Queues</a>
-            <a href="#" class="admin-submenu-item">Scheduled Tasks</a>
-            <a href="#" class="admin-submenu-item">Task History</a>
+            <a href="job-config.html" class="admin-submenu-item">Job Config</a>
+            <a href="job-log.html" class="admin-submenu-item">Job Log</a>
+            <a href="send-email.html" class="admin-submenu-item">Send Email</a>
           </div>
         </details>
-        <details class="admin-menu-group">
-          <summary class="admin-menu-item">
+        <details class="admin-menu-group" open>
+          <summary class="admin-menu-item active">
             <a href="generator-code.html">Generator Code</a>
             <span class="menu-arrow"></span>
           </summary>
           <div class="admin-submenu">
-            <a href="erupt-code.html" class="admin-submenu-item">Erupt Code</a>
+            <a href="erupt-code.html" class="admin-submenu-item active">Erupt Code</a>
           </div>
         </details>
         <details class="admin-menu-group">
@@ -158,16 +158,90 @@
       </header>
       <div class="admin-page-header">
         <div>
-          <div class="admin-page-title">Log in</div>
-          <div class="admin-breadcrumb">Home / System Management / Log in</div>
+          <div class="admin-page-title">Erupt Code</div>
+          <div class="admin-breadcrumb">Home / Generator Code / Erupt Code</div>
         </div>
       </div>
       <main class="admin-dashboard admin-menu-management">
         <section class="admin-panel">
-          <div class="panel-header">
-            <div>Log in</div>
+          <div class="panel-header"><div>Erupt Code</div></div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-bottom:16px;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+              <button class="primary-button">+ Add</button>
+              <button class="secondary-button" style="border-color:#ef4444; color:#ef4444;">Delete</button>
+              <button class="secondary-button">Query</button>
+              <button class="secondary-button">Table Control</button>
+            </div>
+            <button class="secondary-button">Reset</button>
           </div>
-          <p>Placeholder page for Log in.</p>
+          <div style="background:#fff; padding:16px; border-radius:12px; border:1px solid #e5e7eb; margin-bottom:16px;">
+            <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end;">
+              <label style="display:flex; flex:1; min-width:220px; gap:8px; align-items:center;">Name:
+                <input type="text" style="flex:1; min-width:140px; padding:10px; border:1px solid #d1d5db; border-radius:8px;" />
+              </label>
+              <label style="display:flex; flex:1; min-width:220px; gap:8px; align-items:center;">Entity class name:
+                <input type="text" style="flex:1; min-width:140px; padding:10px; border:1px solid #d1d5db; border-radius:8px;" />
+              </label>
+              <label style="display:flex; flex:1; min-width:220px; gap:8px; align-items:center;">Table name:
+                <input type="text" style="flex:1; min-width:140px; padding:10px; border:1px solid #d1d5db; border-radius:8px;" />
+              </label>
+            </div>
+          </div>
+          <div class="account-table-wrapper">
+            <table class="account-table" style="width:100%; border-collapse:collapse;">
+              <thead>
+                <tr>
+                  <th style="width:32px; padding:12px; text-align:left;"><input type="checkbox" /></th>
+                  <th style="padding:12px; text-align:left;">Name</th>
+                  <th style="padding:12px; text-align:left;">Entity class name</th>
+                  <th style="padding:12px; text-align:left;">Table name</th>
+                  <th style="padding:12px; text-align:left;">Introduction</th>
+                  <th style="padding:12px; text-align:left;">Operation</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="padding:12px;"><input type="checkbox" /></td>
+                  <td style="padding:12px;">Loan Setup</td>
+                  <td style="padding:12px;">LoanConfig</td>
+                  <td style="padding:12px;">qkl_loan_config</td>
+                  <td style="padding:12px;">Loan setup entity for system configuration</td>
+                  <td style="padding:12px; display:flex; gap:8px; align-items:center;">
+                    <button class="secondary-button" style="padding:6px 10px;">View</button>
+                    <button class="secondary-button" style="padding:6px 10px;">Edit</button>
+                    <button class="secondary-button" style="padding:6px 10px; border-color:#ef4444; color:#ef4444;">Delete</button>
+                    <button class="secondary-button" style="padding:6px 10px;">Code</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:12px;"><input type="checkbox" /></td>
+                  <td style="padding:12px;">User Level Settings</td>
+                  <td style="padding:12px;">Letter</td>
+                  <td style="padding:12px;">qkl_level</td>
+                  <td style="padding:12px;">User level configuration entity</td>
+                  <td style="padding:12px; display:flex; gap:8px; align-items:center;">
+                    <button class="secondary-button" style="padding:6px 10px;">View</button>
+                    <button class="secondary-button" style="padding:6px 10px;">Edit</button>
+                    <button class="secondary-button" style="padding:6px 10px; border-color:#ef4444; color:#ef4444;">Delete</button>
+                    <button class="secondary-button" style="padding:6px 10px;">Code</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:16px;">
+            <div style="color:#6b7280;">1 - 2 of 2</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+              <button class="secondary-button">◀</button>
+              <button class="secondary-button">1</button>
+              <button class="secondary-button">2</button>
+              <span>10 / page</span>
+              <label style="display:flex; align-items:center; gap:8px;">
+                Goto
+                <input type="number" min="1" value="1" style="width:72px; padding:8px; border:1px solid #d1d5db; border-radius:8px;" />
+              </label>
+            </div>
+          </div>
         </section>
       </main>
     </div>
