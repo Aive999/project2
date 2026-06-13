@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Configuration</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-logo">K</div>
+        <a href="admin.html" class="admin-title">Coinbase Backstage Management System</a>
+      </div>
+                                                                  <nav class="admin-menu">
+        <details class="admin-menu-group" open>
+          <summary class="admin-menu-item active">
+            <a href="admin.html">System Management</a>
+            <span class="menu-arrow"></span>
+          </summary>
+          <div class="admin-submenu">
+            <a href="menu-management.html" class="admin-submenu-item">Menu Management</a>
+            <a href="role-management.html" class="admin-submenu-item">Role Management</a>
+            <a href="organization-maintenance.html" class="admin-submenu-item">Organization Maintenance</a>
+            <a href="post-maintenance.html" class="admin-submenu-item">Post Maintenance</a>
+            <a href="user-configuration.html" class="admin-submenu-item active">User Configuration</a>
+            <a href="data-dictionary.html" class="admin-submenu-item">Data Dictionary</a>
+            <a href="online-users.html" class="admin-submenu-item">Online Users</a>
+            <a href="login.html" class="admin-submenu-item">Log In</a>
+            <a href="operation-log.html" class="admin-submenu-item">Operation Log</a>
+            <a href="kline-api-config.html" class="admin-submenu-item">K-line API Configuration</a>
+          </div>
+        </details>
+        <details class="admin-menu-group">
+          <summary class="admin-menu-item">
+            <a href="system-monitoring.html">System Monitoring</a>
+            <span class="menu-arrow"></span>
+          </summary>
+          <div class="admin-submenu">
+            <a href="server-monitor.html" class="admin-submenu-item">Server Monitor</a>
+            <a href="cache-monitor.html" class="admin-submenu-item">Cache Monitor</a>
+          </div>
+        </details>
+        <details class="admin-menu-group">
+          <summary class="admin-menu-item">
+            <a href="task-management.html">Task Management</a>
+            <span class="menu-arrow"></span>
+          </summary>
+          <div class="admin-submenu">
+            <a href="#" class="admin-submenu-item">Task Queues</a>
+            <a href="#" class="admin-submenu-item">Scheduled Tasks</a>
+            <a href="#" class="admin-submenu-item">Task History</a>
+          </div>
+        </details>
+        <details class="admin-menu-group">
+          <summary class="admin-menu-item">
+            <a href="generator-code.html">Generator Code</a>
+            <span class="menu-arrow"></span>
+          </summary>
+          <div class="admin-submenu">
+            <a href="erupt-code.html" class="admin-submenu-item">Erupt Code</a>
+          </div>
+        </details>
+        <details class="admin-menu-group">
+          <summary class="admin-menu-item">
+            <a href="exchange.html">Exchange</a>
+            <span class="menu-arrow"></span>
+          </summary>
+          <div class="admin-submenu">
+            <a href="account-management.html" class="admin-submenu-item">Account Management</a>
+            <a href="user-level.html" class="admin-submenu-item">User Level</a>
+            <a href="withdrawal-records.html" class="admin-submenu-item">Withdrawal Records</a>
+            <a href="recharge-review.html" class="admin-submenu-item">Recharge Review</a>
+            <a href="top-up-records.html" class="admin-submenu-item">Top-up Records</a>
+            <a href="feedback.html" class="admin-submenu-item">Feedback</a>
+            <a href="user-invitation-records.html" class="admin-submenu-item">User Invitation Records</a>
+            <a href="new-withdrawal-records.html" class="admin-submenu-item">New Withdrawal Records</a>
+            <a href="product-management.html" class="admin-submenu-item">Product Management</a>
+          </div>
+        </details>
+        <details class="admin-menu-group">
+          <summary class="admin-menu-item">
+            <a href="loan-management.html">Loan Management</a>
+            <span class="menu-arrow"></span>
+          </summary>
+          <div class="admin-submenu">
+            <a href="loan-setup.html" class="admin-submenu-item">Loan Setup</a>
+            <a href="loan-review.html" class="admin-submenu-item">Loan Review</a>
+          </div>
+        </details>
+        <details class="admin-menu-group">
+          <summary class="admin-menu-item">
+            <a href="asset-management.html">Asset Management</a>
+            <span class="menu-arrow"></span>
+          </summary>
+          <div class="admin-submenu">
+            <a href="seconds-contracts.html" class="admin-submenu-item">Seconds Contract</a>
+            <a href="new-spot-points.html" class="admin-submenu-item">New Spot Points</a>
+            <a href="spot-asset-list.html" class="admin-submenu-item">List of Spot Assets</a>
+            <a href="contract-asset-list.html" class="admin-submenu-item">List of Contract Assets</a>
+            <a href="locked-mining-assets.html" class="admin-submenu-item">Locked Mining Assets</a>
+          </div>
+        </details>
+        <details class="admin-menu-group">
+          <summary class="admin-menu-item">
+            <a href="order-management.html">Order Management</a>
+            <span class="menu-arrow"></span>
+          </summary>
+          <div class="admin-submenu">
+            <a href="spot-flow-records.html" class="admin-submenu-item">Spot Flow Records</a>
+            <a href="spot-exchange-trades.html" class="admin-submenu-item">Spot Exchange Trades</a>
+            <a href="cycle-contracts-trades.html" class="admin-submenu-item">Cycle Contracts Trades</a>
+          </div>
+        </details>
+        <details class="admin-menu-group">
+          <summary class="admin-menu-item">
+            <a href="content-management.html">Content Management</a>
+            <span class="menu-arrow"></span>
+          </summary>
+          <div class="admin-submenu">
+            <a href="locked-mining.html" class="admin-submenu-item">Locked Mining</a>
+            <a href="copywriting-management.html" class="admin-submenu-item">Copywriting Management</a>
+          </div>
+        </details>
+        <details class="admin-menu-group">
+          <summary class="admin-menu-item">
+            <a href="certification-audit.html">Certification Management</a>
+            <span class="menu-arrow"></span>
+          </summary>
+          <div class="admin-submenu">
+            <a href="primary-real-name.html" class="admin-submenu-item">Primary Real Name</a>
+            <a href="advanced-real-name.html" class="admin-submenu-item">Advanced Real Name</a>
+          </div>
+        </details>
+      </nav>
+    </aside>
+    <div class="admin-main">
+      <header class="admin-header">
+        <div class="admin-search">
+          <span class="search-icon">🔎</span>
+          <input type="text" placeholder="Search Menu" aria-label="Search Menu" />
+        </div>
+        <div class="admin-header-actions">
+          <button class="admin-pill">Start voice broadcast</button>
+          <button class="admin-pill">Primary certification audit (0)</button>
+          <button class="admin-pill">Advanced Certification Audit (0)</button>
+          <button class="admin-pill">Withdrawal Review (0)</button>
+          <button class="admin-pill">Cycle contracts (0)</button>
+          <button class="admin-pill">Recharge Review (0)</button>
+        </div>
+        <div class="admin-profile">
+          <button class="icon-button">🌐</button>
+          <button class="icon-button">⚙️</button>
+          <div class="profile-badge">a</div>
+          <span>admin</span>
+        </div>
+      </header>
+      <div class="admin-page-header">
+        <div>
+          <div class="admin-page-title">User Configuration</div>
+          <div class="admin-breadcrumb">Home / System Management / User Configuration</div>
+        </div>
+      </div>
+      <main class="admin-dashboard admin-menu-management">
+        <div class="admin-layout-grid">
+          <div class="admin-layout-grid" style="display:flex; gap:18px; align-items:flex-start">
+            <section class="admin-panel" style="flex:0 0 260px; max-width:860px">
+            <div class="panel-header" style="display:flex; align-items:center; justify-content:space-between">
+              <div>User Configuration</div>
+            </div>
+            <div style="display:flex; gap:8px; margin:8px 0">
+              <button id="user-add" class="primary-button">+ Add</button>
+              <button id="user-delete" class="secondary-button">Delete</button>
+              <button id="user-query" class="secondary-button">Query</button>
+              <button id="user-table-control" class="secondary-button">Table Control</button>
+            </div>
+            <div style="margin-bottom:8px">
+              <input id="user-search" placeholder="Search" style="width:100%; padding:8px" />
+            </div>
+              <div style="height:680px; overflow:auto; background:#fff; border-radius:8px; padding:12px; border:1px solid #e5e7eb">
+              <div style="display:flex; gap:12px; margin-bottom:8px; align-items:flex-start">
+                <div style="flex:1">
+                  <label>Username：<input id="filter-username" /></label>
+                  <label>Name：<input id="filter-name" /></label>
+                </div>
+                <div style="flex:1">
+                  <label>Account Status：<select id="filter-status"><option value="">(any)</option><option>Enable</option><option>Disable</option></select></label>
+                  <label>Overpipe users：<select id="filter-overpipe"><option value="">(any)</option><option>Yes</option><option>No</option></select></label>
+                </div>
+                <div style="flex:1">
+                  <label>Post：<input id="filter-post" /></label>
+                  <label>Organization：<input id="filter-org" /></label>
+                </div>
+              </div>
+
+              <table class="account-table" style="width:100%; border-collapse:collapse">
+                <thead>
+                  <tr>
+                    <th style="width:32px"><input id="select-all" type="checkbox" /></th>
+                    <th>Username</th>
+                    <th>Name</th>
+                    <th>Account Status</th>
+                    <th>Overpipe user</th>
+                    <th>Home Menu</th>
+                    <th>Organization to which</th>
+                    <th>Post</th>
+                    <th>Reset Password time</th>
+                    <th>Time to lapse</th>
+                    <th>Role</th>
+                    <th>Creator</th>
+                    <th>Creation time</th>
+                    <th>Operation</th>
+                  </tr>
+                </thead>
+                <tbody id="user-table-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="admin-panel">
+            <div class="panel-header">User Details</div>
+            <div id="user-detail" style="padding:12px">
+              <p>Select a user from the table to edit details here.</p>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const USER_KEY = 'adminUsers';
+    const defaultUsers = [
+      { id:'U1', username:'erupted', name:'erupted', status:'Enable', overpipe:'Yes', homeMenu:'Home', org:'Head Office', post:'Admin', resetAt:'2023-01-01', lapse:'90 days', role:'Admin', creator:'system', created:'2023-01-01 09:00' },
+      { id:'U2', username:'admin', name:'admin', status:'Enable', overpipe:'Yes', homeMenu:'Home', org:'Head Office', post:'Super', resetAt:'2024-01-01', lapse:'90 days', role:'Super', creator:'system', created:'2024-01-01 09:00' },
+    ];
+
+    let users = JSON.parse(localStorage.getItem(USER_KEY)) || defaultUsers.slice();
+
+    function saveUsers(){ localStorage.setItem(USER_KEY, JSON.stringify(users)); }
+
+    function renderTable(filter={}){
+      const tbody = document.getElementById('user-table-body');
+      const rows = users.filter(u=>{
+        if (filter.username && !u.username.includes(filter.username)) return false;
+        if (filter.name && !u.name.includes(filter.name)) return false;
+        if (filter.status && u.status!==filter.status) return false;
+        if (filter.overpipe && u.overpipe!==filter.overpipe) return false;
+        if (filter.post && !u.post.includes(filter.post)) return false;
+        if (filter.org && !u.org.includes(filter.org)) return false;
+        return true;
+      });
+      tbody.innerHTML = rows.map(u=>{
+        return `<tr data-id="${u.id}">`+
+          `<td><input class="row-check" type="checkbox" data-id="${u.id}" /></td>`+
+          `<td>${u.username}</td>`+
+          `<td>${u.name}</td>`+
+          `<td><span class="status-badge">${u.status}</span></td>`+
+          `<td>${u.overpipe}</td>`+
+          `<td>${u.homeMenu||''}</td>`+
+          `<td>${u.org||''}</td>`+
+          `<td>${u.post||''}</td>`+
+          `<td>${u.resetAt||''}</td>`+
+          `<td>${u.lapse||''}</td>`+
+          `<td>${u.role||''}</td>`+
+          `<td>${u.creator||''}</td>`+
+          `<td>${u.created||''}</td>`+
+          `<td style="white-space:nowrap"><button class="icon-button" data-action="view" data-id="${u.id}">👁️</button> <button class="icon-button" data-action="edit" data-id="${u.id}">✏️</button> <button class="icon-button" data-action="reset" data-id="${u.id}">🔑</button> <button class="icon-button" data-action="delete" data-id="${u.id}">🗑️</button></td>`+
+        `</tr>`;
+      }).join('') || '<tr><td colspan="14" style="color:#9ca3af">(no data)</td></tr>';
+      attachRowEvents();
+    }
+
+    function attachRowEvents(){
+      document.querySelectorAll('[data-action]').forEach(btn=>btn.onclick = (e)=>{
+        const id = btn.getAttribute('data-id');
+        const action = btn.getAttribute('data-action');
+        if (action==='view' || action==='edit') showDetail(id);
+        if (action==='reset') resetPassword(id);
+        if (action==='delete') deleteUser(id);
+      });
+      document.getElementById('select-all').onchange = (e)=>{ document.querySelectorAll('.row-check').forEach(cb=>cb.checked = e.target.checked); };
+    }
+
+    function showDetail(id){
+      const u = users.find(x=>x.id===id);
+      const container = document.getElementById('user-detail');
+      if (!u) { container.innerHTML = '<p>User not found.</p>'; return; }
+      container.innerHTML = `
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+          <label>Username<input id="detail-username" value="${u.username}" /></label>
+          <label>Name<input id="detail-name" value="${u.name}" /></label>
+          <label>Account Status<select id="detail-status"><option ${u.status==='Enable'?'selected':''}>Enable</option><option ${u.status==='Disable'?'selected':''}>Disable</option></select></label>
+          <label>Overpipe user<select id="detail-overpipe"><option ${u.overpipe==='Yes'?'selected':''}>Yes</option><option ${u.overpipe==='No'?'selected':''}>No</option></select></label>
+          <label>Home Menu<input id="detail-home" value="${u.homeMenu||''}" /></label>
+          <label>Organization<input id="detail-org" value="${u.org||''}" /></label>
+          <label>Post<input id="detail-post" value="${u.post||''}" /></label>
+          <label>Role<input id="detail-role" value="${u.role||''}" /></label>
+        </div>
+        <div style="margin-top:12px"><button id="detail-save" class="primary-button">Save</button> <button id="detail-close" class="secondary-button">Close</button></div>
+      `;
+      document.getElementById('detail-close').onclick = ()=> document.getElementById('user-detail').innerHTML = '<p>Select a user from the table to edit details here.</p>';
+      document.getElementById('detail-save').onclick = ()=>{
+        u.username = document.getElementById('detail-username').value.trim();
+        u.name = document.getElementById('detail-name').value.trim();
+        u.status = document.getElementById('detail-status').value;
+        u.overpipe = document.getElementById('detail-overpipe').value;
+        u.homeMenu = document.getElementById('detail-home').value.trim();
+        u.org = document.getElementById('detail-org').value.trim();
+        u.post = document.getElementById('detail-post').value.trim();
+        u.role = document.getElementById('detail-role').value.trim();
+        saveUsers(); renderTable(getFilters());
+        alert('Saved');
+      };
+    }
+
+    function resetPassword(id){
+      const u = users.find(x=>x.id===id);
+      if (!u) return; u.resetAt = new Date().toLocaleString(); saveUsers(); renderTable(getFilters()); alert('Password reset time updated');
+    }
+
+    function deleteUser(id){
+      if (!confirm('Delete user?')) return; users = users.filter(x=>x.id!==id); saveUsers(); renderTable(getFilters());
+    }
+
+    function addUser(){
+      const username = prompt('Username') || 'user'+Math.floor(Math.random()*9000);
+      const name = prompt('Name') || username;
+      const now = new Date().toLocaleString();
+      const u = { id:'U'+Math.floor(1000+Math.random()*9000), username, name, status:'Enable', overpipe:'No', homeMenu:'', org:'', post:'', resetAt:'', lapse:'90 days', role:'User', creator:'admin', created: now };
+      users.push(u); saveUsers(); renderTable(getFilters());
+    }
+
+    function deleteSelected(){
+      const ids = Array.from(document.querySelectorAll('.row-check:checked')).map(cb=>cb.getAttribute('data-id'));
+      if (!ids.length) return alert('No selection'); if (!confirm('Delete selected users?')) return;
+      users = users.filter(u=>!ids.includes(u.id)); saveUsers(); renderTable(getFilters());
+    }
+
+    function getFilters(){
+      return {
+        username: document.getElementById('filter-username').value.trim(),
+        name: document.getElementById('filter-name').value.trim(),
+        status: document.getElementById('filter-status').value,
+        overpipe: document.getElementById('filter-overpipe').value,
+        post: document.getElementById('filter-post').value.trim(),
+        org: document.getElementById('filter-org').value.trim(),
+      };
+    }
+
+    document.getElementById('user-add').addEventListener('click', addUser);
+    document.getElementById('user-delete').addEventListener('click', deleteSelected);
+    document.getElementById('user-query').addEventListener('click', ()=> renderTable(getFilters()));
+    document.getElementById('user-search').addEventListener('input', (e)=>{
+      const q = e.target.value.trim(); document.getElementById('filter-username').value=q; document.getElementById('filter-name').value=q; renderTable(getFilters());
+    });
+
+    renderTable();
+  </script>
+</body>
+</html>
+    </div>
+  </div>
+</body>
+</html>

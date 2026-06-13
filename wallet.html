@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gemini Wallet</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="wallet-header">
+      <div class="wallet-balance">
+        <div class="wallet-title">Total asset conversion(USDT)</div>
+        <div class="wallet-amount">0</div>
+        <div class="wallet-usd">≈$0</div>
+      </div>
+      <div class="wallet-actions">
+        <button class="wallet-action">⬇️<span>Deposit</span></button>
+        <button class="wallet-action">⬆️<span>Withdraw</span></button>
+        <button class="wallet-action">🔄<span>Transfer</span></button>
+        <button class="wallet-action">💱<span>Exchange</span></button>
+        <button class="wallet-action">💰<span>Loan</span></button>
+      </div>
+    </header>
+
+    <main>
+      <section class="wallet-panel">
+        <div class="wallet-tabs">
+          <button class="wallet-tab active">Exchange</button>
+          <button class="wallet-tab">Futures</button>
+        </div>
+        <div class="wallet-summary">
+          <div class="wallet-summary-title">Wallet asset conversion (USDT)</div>
+          <div class="wallet-summary-value">0</div>
+          <div class="wallet-summary-usd">≈$0</div>
+        </div>
+        <div class="wallet-status">
+          <div class="wallet-status-message">Login status expired, please log in again!</div>
+        </div>
+        <div class="wallet-controls">
+          <label class="checkbox-row"><input type="checkbox" /> Hide Small Currency</label>
+          <div class="search-row">
+            <span class="search-icon">🔎</span>
+            <input type="text" placeholder="search" aria-label="Search" />
+          </div>
+        </div>
+      </section>
+
+      <nav class="main-nav">
+        <a href="index.html" class="nav-item">
+          <span>🏠</span>
+          <span>Home</span>
+        </a>
+        <a href="market.html" class="nav-item">
+          <span>📈</span>
+          <span>Market</span>
+        </a>
+        <a href="options.html" class="nav-item">
+          <span>⚡</span>
+          <span>Options</span>
+        </a>
+        <a href="trade.html" class="nav-item">
+          <span>⚙️</span>
+          <span>Trade</span>
+        </a>
+        <a href="wallet.html" class="nav-item active">
+          <span>💼</span>
+          <span>Assets</span>
+        </a>
+      </nav>
+    </main>
+  </div>
+</body>
+</html>
