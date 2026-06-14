@@ -1,3 +1,11 @@
+<script>
+
+if(localStorage.getItem("adminLogin") !== "true"){
+    window.location.href="login.html";
+}
+
+</script>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -156,6 +164,7 @@
           <button class="icon-button">⚙️</button>
           <div class="profile-badge">a</div>
           <span>admin</span>
+          <button onclick="logout()">Logout</button>
         </div>
       </header>
       <div class="admin-page-header">
@@ -199,6 +208,13 @@ function changeLanguage(){
   } else {
     alert("Translator still loading...");
   }
+}
+
+function logout(){
+
+localStorage.removeItem("adminLogin");
+
+window.location.href="login.html";
 
 }
 </script>
