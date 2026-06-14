@@ -308,6 +308,7 @@ body {
 .market-table {
   width: 100%;
   border-collapse: collapse;
+  overflow-x:auto;
 }
 
 .market-table th,
@@ -418,6 +419,7 @@ body {
   table-layout: auto;
   width: 100%;
   min-width: 900px;
+  color:#020617;
 }
 .account-table th,
 .account-table td {
@@ -966,7 +968,7 @@ body {
   color: #ffffff;
 }
 
-..status-card {
+.status-card {
   margin-top: 20px;
   padding: 22px;
   border-radius: 24px;
@@ -1006,6 +1008,7 @@ body {
   border-radius: 24px;
   border: 1px solid #e5e7eb;
   padding: 20px;
+  overflow: visible;
 }
 
 .panel-header {
@@ -1091,6 +1094,7 @@ textarea {
   width: 100%;
   border-collapse: collapse;
   margin-top: 18px;
+  overflow-x:auto;
 }
 
 .account-table th,
@@ -1163,10 +1167,10 @@ textarea {
 }
 
 .admin-sidebar {
-  width: 260px;
+  width: 250px;
   background: #ffffff;
   border-right: 1px solid #e5e7eb;
-  padding: 24px 18px;
+  padding: 24px 24px;
 }
 
 .admin-brand {
@@ -1203,7 +1207,7 @@ textarea {
   border: none;
   width: 100%;
   text-align: left;
-  padding: 14px 16px;
+  padding: 10px 10px;
   border-radius: 14px;
   background: #f8fafc;
   color: #111827;
@@ -1233,7 +1237,7 @@ textarea {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 14px 16px;
+  padding: 10px 10px;
   border-radius: 14px;
   background: #f8fafc;
   color: #111827;
@@ -1604,3 +1608,225 @@ textarea {
   font-size: 1rem;
 }
 
+.table-tools{
+display:flex;
+gap:15px;
+margin-bottom:20px;
+overflow-x:auto;
+ color:#020617;
+}
+
+
+.table-btn{
+background:white;
+border:1px solid #ddd;
+padding:10px 18px;
+border-radius:5px;
+color:#1677ff;
+}
+
+
+.filter-row{
+display:flex;
+align-items:center;
+gap:15px;
+background:#fff;
+padding:15px;
+border-bottom:1px solid #eee;
+}
+
+
+.filter-row input,
+.filter-row select{
+height:32px;
+width:180px;
+border:1px solid #ddd;
+border-radius:4px;
+}
+
+
+.withdraw-table{
+overflow:auto;
+}
+
+
+table{
+width:100%;
+border-collapse:collapse;
+background:white;
+font-size:14px;
+overflow-x:auto;
+}
+
+
+th{
+background:#fafafa;
+font-weight:600;
+}
+
+
+th,td{
+border:1px solid #eee;
+padding:14px 10px;
+text-align:left;
+white-space:nowrap;
+}
+
+
+tbody tr:hover{
+background:#fafafa;
+}
+
+
+.pagination{
+padding:20px;
+text-align:center;
+color:#555;
+}
+
+
+.pagination button{
+margin-left:10px;
+padding:6px 12px;
+border:1px solid #ddd;
+background:white;
+}
+
+/* Withdrawal records page fix */
+
+.admin-menu-management .admin-layout-grid {
+    display: block;
+}
+
+
+.admin-menu-management .admin-panel {
+    width: 1200px;
+   max-width: 1400px;
+    box-sizing: border-box;
+     color:#020617;
+
+}
+
+
+.table-tools {
+    display: flex;
+    gap: 18px;
+    margin-bottom: 30px;
+    overflow-x:auto;
+    color:#020617;
+}
+
+
+.table-btn {
+    background: #fff;
+    border: 1px solid #d9d9d9;
+    padding: 12px 25px;
+    border-radius: 6px;
+    color: #1677ff;
+    font-size: 15px;
+}
+
+
+.filter-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 25px;
+    flex-wrap: nowrap;
+}
+
+
+.filter-row label {
+    color:#344054;
+}
+
+
+.filter-row input,
+.filter-row select {
+    height:38px;
+    width:220px;
+    border:1px solid #d9d9d9;
+    border-radius:5px;
+    padding:0 10px;
+}
+
+
+
+.withdraw-table {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    display: block;
+    overflow-x:auto;
+}
+
+
+.withdraw-table table {
+    min-width: 1500px;
+    width: max-content;
+    border-collapse: collapse;
+    overflow-x:auto;
+}
+
+.withdraw-table th,
+.withdraw-table td {
+    padding:14px;
+    border:1px solid #eee;
+    white-space:nowrap;
+}
+
+
+.withdraw-table th {
+    background:#fafafa;
+    font-weight:600;
+    color:#344054;
+}
+
+
+.pagination {
+    margin-top:25px;
+    text-align:center;
+}
+
+.empty{
+    height:160px;
+    text-align:center !important;
+}
+
+
+.empty-box{
+    color:#cbd5e1;
+    font-size:40px;
+}
+
+
+.empty-box p{
+    font-size:14px;
+    margin-top:10px;
+    color:#94a3b8;
+}
+
+.topup-img{
+    width:75px;
+    height:70px;
+    object-fit:cover;
+}
+.withdraw-table td{
+    max-width:250px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+
+.withdraw-table th:nth-child(5),
+.withdraw-table td:nth-child(5){
+    width:300px;
+    white-space:normal;
+}
+
+
+.withdraw-table th:nth-child(6),
+.withdraw-table td:nth-child(6){
+    width:300px;
+    word-break:break-all;
+}
