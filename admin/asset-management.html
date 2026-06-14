@@ -150,7 +150,9 @@
           <button class="admin-pill">Recharge Review (0)</button>
         </div>
         <div class="admin-profile">
-          <button class="icon-button">🌐</button>
+         <button class="icon-button" onclick="changeLanguage()">
+          中文
+          </button>
           <button class="icon-button">⚙️</button>
           <div class="profile-badge">a</div>
           <span>admin</span>
@@ -174,6 +176,32 @@
       </main>
     </div>
   </div>
+  <div id="google_translate_element"></div>
+
+<script>
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement(
+    {
+      pageLanguage: 'en',
+      includedLanguages: 'zh-CN,en'
+    },
+    'google_translate_element'
+  );
+}
+
+function changeLanguage(){
+
+  let select = document.querySelector(".goog-te-combo");
+
+  if(select){
+    select.value = "zh-CN";
+    select.dispatchEvent(new Event("change"));
+  } else {
+    alert("Translator still loading...");
+  }
+
+}
+</script>
 </body>
 </html>
 
