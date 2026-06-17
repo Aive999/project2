@@ -21,3 +21,15 @@ document.getElementById("error").innerHTML="Invalid login";
 }
 
 });
+
+const togglePassword = document.getElementById("togglePassword");
+const passwordInput = document.getElementById("password");
+
+if (togglePassword && passwordInput) {
+    togglePassword.addEventListener("click", function () {
+        const isHidden = passwordInput.type === "password";
+
+        passwordInput.type = isHidden ? "text" : "password";
+        togglePassword.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+    });
+}
