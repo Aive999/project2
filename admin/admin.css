@@ -145,8 +145,39 @@ color:white;
 
 }
 
+.password-field{
+position:relative;
+}
 
-.login-box button{
+.password-field input{
+padding-right:46px;
+}
+
+.password-toggle{
+position:absolute;
+right:8px;
+top:50%;
+transform:translateY(-50%);
+width:34px;
+height:34px;
+padding:0;
+margin:0;
+border:none;
+border-radius:8px;
+background:transparent;
+color:#cbd5e1;
+cursor:pointer;
+font-size:17px;
+line-height:1;
+}
+
+.password-toggle:hover{
+background:#334155;
+transform:translateY(-50%);
+}
+
+
+.login-box button[type="submit"]{
 
 width:100%;
 padding:13px;
@@ -164,7 +195,7 @@ transition:.3s;
 }
 
 
-.login-box button:hover{
+.login-box button[type="submit"]:hover{
 
 transform:scale(1.05);
 

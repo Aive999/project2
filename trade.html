@@ -11,16 +11,16 @@
     <header class="hero-header">
       <div class="header-top">
         <div class="hero-title">
-          <div class="title-icon">☰</div>
+          <div class="title-icon" aria-hidden="true">&#9776;</div>
           <div>
             <div class="symbol-label">BTC/USDT</div>
             <div class="symbol-sub">Spot</div>
           </div>
         </div>
         <div class="header-actions">
-          <button class="icon-button" aria-label="Favorite">★</button>
-          <button class="icon-button" aria-label="Chart">📊</button>
-          <button class="icon-button" aria-label="Menu">☰</button>
+          <button class="icon-button" aria-label="Favorite" title="Favorite">&#9733;</button>
+          <button class="icon-button" aria-label="Chart" title="Chart">&#128202;</button>
+          <button class="icon-button" aria-label="Menu" title="Menu">&#9776;</button>
         </div>
       </div>
       <section class="trade-banner">
@@ -63,32 +63,18 @@
       </section>
 
       <section class="status-card">
-        <p>The request failed, click to reload</p>
+        <p>Loading trading ticket...</p>
       </section>
 
       <nav class="main-nav">
-        <a href="index.html" class="nav-item">
-          <span>🏠</span>
-          <span>Home</span>
-        </a>
-        <a href="market.html" class="nav-item">
-          <span>📈</span>
-          <span>Market</span>
-        </a>
-        <a href="options.html" class="nav-item">
-          <span>⚡</span>
-          <span>Options</span>
-        </a>
-        <a href="trade.html" class="nav-item active">
-          <span>⚙️</span>
-          <span>Trade</span>
-        </a>
-        <a href="wallet.html" class="nav-item">
-          <span>💼</span>
-          <span>Wallet</span>
-        </a>
+        <a href="index.html" class="nav-item"><span aria-hidden="true">&#127968;</span><span>Home</span></a>
+        <a href="market.html" class="nav-item"><span aria-hidden="true">&#128200;</span><span>Market</span></a>
+        <a href="options.html" class="nav-item"><span aria-hidden="true">&#9889;</span><span>Options</span></a>
+        <a href="trade.html" class="nav-item active"><span aria-hidden="true">&#9881;</span><span>Trade</span></a>
+        <a href="wallet.html" class="nav-item"><span aria-hidden="true">&#128188;</span><span>Wallet</span></a>
       </nav>
     </main>
   </div>
+  <script src="user-app.js"></script>
 </body>
 </html>

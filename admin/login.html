@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
 <title>Admin Login</title>
 <link rel="stylesheet" href="admin.css">
@@ -23,7 +23,12 @@
 
 <input type="text" id="username" placeholder="Username" required>
 
-<input type="password" id="password" placeholder="Password" required>
+<div class="password-field">
+    <input type="password" id="password" placeholder="Password" required>
+    <button type="button" id="togglePassword" class="password-toggle" aria-label="Show password">
+        &#128065;
+    </button>
+</div>
 
 <button type="submit">Login</button>
 
@@ -35,6 +40,63 @@
 
 
 <script src="admin.js"></script>
+<div id="google_translate_element" style="display:none;"></div>
 
+<script>
+(function () {
+  var targetLanguage = "zh-CN";
+  var sourceLanguage = "en";
+
+  function setTranslateCookie() {
+    var value = "/" + sourceLanguage + "/" + targetLanguage;
+    document.cookie = "googtrans=" + value + "; path=/";
+    document.cookie = "googtrans=" + value + "; path=/; domain=" + location.hostname;
+  }
+
+  function selectLanguage(attempt) {
+    var select = document.querySelector(".goog-te-combo");
+
+    if (select) {
+      select.value = targetLanguage;
+      select.dispatchEvent(new Event("change"));
+      return;
+    }
+
+    if (attempt < 20) {
+      setTimeout(function () {
+        selectLanguage(attempt + 1);
+      }, 300);
+    }
+  }
+
+  setTranslateCookie();
+
+  window.googleTranslateElementInit = function () {
+    new google.translate.TranslateElement(
+      {
+        pageLanguage: sourceLanguage,
+        includedLanguages: targetLanguage + ",en",
+        autoDisplay: false
+      },
+      "google_translate_element"
+    );
+
+    selectLanguage(0);
+  };
+
+  window.changeLanguage = function () {
+    setTranslateCookie();
+    selectLanguage(0);
+  };
+
+  window.logout = function () {
+    localStorage.removeItem("adminLogin");
+    window.location.href = "login.html";
+  };
+})();
+</script>
+
+<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </body>
 </html>
+
