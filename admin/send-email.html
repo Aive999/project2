@@ -1,4 +1,4 @@
-﻿<script>
+<script>
 
 if(localStorage.getItem("adminLogin") !== "true"){
     window.location.href="login.html";
@@ -7,7 +7,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
 </script>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -146,7 +146,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
     <div class="admin-main">
       <header class="admin-header">
         <div class="admin-search">
-          <span class="search-icon">🔎</span>
+          <span class="search-icon">??</span>
           <input type="text" placeholder="Search Menu" aria-label="Search Menu" />
         </div>
         <div class="admin-header-actions">
@@ -159,9 +159,9 @@ if(localStorage.getItem("adminLogin") !== "true"){
         </div>
         <div class="admin-profile">
           <button class="icon-button" onclick="changeLanguage()">
-          中文
+          ??
           </button>
-          <button class="icon-button">⚙️</button>
+          <button class="icon-button">??</button>
           <div class="profile-badge">a</div>
           <span>admin</span>
           <button onclick="logout()">Logout</button>
@@ -221,43 +221,63 @@ if(localStorage.getItem("adminLogin") !== "true"){
       </main>
     </div>
   </div>
-
-  <div id="google_translate_element"></div>
+<div id="google_translate_element" style="display:none;"></div>
 
 <script>
-function googleTranslateElementInit() {
-  new google.translate.TranslateElement(
-    {
-      pageLanguage: 'en',
-      includedLanguages: 'zh-CN,en'
-    },
-    'google_translate_element'
-  );
-}
+(function () {
+  var targetLanguage = "zh-CN";
+  var sourceLanguage = "en";
 
-function changeLanguage(){
-
-  let select = document.querySelector(".goog-te-combo");
-
-  if(select){
-    select.value = "zh-CN";
-    select.dispatchEvent(new Event("change"));
-  } else {
-    alert("Translator still loading...");
+  function setTranslateCookie() {
+    var value = "/" + sourceLanguage + "/" + targetLanguage;
+    document.cookie = "googtrans=" + value + "; path=/";
+    document.cookie = "googtrans=" + value + "; path=/; domain=" + location.hostname;
   }
 
-}
+  function selectLanguage(attempt) {
+    var select = document.querySelector(".goog-te-combo");
 
-function logout(){
+    if (select) {
+      select.value = targetLanguage;
+      select.dispatchEvent(new Event("change"));
+      return;
+    }
 
-localStorage.removeItem("adminLogin");
+    if (attempt < 20) {
+      setTimeout(function () {
+        selectLanguage(attempt + 1);
+      }, 300);
+    }
+  }
 
-window.location.href="login.html";
+  setTranslateCookie();
 
-}
+  window.googleTranslateElementInit = function () {
+    new google.translate.TranslateElement(
+      {
+        pageLanguage: sourceLanguage,
+        includedLanguages: targetLanguage + ",en",
+        autoDisplay: false
+      },
+      "google_translate_element"
+    );
+
+    selectLanguage(0);
+  };
+
+  window.changeLanguage = function () {
+    setTranslateCookie();
+    selectLanguage(0);
+  };
+
+  window.logout = function () {
+    localStorage.removeItem("adminLogin");
+    window.location.href = "login.html";
+  };
+})();
 </script>
 
 <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </body>
-</body>
 </html>
+

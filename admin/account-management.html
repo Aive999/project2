@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -272,10 +272,6 @@
       </main>
     </div>
   </div>
-  <div id="google_translate_element"></div>
-
-
-<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
   <script>
     const STORAGE_KEY = 'adminAccountData';
     const defaultAccounts = [
@@ -417,30 +413,64 @@
 
     renderAccounts();
 
-    function googleTranslateElementInit() {
-  new google.translate.TranslateElement(
-    {
-      pageLanguage: 'en',
-      includedLanguages: 'zh-CN,en'
-    },
-    'google_translate_element'
-  );
-}
+  </script>
+<div id="google_translate_element" style="display:none;"></div>
 
-function changeLanguage(){
+<script>
+(function () {
+  var targetLanguage = "zh-CN";
+  var sourceLanguage = "en";
 
-  let select = document.querySelector(".goog-te-combo");
-
-  if(select){
-    select.value = "zh-CN";
-    select.dispatchEvent(new Event("change"));
-  } else {
-    alert("Translator still loading...");
+  function setTranslateCookie() {
+    var value = "/" + sourceLanguage + "/" + targetLanguage;
+    document.cookie = "googtrans=" + value + "; path=/";
+    document.cookie = "googtrans=" + value + "; path=/; domain=" + location.hostname;
   }
 
-}
-  </script>
+  function selectLanguage(attempt) {
+    var select = document.querySelector(".goog-te-combo");
+
+    if (select) {
+      select.value = targetLanguage;
+      select.dispatchEvent(new Event("change"));
+      return;
+    }
+
+    if (attempt < 20) {
+      setTimeout(function () {
+        selectLanguage(attempt + 1);
+      }, 300);
+    }
+  }
+
+  setTranslateCookie();
+
+  window.googleTranslateElementInit = function () {
+    new google.translate.TranslateElement(
+      {
+        pageLanguage: sourceLanguage,
+        includedLanguages: targetLanguage + ",en",
+        autoDisplay: false
+      },
+      "google_translate_element"
+    );
+
+    selectLanguage(0);
+  };
+
+  window.changeLanguage = function () {
+    setTranslateCookie();
+    selectLanguage(0);
+  };
+
+  window.logout = function () {
+    localStorage.removeItem("adminLogin");
+    window.location.href = "login.html";
+  };
+})();
+</script>
+
+<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </body>
 </html>
-
 
