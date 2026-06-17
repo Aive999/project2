@@ -12,12 +12,12 @@
       <div class="header-top">
         <div class="avatar"></div>
         <div class="search-box">
-          <span class="search-icon">🔎</span>
+          <span class="search-icon" aria-hidden="true">&#128269;</span>
           <input type="text" placeholder="Search symbol" aria-label="Search symbol" />
         </div>
         <div class="header-actions">
-          <button class="icon-button" aria-label="Language">🌐</button>
-          <button class="icon-button" aria-label="Support">🎧</button>
+          <button class="icon-button" aria-label="Language" title="Language">&#127760;</button>
+          <button class="icon-button account-button" aria-label="Login or register" title="Login or register">&#128100;</button>
         </div>
       </div>
       <section class="hero-banner">
@@ -37,9 +37,9 @@
             <button class="options-tab">Position</button>
           </div>
           <div class="options-actions">
-            <button class="options-icon">★</button>
-            <button class="options-icon">📊</button>
-            <button class="options-icon">☰</button>
+            <button class="options-icon" aria-label="Favorite" title="Favorite">&#9733;</button>
+            <button class="options-icon" aria-label="Chart" title="Chart">&#128202;</button>
+            <button class="options-icon" aria-label="More" title="More">&#9776;</button>
           </div>
         </div>
 
@@ -50,29 +50,14 @@
           </div>
 
           <div class="trade-settings">
-            <div>
-              <label>Cross</label>
-              <span>100X</span>
-            </div>
-            <div>
-              <label>Price</label>
-              <span>63708.48</span>
-            </div>
-            <div>
-              <label>Number</label>
-              <span>0.1147</span>
-            </div>
+            <div><label>Cross</label><span>100X</span></div>
+            <div><label>Price</label><span>63708.48</span></div>
+            <div><label>Number</label><span>0.1147</span></div>
           </div>
 
           <div class="trade-info-grid">
-            <div class="trade-info-item">
-              <div>63,394.1999</div>
-              <span>Market</span>
-            </div>
-            <div class="trade-info-item">
-              <div>1 Share</div>
-              <span>= 0.01 BTC</span>
-            </div>
+            <div class="trade-info-item"><div>63,394.1999</div><span>Market</span></div>
+            <div class="trade-info-item"><div>1 Share</div><span>= 0.01 BTC</span></div>
           </div>
 
           <div class="risk-row">
@@ -88,18 +73,9 @@
           </div>
 
           <div class="summary-grid">
-            <div>
-              <p class="summary-label">Available</p>
-              <strong>0 USDT</strong>
-            </div>
-            <div>
-              <p class="summary-label">Margin</p>
-              <strong>6.3394 USDT</strong>
-            </div>
-            <div>
-              <p class="summary-label">Fee</p>
-              <strong>0.0 USDT</strong>
-            </div>
+            <div><p class="summary-label">Available</p><strong>0 USDT</strong></div>
+            <div><p class="summary-label">Margin</p><strong>6.3394 USDT</strong></div>
+            <div><p class="summary-label">Fee</p><strong>0.0 USDT</strong></div>
           </div>
 
           <button class="primary-button">Buy/long</button>
@@ -117,28 +93,14 @@
       </section>
 
       <nav class="main-nav">
-        <a href="index.html" class="nav-item">
-          <span>🏠</span>
-          <span>Home</span>
-        </a>
-        <a href="market.html" class="nav-item">
-          <span>📈</span>
-          <span>Market</span>
-        </a>
-        <a href="options.html" class="nav-item active">
-          <span>⚡</span>
-          <span>Options</span>
-        </a>
-        <a href="trade.html" class="nav-item">
-          <span>⚙️</span>
-          <span>Trade</span>
-        </a>
-        <a href="wallet.html" class="nav-item">
-          <span>💼</span>
-          <span>Wallet</span>
-        </a>
+        <a href="index.html" class="nav-item"><span aria-hidden="true">&#127968;</span><span>Home</span></a>
+        <a href="market.html" class="nav-item"><span aria-hidden="true">&#128200;</span><span>Market</span></a>
+        <a href="options.html" class="nav-item active"><span aria-hidden="true">&#9889;</span><span>Options</span></a>
+        <a href="trade.html" class="nav-item"><span aria-hidden="true">&#9881;</span><span>Trade</span></a>
+        <a href="wallet.html" class="nav-item"><span aria-hidden="true">&#128188;</span><span>Wallet</span></a>
       </nav>
     </main>
   </div>
+  <script src="user-app.js"></script>
 </body>
 </html>
