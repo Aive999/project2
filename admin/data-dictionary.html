@@ -213,15 +213,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
       </main>
   <script>
     const DD_KEY = 'adminDataDictionary';
-    const sample = [
-      { id:'D1', coding:'web_page_config', name:'Front-end page data configuration', remark:'', updater:'erupted', updated:'2023-05-23 10:32:17' },
-      { id:'D2', coding:'sms_config', name:'SMS channel configuration', remark:'', updater:'erupted', updated:'2023-05-26 10:18:07' },
-      { id:'D3', coding:'aliyun_email_config', name:'Alibaba Cloud Mailbox Configuration', remark:'', updater:'erupted', updated:'2023-05-31 00:57:20' },
-      { id:'D4', coding:'system_config', name:'System Configuration', remark:'', updater:'erupted', updated:'2023-09-01 18:37:12' },
-      { id:'D5', coding:'recharge_address_config', name:'Top-up address settings', remark:'', updater:'admin', updated:'2025-02-23 19:39:32' },
-    ];
-
-    let dict = JSON.parse(localStorage.getItem(DD_KEY)) || sample.slice();
+    let dict = JSON.parse(localStorage.getItem(DD_KEY) || '[]');
 
     function saveDict(){ localStorage.setItem(DD_KEY, JSON.stringify(dict)); }
 

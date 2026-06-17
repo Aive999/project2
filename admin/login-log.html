@@ -215,15 +215,33 @@ if(localStorage.getItem("adminLogin") !== "true"){
   </div>
 <script>
   const LL_KEY = 'adminLoginLog';
-  const sample = [
-    { id:'L1', user:'admin', login:'2026-06-13 14:02:54', ip:'103.60.171.139', source:'Philippines | 0 | 0 | 0 | Globe-Telecom', os:'Windows 10', browser:'Chrome 14 149', type:'Computer' },
-    { id:'L2', user:'admin', login:'2026-06-13 11:12:07', ip:'103.60.171.139', source:'Philippines | 0 | 0 | 0 | Globe-Telecom', os:'Android 1.x', browser:'Chrome Mobile 149', type:'Mobile' },
-    { id:'L3', user:'admin', login:'2026-06-13 11:11:31', ip:'103.60.171.139', source:'Philippines | 0 | 0 | 0 | Globe-Telecom', os:'Android 1.x', browser:'Chrome Mobile 149', type:'Mobile' },
-  ];
-
-  let logs = JSON.parse(localStorage.getItem(LL_KEY)) || sample.slice();
+  const USER_LL_KEY = 'userLoginLog';
+  let logs = JSON.parse(localStorage.getItem(LL_KEY) || '[]');
+  let userLogs = JSON.parse(localStorage.getItem(USER_LL_KEY) || '[]');
 
   function saveLogs(){ localStorage.setItem(LL_KEY, JSON.stringify(logs)); }
+  function saveUserLogs(){ localStorage.setItem(USER_LL_KEY, JSON.stringify(userLogs)); }
+
+  function localUserRows(){
+    let users = {};
+    try { users = JSON.parse(localStorage.getItem('demoExchangeUsers') || '{}'); } catch { users = {}; }
+    return Object.values(users).map(user => ({
+      id: `USER-${user.username}`,
+      user: user.username,
+      login: user.transactions?.[0]?.time || 'Registered user',
+      ip: 'local',
+      source: 'Local browser',
+      os: 'Stored account',
+      browser: 'User account',
+      type: user.phone ? `Phone ${user.phone}` : 'Currency user'
+    }));
+  }
+
+  function allLogs(){
+    const byId = new Map();
+    logs.concat(userLogs, localUserRows()).forEach(log => byId.set(log.id, log));
+    return Array.from(byId.values());
+  }
 
   function renderLogs(){
     const tbody = document.getElementById('ll-body');
@@ -235,7 +253,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
       browser: document.getElementById('filter-browser').value.trim(),
       type: document.getElementById('filter-type').value.trim(),
     };
-    const rows = logs.filter(o=>{
+    const rows = allLogs().filter(o=>{
       if (f.user && !o.user.includes(f.user)) return false;
       if (f.ip && !o.ip.includes(f.ip)) return false;
       if (f.source && !o.source.includes(f.source)) return false;
@@ -247,7 +265,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
     tbody.innerHTML = rows.map(r=>`<tr data-id="${r.id}">`+
       `<td><input class="ll-check" type="checkbox" data-id="${r.id}" /></td>`+
       `<td>${r.user}</td><td>${r.login}</td><td>${r.ip}</td><td>${r.source}</td><td>${r.os}</td><td>${r.browser}</td><td>${r.type}</td>`+
-      `<td style="white-space:nowrap"><button class="icon-button" data-action="delete" data-id="${r.id}" title="Delete">🗑️</button></td>`+
+      `<td style="white-space:nowrap"><button class="row-action" data-action="delete" data-id="${r.id}" title="Delete">Delete</button></td>`+
       `</tr>`).join('') || '<tr><td colspan="9" style="color:#9ca3af">(no data)</td></tr>';
     attachLL();
   }
@@ -260,9 +278,9 @@ if(localStorage.getItem("adminLogin") !== "true"){
     document.getElementById('ll-select-all').onchange = e=> document.querySelectorAll('.ll-check').forEach(cb=>cb.checked = e.target.checked);
   }
 
-  function deleteLog(id){ if (!confirm('Delete log?')) return; logs = logs.filter(x=>x.id!==id); saveLogs(); renderLogs(); }
-  function deleteSelected(){ const ids = Array.from(document.querySelectorAll('.ll-check:checked')).map(cb=>cb.getAttribute('data-id')); if (!ids.length) return alert('No selection'); if (!confirm('Delete selected logs?')) return; logs = logs.filter(l=>!ids.includes(l.id)); saveLogs(); renderLogs(); }
-  function downloadCSV(){ const rows=[['user','login','ip','source','os','browser','type']].concat(logs.map(o=>[o.user,o.login,o.ip,o.source,o.os,o.browser,o.type])); const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='login-log.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
+  function deleteLog(id){ if (!confirm('Delete log?')) return; logs = logs.filter(x=>x.id!==id); userLogs = userLogs.filter(x=>x.id!==id); saveLogs(); saveUserLogs(); renderLogs(); }
+  function deleteSelected(){ const ids = Array.from(document.querySelectorAll('.ll-check:checked')).map(cb=>cb.getAttribute('data-id')); if (!ids.length) return alert('No selection'); if (!confirm('Delete selected logs?')) return; logs = logs.filter(l=>!ids.includes(l.id)); userLogs = userLogs.filter(l=>!ids.includes(l.id)); saveLogs(); saveUserLogs(); renderLogs(); }
+  function downloadCSV(){ const rows=[['user','login','ip','source','os','browser','type']].concat(allLogs().map(o=>[o.user,o.login,o.ip,o.source,o.os,o.browser,o.type])); const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='login-log.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
 
   document.getElementById('ll-download').addEventListener('click', downloadCSV);
   document.getElementById('ll-query').addEventListener('click', renderLogs);

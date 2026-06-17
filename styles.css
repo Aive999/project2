@@ -3482,6 +3482,10 @@ body.demo-modal-open .main-nav {
     cursor: pointer;
 }
 
+.admin-row-edited {
+    background: #ecfdf5 !important;
+}
+
 .admin-menu a.active,
 .admin-submenu-item.active {
     color: #1d4ed8 !important;

@@ -1,6 +1,7 @@
 const DemoExchange = (() => {
   const USERS_KEY = "demoExchangeUsers";
   const SESSION_KEY = "demoExchangeSession";
+  const USER_LOG_KEY = "userLoginLog";
   let authMode = "login";
   let walletMode = "Exchange";
   let tradeHistoryMode = "Position order";
@@ -17,6 +18,23 @@ const DemoExchange = (() => {
 
   function writeUsers(users) {
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  }
+
+  function addUserLog(username, action, status) {
+    const logs = JSON.parse(localStorage.getItem(USER_LOG_KEY) || "[]");
+    logs.unshift({
+      id: "UL" + Date.now(),
+      user: username || "unknown",
+      login: new Date().toLocaleString(),
+      ip: "local",
+      source: "Local browser",
+      os: navigator.platform || "Unknown",
+      browser: navigator.userAgent.includes("Chrome") ? "Chrome" : "Browser",
+      type: /Mobi|Android/i.test(navigator.userAgent) ? "Mobile" : "Computer",
+      action,
+      status
+    });
+    localStorage.setItem(USER_LOG_KEY, JSON.stringify(logs.slice(0, 100)));
   }
 
   function currentUsername() {
@@ -99,12 +117,17 @@ const DemoExchange = (() => {
     users[username] = user;
     writeUsers(users);
     localStorage.setItem(SESSION_KEY, username);
+    addUserLog(username, "Register", "Success");
   }
 
   function login(username, password) {
     const user = readUsers()[username];
-    if (!user || user.password !== password) throw new Error("Invalid username or password.");
+    if (!user || user.password !== password) {
+      addUserLog(username, "Login", "Failed");
+      throw new Error("Invalid username or password.");
+    }
     localStorage.setItem(SESSION_KEY, username);
+    addUserLog(username, "Login", "Success");
   }
 
   function logout() {

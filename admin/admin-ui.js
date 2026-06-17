@@ -1,6 +1,7 @@
 (function () {
   const isLoginPage = location.pathname.endsWith("/login.html");
   const loggedIn = localStorage.getItem("adminLogin") === "true";
+  const pageName = location.pathname.split("/").pop() || "admin.html";
 
   if (!isLoginPage && !loggedIn) {
     window.location.href = "login.html";
@@ -10,6 +11,18 @@
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
 
+  function readJSON(key, fallback) {
+    try {
+      return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+    } catch {
+      return fallback;
+    }
+  }
+
+  function writeJSON(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+  }
+
   function money(value) {
     return Number(value || 0).toLocaleString(undefined, {
       minimumFractionDigits: 2,
@@ -18,19 +31,11 @@
   }
 
   function readUsers() {
-    try {
-      return JSON.parse(localStorage.getItem("demoExchangeUsers") || "{}");
-    } catch {
-      return {};
-    }
+    return readJSON("demoExchangeUsers", {});
   }
 
   function readAdminAccounts() {
-    try {
-      return JSON.parse(localStorage.getItem("adminAccountData") || "[]");
-    } catch {
-      return [];
-    }
+    return readJSON("adminAccountData", []);
   }
 
   function showToast(message, type = "success") {
@@ -46,50 +51,62 @@
     showToast.timer = setTimeout(() => toast.classList.remove("show"), 2600);
   }
 
+  function getUserTransactions(type) {
+    return Object.values(readUsers()).flatMap((user) => (user.transactions || [])
+      .filter((tx) => tx.type === type)
+      .map((tx) => ({
+        account: user.username,
+        name: user.username,
+        network: "Local",
+        coin: tx.asset || "USDT",
+        address: "local-wallet",
+        amount: tx.amount,
+        time: tx.time,
+        status: tx.status || "Pending"
+      })));
+  }
+
   function normalizeIcons() {
     $$(".admin-search .search-icon").forEach((node) => {
-      node.textContent = "🔎";
+      node.textContent = "Search";
       node.setAttribute("aria-hidden", "true");
     });
+
     $$(".admin-profile .icon-button").forEach((button) => {
-      if (button.textContent.includes("ä") || button.textContent.trim() === "") {
-        button.textContent = "中文";
-      }
-      if (button.textContent.includes("â")) {
-        button.textContent = "⚙";
+      const text = button.textContent.trim();
+      if (!text || /[Ãðâä]/.test(text)) {
+        button.textContent = button.getAttribute("onclick") ? "CN" : "Settings";
       }
     });
+
     $$(".table-btn").forEach((button) => {
-      button.textContent = button.textContent
-        .replace(/ðŸ”|🔍/g, "Query")
-        .replace(/â–¦/g, "Table Control")
-        .trim();
+      const text = button.textContent.toLowerCase();
+      if (text.includes("query") || /[Ãð]/.test(text)) button.textContent = "Query";
+      if (text.includes("table") || text.includes("control") || text.includes("¦")) button.textContent = "Table Control";
     });
+
     $$(".empty-box").forEach((box) => {
-      if (box.textContent.includes("ð")) {
-        const p = $("p", box)?.textContent || "No Data";
-        box.innerHTML = `<div class="empty-icon">📦</div><p>${p.replace("No Date", "No Data")}</p>`;
-      }
+      const label = $("p", box)?.textContent?.replace("No Date", "No Data") || "No Data";
+      box.innerHTML = `<div class="empty-icon">No records</div><p>${label}</p>`;
     });
+
     $$("td").forEach((cell) => {
-      if (cell.textContent.includes("ð") || cell.textContent.includes("âœ")) {
+      if (cell.closest("#ll-body") || cell.querySelector("[data-action='delete']")) return;
+      if (/[Ãðâ]/.test(cell.textContent)) {
         cell.innerHTML = '<button class="row-action" data-action="view">View</button><button class="row-action" data-action="edit">Edit</button>';
       }
     });
   }
 
   function setActiveNavigation() {
-    const page = location.pathname.split("/").pop() || "admin.html";
     $$(".admin-menu a").forEach((link) => {
-      const href = link.getAttribute("href");
-      const active = href === page;
+      const active = link.getAttribute("href") === pageName;
       link.classList.toggle("active", active);
       link.closest(".admin-submenu-item")?.classList.toggle("active", active);
       if (active) {
         const details = link.closest("details");
         if (details) details.open = true;
-        const summary = details?.querySelector(".admin-menu-item");
-        summary?.classList.add("active");
+        details?.querySelector(".admin-menu-item")?.classList.add("active");
       }
     });
   }
@@ -113,19 +130,86 @@
     if (!cards.length) return;
     const users = Object.values(readUsers());
     const accounts = readAdminAccounts();
-    const userTotal = users.length + accounts.length;
     const portfolioTotal = users.reduce((sum, user) => sum + Number(user.balances?.USDT || 0), 0) +
       accounts.reduce((sum, account) => sum + Number(account.balance || 0), 0);
-    const today = new Date().toLocaleDateString();
-    const newToday = users.filter((user) =>
-      (user.transactions || []).some((tx) => String(tx.time || "").startsWith(today))
-    ).length;
-
-    const values = [userTotal, newToday, money(portfolioTotal), money(portfolioTotal)];
+    const values = [
+      users.length + accounts.length,
+      users.length,
+      money(portfolioTotal),
+      money(portfolioTotal)
+    ];
     cards.forEach((card, index) => {
       const value = $(".card-value", card);
-      if (value && values[index] !== undefined) value.textContent = values[index];
+      if (value) value.textContent = values[index] ?? value.textContent;
     });
+  }
+
+  function tableKey(index) {
+    return `adminTable:${pageName}:${index}`;
+  }
+
+  function captureTable(table) {
+    return {
+      rows: $$("tbody tr", table)
+        .filter((row) => !row.querySelector(".empty-box"))
+        .map((row) => $$("td", row).map((cell) => cell.innerHTML.trim()))
+    };
+  }
+
+  function renderStoredTable(table, data) {
+    const tbody = $("tbody", table);
+    if (!tbody || !data?.rows?.length) return;
+    tbody.innerHTML = data.rows.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("");
+  }
+
+  function saveTable(table) {
+    const index = $$("table").indexOf(table);
+    if (index >= 0) writeJSON(tableKey(index), captureTable(table));
+  }
+
+  function persistTables() {
+    $$("table").forEach((table, index) => {
+      if ($("tbody", table)?.id === "ll-body") return;
+      if ($("tbody", table)?.id === "account-table-body") return;
+      const stored = readJSON(tableKey(index), null);
+      if (stored?.rows?.length) {
+        renderStoredTable(table, stored);
+      } else {
+        writeJSON(tableKey(index), captureTable(table));
+      }
+    });
+  }
+
+  function renderUserTransactionTable(type) {
+    const tbody = $(".withdraw-table tbody");
+    if (!tbody) return;
+    const records = getUserTransactions(type);
+    if (!records.length) return;
+    const isDeposit = type === "Deposit";
+    tbody.innerHTML = records.map((record) => `
+      <tr>
+        <td><input type="checkbox"></td>
+        <td>${record.account}</td>
+        <td>${record.name}</td>
+        <td>${record.network}</td>
+        <td>${record.coin}</td>
+        ${isDeposit
+          ? `<td>${record.address}</td><td>${money(record.amount)}</td><td>Local</td><td>${record.time}</td><td>${record.status}</td>`
+          : `<td>${record.coin}</td><td>${record.address}</td><td>${money(record.amount)}</td><td>${record.time}</td>`}
+        <td><button class="row-action" data-action="view">View</button><button class="row-action" data-action="edit">Edit</button></td>
+      </tr>
+    `).join("");
+    saveTable(tbody.closest("table"));
+  }
+
+  function hydratePageData() {
+    persistTables();
+    if (pageName === "withdrawal-records.html" || pageName === "new-withdrawal-records.html") {
+      renderUserTransactionTable("Withdraw");
+    }
+    if (pageName === "recharge-review.html" || pageName === "top-up-records.html") {
+      renderUserTransactionTable("Deposit");
+    }
   }
 
   function bindHeaderActions() {
@@ -150,20 +234,18 @@
     });
   }
 
-  function rowMatchesFilters(row, controls) {
-    const rowText = row.textContent.toLowerCase();
-    return controls.every((control) => {
-      const value = control.value?.trim().toLowerCase();
-      return !value || rowText.includes(value);
-    });
-  }
-
   function filterTable(panel) {
-    const controls = $$("input, select", $(".filter-row", panel)).filter((control) => control.type !== "checkbox");
-    const rows = $$("tbody tr", panel).filter((row) => !row.querySelector(".empty-box"));
+    const filter = $(".filter-row", panel);
+    if (!filter) return;
+    const controls = $$("input, select", filter).filter((control) => control.type !== "checkbox");
     let visible = 0;
-    rows.forEach((row) => {
-      const show = rowMatchesFilters(row, controls);
+    $$("tbody tr", panel).forEach((row) => {
+      if (row.querySelector(".empty-box")) return;
+      const text = row.textContent.toLowerCase();
+      const show = controls.every((control) => {
+        const value = control.value.trim().toLowerCase();
+        return !value || text.includes(value);
+      });
       row.style.display = show ? "" : "none";
       if (show) visible += 1;
     });
@@ -178,18 +260,17 @@
     }
     const table = $("table", panel);
     if (!table) return;
-    const headers = $$("thead th", table);
     picker = document.createElement("div");
     picker.className = "column-picker";
-    picker.innerHTML = headers.map((th, index) => `
+    picker.innerHTML = $$("thead th", table).map((th, index) => `
       <label><input type="checkbox" checked data-column-index="${index}"> ${th.textContent.trim() || "Select"}</label>
     `).join("");
     $(".table-tools", panel)?.after(picker);
     picker.addEventListener("change", (event) => {
       const input = event.target.closest("input[data-column-index]");
       if (!input) return;
-      const index = Number(input.dataset.columnIndex) + 1;
-      $$(`tr > *:nth-child(${index})`, table).forEach((cell) => {
+      const column = Number(input.dataset.columnIndex) + 1;
+      $$(`tr > *:nth-child(${column})`, table).forEach((cell) => {
         cell.style.display = input.checked ? "" : "none";
       });
     });
@@ -197,15 +278,15 @@
 
   function bindTables() {
     $$(".admin-panel").forEach((panel) => {
-      const queryButton = $$(".table-btn", panel).find((button) => button.textContent.toLowerCase().includes("query"));
-      queryButton?.addEventListener("click", () => filterTable(panel));
+      $$(".table-btn", panel).forEach((button) => {
+        const text = button.textContent.toLowerCase();
+        if (text.includes("query")) button.addEventListener("click", () => filterTable(panel));
+        if (text.includes("table control")) button.addEventListener("click", () => buildColumnPanel(panel));
+      });
       $$(".filter-row input, .filter-row select", panel).forEach((control) => {
         control.addEventListener("input", () => filterTable(panel));
         control.addEventListener("change", () => filterTable(panel));
       });
-
-      const tableControl = $$(".table-btn", panel).find((button) => button.textContent.toLowerCase().includes("table control"));
-      tableControl?.addEventListener("click", () => buildColumnPanel(panel));
     });
 
     $$("thead input[type='checkbox']").forEach((checkbox) => {
@@ -221,8 +302,13 @@
       const action = event.target.closest(".row-action");
       if (!action) return;
       const row = action.closest("tr");
+      const table = row.closest("table");
+      if (action.dataset.action === "edit") {
+        row.classList.toggle("admin-row-edited");
+        if (table) saveTable(table);
+      }
       const cells = $$("td", row).map((td) => td.textContent.trim()).filter(Boolean);
-      showToast(`${action.dataset.action === "edit" ? "Editing" : "Viewing"} record ${cells[1] || cells[0] || ""}.`);
+      showToast(`${action.dataset.action === "edit" ? "Updated" : "Viewing"} record ${cells[1] || cells[0] || ""}.`);
     });
 
     $$(".pagination button").forEach((button) => {
@@ -241,13 +327,21 @@
         showToast("Saved successfully.");
       });
     });
-    $$(".primary-button, .secondary-button").forEach((button) => {
-      if (button.id || button.closest("form") || button.onclick) return;
-      button.addEventListener("click", () => showToast(`${button.textContent.trim() || "Action"} completed.`));
-    });
+  }
+
+  function exposeStore() {
+    window.AdminStore = {
+      read: readJSON,
+      write: writeJSON,
+      users: readUsers,
+      accounts: readAdminAccounts,
+      transactions: getUserTransactions
+    };
   }
 
   function init() {
+    exposeStore();
+    hydratePageData();
     normalizeIcons();
     setActiveNavigation();
     bindMenuSearch();

@@ -240,6 +240,7 @@
                     <th>Registration time</th>
                     <th>Invitation Code</th>
                     <th>User Status</th>
+                    <th>Operation</th>
                   </tr>
                 </thead>
                 <tbody id="account-table-body">
@@ -274,13 +275,7 @@
   </div>
   <script>
     const STORAGE_KEY = 'adminAccountData';
-    const defaultAccounts = [
-      { id: 'ACC1001', name: 'Alice Chen', balance: 1200.0, status: 'Active' },
-      { id: 'ACC1002', name: 'Brian Lee', balance: 560.5, status: 'Frozen' },
-      { id: 'ACC1003', name: 'Cara Patel', balance: 3450.75, status: 'Active' },
-    ];
-
-    let accounts = JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultAccounts;
+    let accounts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 
     const messageBox = document.getElementById('message-box');
     const accountTableBody = document.getElementById('account-table-body');
@@ -290,6 +285,65 @@
 
     function saveAccounts() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
+    }
+
+    function readLocalUsers() {
+      try {
+        return JSON.parse(localStorage.getItem('demoExchangeUsers') || '{}');
+      } catch {
+        return {};
+      }
+    }
+
+    function userPortfolio(user) {
+      const prices = { BTC: 63670.71, ETH: 3420.35, EUR: 1.0845, JPY: 147.82 };
+      return Object.entries(user.balances || {}).reduce((total, [asset, amount]) => {
+        return total + Number(amount || 0) * (asset === 'USDT' ? 1 : (prices[asset] || 1));
+      }, 0);
+    }
+
+    function syncLocalUsers() {
+      const users = readLocalUsers();
+      Object.values(users).forEach(user => {
+        const id = `USER-${user.username}`;
+        const existing = accounts.find(account => account.id === id);
+        const data = {
+          id,
+          name: user.username,
+          balance: userPortfolio(user),
+          status: existing?.status || 'Active',
+          phone: user.phone || '',
+          email: '',
+          source: 'User'
+        };
+        if (existing) {
+          Object.assign(existing, data);
+        } else {
+          accounts.push(data);
+        }
+      });
+      saveAccounts();
+    }
+
+    function updateLocalUserBalance(accountId, delta, detail) {
+      if (!accountId.startsWith('USER-')) return;
+      const username = accountId.replace('USER-', '');
+      const users = readLocalUsers();
+      const user = users[username];
+      if (!user) return;
+      user.balances = user.balances || { USDT: 0, BTC: 0, ETH: 0, EUR: 0, JPY: 0 };
+      user.transactions = user.transactions || [];
+      user.balances.USDT = Math.max(0, Number(user.balances.USDT || 0) + Number(delta || 0));
+      user.transactions.unshift({
+        id: 'ADM' + Date.now(),
+        type: 'Admin Adjustment',
+        asset: 'USDT',
+        amount: Math.abs(Number(delta || 0)),
+        status: 'Completed',
+        detail,
+        time: new Date().toLocaleString()
+      });
+      localStorage.setItem('demoExchangeUsers', JSON.stringify(users));
     }
 
     function formatCurrency(value) {
@@ -306,7 +360,8 @@
     }
 
     function renderAccountOptions() {
-      const options = accounts.map(account => `<option value="${account.id}">${account.id} — ${account.name}</option>`).join('');
+      syncLocalUsers();
+      const options = accounts.map(account => `<option value="${account.id}">${account.id} - ${account.name}</option>`).join('');
       fundSelect.innerHTML = options;
       transferFromSelect.innerHTML = options;
       transferToSelect.innerHTML = options;
@@ -317,9 +372,24 @@
       accountTableBody.innerHTML = accounts
         .map(account => `
           <tr>
-            <td>${account.id}</td>
+            <td>${account.source || 'Admin'}</td>
+            <td>Standard</td>
+            <td>${account.status === 'Active' ? 'Active User' : 'Restricted User'}</td>
             <td>${account.name}</td>
+            <td>${account.email || '-'}</td>
+            <td>${account.phone || '-'}</td>
             <td>$${formatCurrency(account.balance)}</td>
+            <td>$${formatCurrency(account.balance)}</td>
+            <td>$0.00</td>
+            <td>Pending</td>
+            <td>Pending</td>
+            <td>Pending</td>
+            <td>${account.name}</td>
+            <td>-</td>
+            <td>${account.id}</td>
+            <td>Allowed</td>
+            <td>${new Date().toLocaleString()}</td>
+            <td>${account.id}</td>
             <td><span class="status-badge ${account.status === 'Active' ? 'status-active' : 'status-frozen'}">${account.status}</span></td>
             <td>
               <button class="secondary-button" type="button" onclick="toggleStatus('${account.id}')">${account.status === 'Active' ? 'Freeze' : 'Enable'}</button>
@@ -364,6 +434,7 @@
       }
 
       account.balance += amount;
+      updateLocalUserBalance(accountId, amount, `Admin added ${formatCurrency(amount)} USDT`);
       document.getElementById('add-funds-amount').value = '';
       renderAccounts();
       showMessage(`Added $${formatCurrency(amount)} to ${account.name}.`);
@@ -391,6 +462,8 @@
 
       fromAccount.balance -= amount;
       toAccount.balance += amount;
+      updateLocalUserBalance(fromId, -amount, `Admin transferred ${formatCurrency(amount)} USDT out`);
+      updateLocalUserBalance(toId, amount, `Admin transferred ${formatCurrency(amount)} USDT in`);
       document.getElementById('transfer-amount').value = '';
       renderAccounts();
       showMessage(`Transferred $${formatCurrency(amount)} from ${fromAccount.name} to ${toAccount.name}.`);
