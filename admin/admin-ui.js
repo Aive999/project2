@@ -38,7 +38,10 @@
     };
 
     removeMatching("adminLoginLog", (row) => ["L1", "L2", "L3"].includes(row.id));
-    removeMatching("adminAccountData", (row) => ["ACC1001", "ACC1002", "ACC1003"].includes(row.id) && !row.source);
+    removeMatching("adminAccountData", (row) => {
+      const dummyNames = ["Alice Chen", "Brian Lee", "Cara Patel"];
+      return ["ACC1001", "ACC1002", "ACC1003"].includes(row.id) || dummyNames.includes(row.name);
+    });
     removeMatching("adminDataDictionary", (row) => ["D1", "D2", "D3", "D4", "D5"].includes(row.id));
     removeMatching("adminJobConfig", (row) => /^J([1-9]|10)$/.test(row.id || ""));
     removeMatching("adminKlineApiConfig", (row) => ["K1", "K2", "K3"].includes(row.id));

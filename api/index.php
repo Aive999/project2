@@ -153,6 +153,20 @@ function valid_storage_key(string $key): bool
     return (bool)preg_match('/^(admin[A-Za-z0-9:_-]+|adminTable:[A-Za-z0-9._:-]+)$/', $key);
 }
 
+function clean_admin_storage_value(string $key, mixed $value): mixed
+{
+    if ($key !== 'adminAccountData' || !is_array($value)) {
+        return $value;
+    }
+    $dummyIds = ['ACC1001', 'ACC1002', 'ACC1003'];
+    $dummyNames = ['Alice Chen', 'Brian Lee', 'Cara Patel'];
+    return array_values(array_filter($value, function ($row) use ($dummyIds, $dummyNames) {
+        if (!is_array($row)) return true;
+        return !in_array($row['id'] ?? '', $dummyIds, true)
+            && !in_array($row['name'] ?? '', $dummyNames, true);
+    }));
+}
+
 $data = input();
 $action = $data['action'] ?? '';
 
@@ -372,7 +386,8 @@ try {
         $rows = db()->query('SELECT storage_key, value_json FROM admin_storage')->fetchAll();
         $storage = [];
         foreach ($rows as $row) {
-            $storage[$row['storage_key']] = json_decode($row['value_json'], true);
+            $value = json_decode($row['value_json'], true);
+            $storage[$row['storage_key']] = clean_admin_storage_value($row['storage_key'], $value);
         }
         respond(['ok' => true, 'storage' => $storage]);
     }
@@ -381,7 +396,7 @@ try {
         require_admin();
         $key = (string)($data['key'] ?? '');
         if (!valid_storage_key($key)) fail('Invalid storage key.');
-        $value = $data['value'] ?? null;
+        $value = clean_admin_storage_value($key, $data['value'] ?? null);
         $stmt = db()->prepare('INSERT INTO admin_storage (storage_key, value_json) VALUES (?, ?)
             ON DUPLICATE KEY UPDATE value_json = VALUES(value_json)');
         $stmt->execute([$key, json_encode($value)]);

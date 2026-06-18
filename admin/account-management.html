@@ -167,22 +167,20 @@
       </div>
       <main class="admin-dashboard admin-menu-management">
         <div class="admin-layout-grid">
-          <section class="admin-panel">
+          <section class="admin-panel account-operations-panel">
             <div class="panel-header">
               <div>Account Operations</div>
             </div>
             <div id="message-box" class="message-box" style="display:none"></div>
-            <div class="form-grid">
-              <label class="full-width-label">
-                <span>Create New Registered Account</span>
-                <div style="display:grid; gap:12px;">
-                  <input type="text" id="new-account-name" placeholder="Account holder name" />
-                  <input type="text" id="new-account-balance" placeholder="Initial balance" />
-                  <button id="create-account-btn" class="primary-button" type="button">Create Account</button>
-                </div>
-              </label>
+            <div class="account-op-block">
+              <div class="account-op-title">Create New Registered Account</div>
+              <div class="account-op-row account-op-create">
+                <input type="text" id="new-account-name" placeholder="Account holder name" />
+                <input type="text" id="new-account-balance" placeholder="Initial balance" />
+                <button id="create-account-btn" class="primary-button" type="button">Create Account</button>
+              </div>
             </div>
-            <div class="form-grid">
+            <div class="form-grid account-op-grid">
               <label>
                 <span>Select account to add funds</span>
                 <select id="fund-account-select"></select>
@@ -191,11 +189,12 @@
                 <span>Amount to add</span>
                 <input type="text" id="add-funds-amount" placeholder="100.00" />
               </label>
-              <label class="full-width-label">
+              <label>
+                <span>&nbsp;</span>
                 <button id="add-funds-btn" class="primary-button" type="button">Add Funds</button>
               </label>
             </div>
-            <div class="form-grid">
+            <div class="form-grid account-op-grid account-transfer-grid">
               <label>
                 <span>Transfer from</span>
                 <select id="transfer-from-select"></select>
@@ -208,7 +207,8 @@
                 <span>Amount</span>
                 <input type="text" id="transfer-amount" placeholder="50.00" />
               </label>
-              <label class="full-width-label">
+              <label>
+                <span>&nbsp;</span>
                 <button id="transfer-funds-btn" class="primary-button" type="button">Transfer Funds</button>
               </label>
             </div>
@@ -243,29 +243,7 @@
                     <th>Operation</th>
                   </tr>
                 </thead>
-                <tbody id="account-table-body">
-                  <tr>
-                    <td>Standard</td>
-                    <td>Gold</td>
-                    <td>Premium Investor</td>
-                    <td>Alice Chen</td>
-                    <td>alice@example.com</td>
-                    <td>+1 555-0100</td>
-                    <td>12,500.00</td>
-                    <td>8,000.00</td>
-                    <td>4,500.00</td>
-                    <td>Verified</td>
-                    <td>Passed</td>
-                    <td>Passed</td>
-                    <td>Alice Chen</td>
-                    <td>Uploaded</td>
-                    <td>VIP client</td>
-                    <td>Allowed</td>
-                    <td>2026-06-12 09:20:00</td>
-                    <td>INV12345</td>
-                    <td>Active</td>
-                  </tr>
-                </tbody>
+                <tbody id="account-table-body"></tbody>
               </table>
             </div>
           </section>
@@ -277,6 +255,9 @@
     const STORAGE_KEY = 'adminAccountData';
     let accounts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
     let serverUserAccounts = [];
+    const dummyAccountNames = new Set(['Alice Chen', 'Brian Lee', 'Cara Patel']);
+    accounts = accounts.filter(account => !dummyAccountNames.has(account.name) && !['ACC1001', 'ACC1002', 'ACC1003'].includes(account.id));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
 
     const messageBox = document.getElementById('message-box');
     const accountTableBody = document.getElementById('account-table-body');
