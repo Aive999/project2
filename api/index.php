@@ -139,6 +139,40 @@ function add_transaction(int $userId, string $type, string $asset, float $amount
     $stmt->execute([$userId, $type, $asset, $amount, $status, $detail]);
 }
 
+function import_public_user(array $incoming): void
+{
+    $username = trim((string)($incoming['username'] ?? ''));
+    $phone = trim((string)($incoming['phone'] ?? ''));
+    $password = (string)($incoming['password'] ?? '');
+    if ($username === '' || $password === '') return;
+    if (user_by_username($username)) return;
+
+    $stmt = db()->prepare('INSERT INTO users (username, phone, password_hash) VALUES (?, ?, ?)');
+    $stmt->execute([$username, $phone ?: '', password_hash($password, PASSWORD_DEFAULT)]);
+    $user = user_by_username($username);
+    if (!$user) return;
+    $userId = (int)$user['id'];
+    ensure_balances($userId);
+
+    foreach (($incoming['balances'] ?? []) as $asset => $amount) {
+        if (in_array($asset, ASSETS, true)) {
+            $stmt = db()->prepare('UPDATE balances SET amount = ? WHERE user_id = ? AND asset = ?');
+            $stmt->execute([(float)$amount, $userId, $asset]);
+        }
+    }
+
+    foreach (($incoming['transactions'] ?? []) as $tx) {
+        add_transaction(
+            $userId,
+            (string)($tx['type'] ?? 'Import'),
+            (string)($tx['asset'] ?? 'USDT'),
+            (float)($tx['amount'] ?? 0),
+            (string)($tx['status'] ?? 'Completed'),
+            (string)($tx['detail'] ?? 'Imported from browser')
+        );
+    }
+}
+
 function portfolio_value(array $balances): float
 {
     $total = (float)($balances['USDT'] ?? 0);
@@ -171,6 +205,19 @@ $data = input();
 $action = $data['action'] ?? '';
 
 try {
+    if ($action === 'sync_local_users') {
+        $users = $data['users'] ?? [];
+        if (!is_array($users)) fail('Invalid users payload.');
+        $imported = 0;
+        foreach ($users as $incoming) {
+            $before = user_by_username((string)($incoming['username'] ?? ''));
+            import_public_user(is_array($incoming) ? $incoming : []);
+            $after = user_by_username((string)($incoming['username'] ?? ''));
+            if (!$before && $after) $imported++;
+        }
+        respond(['ok' => true, 'imported' => $imported]);
+    }
+
     if ($action === 'register') {
         $username = trim((string)($data['username'] ?? ''));
         $phone = trim((string)($data['phone'] ?? ''));

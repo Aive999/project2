@@ -63,6 +63,17 @@ const DemoExchange = (() => {
     }
   }
 
+  async function migrateLocalUsersToMysql() {
+    const users = Object.values(readUsers()).filter((user) => user?.username && user?.password);
+    if (!users.length || localStorage.getItem("mysqlUserMigrationDone") === "true") return;
+    try {
+      await apiRequest("sync_local_users", { users });
+      localStorage.setItem("mysqlUserMigrationDone", "true");
+    } catch {
+      // Migration will retry on the next page load.
+    }
+  }
+
   function addUserLog(username, action, status) {
     const logs = JSON.parse(localStorage.getItem(USER_LOG_KEY) || "[]");
     logs.unshift({
@@ -154,24 +165,9 @@ const DemoExchange = (() => {
       cacheServerUser(data.user);
       return;
     } catch (error) {
-      if (!backendUnavailable(error)) {
-        throw error;
-      }
+      if (backendUnavailable(error)) throw new Error("Cannot connect to MySQL. Please check the server connection.");
+      throw error;
     }
-
-    const user = {
-      username,
-      phone,
-      password,
-      createdAt: new Date().toISOString(),
-      balances: { USDT: 0, BTC: 0, ETH: 0, EUR: 0, JPY: 0 },
-      transactions: []
-    };
-
-    users[username] = user;
-    writeUsers(users);
-    localStorage.setItem(SESSION_KEY, username);
-    addUserLog(username, "Register", "Success");
   }
 
   async function login(username, password) {
@@ -181,19 +177,10 @@ const DemoExchange = (() => {
       addUserLog(username, "Login", "Success");
       return;
     } catch (error) {
-      if (!backendUnavailable(error)) {
-        addUserLog(username, "Login", "Failed");
-        throw error;
-      }
-    }
-
-    const user = readUsers()[username];
-    if (!user || user.password !== password) {
       addUserLog(username, "Login", "Failed");
-      throw new Error("Invalid username or password.");
+      if (backendUnavailable(error)) throw new Error("Cannot connect to MySQL. Please check the server connection.");
+      throw error;
     }
-    localStorage.setItem(SESSION_KEY, username);
-    addUserLog(username, "Login", "Success");
   }
 
   function logout() {
@@ -224,20 +211,9 @@ const DemoExchange = (() => {
       cacheServerUser(data.user);
       return { user: data.user, units: data.units };
     } catch (error) {
-      if (!backendUnavailable(error)) {
-        throw error;
-      }
+      if (backendUnavailable(error)) throw new Error("Cannot connect to MySQL. Trade was not saved.");
+      throw error;
     }
-
-    user.balances.USDT -= amount;
-    if (side.toLowerCase().includes("short")) {
-      addTransaction(user, side, asset, units, "Open", `${side} ${asset}/USDT margin at ${money(prices[asset])}`);
-      return { user, units };
-    }
-
-    user.balances[asset] = (user.balances[asset] || 0) + units;
-    addTransaction(user, side, asset, units, "Filled", `${side} ${asset}/USDT at ${money(prices[asset])}`);
-    return { user, units };
   }
 
   async function walletAction(type, amount, asset = "USDT") {
@@ -251,36 +227,9 @@ const DemoExchange = (() => {
       cacheServerUser(data.user);
       return;
     } catch (error) {
-      if (!backendUnavailable(error)) {
-        throw error;
-      }
+      if (backendUnavailable(error)) throw new Error("Cannot connect to MySQL. Transaction was not saved.");
+      throw error;
     }
-
-    if (type === "Deposit") {
-      user.balances[asset] = (user.balances[asset] || 0) + value;
-      addTransaction(user, "Deposit", asset, value, "Completed", "Funds added");
-      return;
-    }
-
-    if (type === "Withdraw") {
-      if ((user.balances[asset] || 0) < value) throw new Error("Insufficient balance.");
-      user.balances[asset] -= value;
-      addTransaction(user, "Withdraw", asset, value, "Pending", "Withdrawal request");
-      return;
-    }
-
-    if (type === "Transfer") {
-      addTransaction(user, "Transfer", asset, value, "Completed", "Moved between wallets");
-      return;
-    }
-
-    if (type === "Loan") {
-      user.balances.USDT += value;
-      addTransaction(user, "Loan", "USDT", value, "Approved", "Credit line");
-      return;
-    }
-
-    saveUser(user);
   }
 
   async function exchange(fromAsset, toAsset, amount) {
@@ -295,16 +244,9 @@ const DemoExchange = (() => {
       cacheServerUser(data.user);
       return;
     } catch (error) {
-      if (!backendUnavailable(error)) {
-        throw error;
-      }
+      if (backendUnavailable(error)) throw new Error("Cannot connect to MySQL. Exchange was not saved.");
+      throw error;
     }
-
-    const fromUsdt = fromAsset === "USDT" ? value : value * prices[fromAsset];
-    const received = toAsset === "USDT" ? fromUsdt : fromUsdt / prices[toAsset];
-    user.balances[fromAsset] -= value;
-    user.balances[toAsset] = (user.balances[toAsset] || 0) + received;
-    addTransaction(user, "Exchange", `${fromAsset}/${toAsset}`, received, "Completed", `${coin(value)} ${fromAsset} converted`);
   }
 
   function transactionRows(user, mode = "all") {
@@ -1132,6 +1074,7 @@ const DemoExchange = (() => {
   }
 
   async function init() {
+    await migrateLocalUsersToMysql();
     await syncCurrentUser();
     renderAccountPanel();
     bindAccountButtons();
