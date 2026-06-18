@@ -1571,6 +1571,47 @@ textarea {
   font-size: 0.92rem;
 }
 
+#refresh-users-btn {
+  width: auto;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 800;
+}
+
+.account-table .row-action,
+#refresh-users-btn {
+  white-space: nowrap;
+}
+
+.account-table .account-action-edit {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.account-table .account-action-freeze {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.account-table .account-action-enable {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.account-table .account-action-delete {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 @media (max-width: 980px) {
   .admin-layout-grid {
     grid-template-columns: 1fr;

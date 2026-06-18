@@ -216,6 +216,7 @@
           <section class="admin-panel">
             <div class="panel-header">
               <div>Registered Accounts</div>
+              <button id="refresh-users-btn" class="secondary-button" type="button">Refresh Users</button>
             </div>
             <div class="account-table-wrapper">
               <table class="account-table">
@@ -264,15 +265,33 @@
     const fundSelect = document.getElementById('fund-account-select');
     const transferFromSelect = document.getElementById('transfer-from-select');
     const transferToSelect = document.getElementById('transfer-to-select');
+    const refreshUsersBtn = document.getElementById('refresh-users-btn');
+
+    async function adminApi(action, payload = {}) {
+      if (window.AdminStore?.api) {
+        return window.AdminStore.api(action, payload);
+      }
+      const response = await fetch('../api/index.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ action, ...payload })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || 'Server request failed.');
+      }
+      return data;
+    }
 
     function saveAccounts() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
     }
 
     async function syncServerUsers() {
-      if (!window.AdminStore?.api) return;
+      accountTableBody.innerHTML = '<tr><td colspan="20" style="color:#64748b;">Loading users from MySQL...</td></tr>';
       try {
-        const data = await window.AdminStore.api('admin_users');
+        const data = await adminApi('admin_users');
         serverUserAccounts = (data.users || []).map(user => ({
           id: user.id,
           name: user.username,
@@ -288,7 +307,18 @@
         serverUserAccounts = [];
         renderAccounts();
         showMessage(error.message || 'Unable to load MySQL users. Please log in again.', 'error');
+        if ((error.message || '').toLowerCase().includes('admin login')) {
+          setTimeout(() => { window.location.href = 'login.html'; }, 1200);
+        }
       }
+    }
+
+    function bootServerUsers(attempt = 0) {
+      if (window.AdminStore?.api || attempt >= 20) {
+        syncServerUsers();
+        return;
+      }
+      setTimeout(() => bootServerUsers(attempt + 1), 150);
     }
 
     function allAccounts() {
@@ -343,9 +373,9 @@
             <td>${account.id}</td>
             <td><span class="status-badge ${account.status === 'Active' ? 'status-active' : 'status-frozen'}">${account.status}</span></td>
             <td>
-              <button class="secondary-button" type="button" onclick="editAccount('${account.id}')">Edit</button>
-              <button class="secondary-button" type="button" onclick="toggleStatus('${account.id}')">${account.status === 'Active' ? 'Freeze' : 'Enable'}</button>
-              <button class="secondary-button" type="button" onclick="deleteAccount('${account.id}')">Delete</button>
+              <button class="row-action account-action-edit" type="button" onclick="editAccount('${account.id}')">Edit</button>
+              <button class="row-action ${account.status === 'Active' ? 'account-action-freeze' : 'account-action-enable'}" type="button" onclick="toggleStatus('${account.id}')">${account.status === 'Active' ? 'Freeze' : 'Enable'}</button>
+              <button class="row-action account-action-delete" type="button" onclick="deleteAccount('${account.id}')">Delete</button>
             </td>
           </tr>
         `)
@@ -386,9 +416,9 @@
         return;
       }
 
-      if (account.source === 'MySQL' && window.AdminStore?.api) {
+      if (account.source === 'MySQL') {
         try {
-          await window.AdminStore.api('admin_adjust', {
+          await adminApi('admin_adjust', {
             accountId,
             amount,
             detail: `Admin added ${formatCurrency(amount)} USDT`
@@ -431,9 +461,9 @@
         return;
       }
 
-      if (fromAccount.source === 'MySQL' && toAccount.source === 'MySQL' && window.AdminStore?.api) {
+      if (fromAccount.source === 'MySQL' && toAccount.source === 'MySQL') {
         try {
-          await window.AdminStore.api('admin_transfer', {
+          await adminApi('admin_transfer', {
             fromId,
             toId,
             amount
@@ -447,9 +477,9 @@
         return;
       }
 
-      if (fromAccount.source === 'MySQL' && window.AdminStore?.api) {
+      if (fromAccount.source === 'MySQL') {
         try {
-          await window.AdminStore.api('admin_adjust', {
+          await adminApi('admin_adjust', {
             accountId: fromId,
             amount: -amount,
             detail: `Admin transferred ${formatCurrency(amount)} USDT out`
@@ -459,9 +489,9 @@
           return;
         }
       }
-      if (toAccount.source === 'MySQL' && window.AdminStore?.api) {
+      if (toAccount.source === 'MySQL') {
         try {
-          await window.AdminStore.api('admin_adjust', {
+          await adminApi('admin_adjust', {
             accountId: toId,
             amount,
             detail: `Admin transferred ${formatCurrency(amount)} USDT in`
@@ -491,9 +521,9 @@
         return;
       }
       account.status = account.status === 'Active' ? 'Frozen' : 'Active';
-      if (account.source === 'MySQL' && window.AdminStore?.api) {
+      if (account.source === 'MySQL') {
         try {
-          await window.AdminStore.api('admin_status', { accountId, status: account.status });
+          await adminApi('admin_status', { accountId, status: account.status });
           await syncServerUsers();
           showMessage(account.status === 'Frozen'
             ? `${account.name} is frozen. The user will be notified and cannot use the account.`
@@ -517,9 +547,9 @@
       }
       const name = prompt('Account name', account.name);
       if (!name) return;
-      if (account.source === 'MySQL' && window.AdminStore?.api) {
+      if (account.source === 'MySQL') {
         try {
-          await window.AdminStore.api('admin_user_update', {
+          await adminApi('admin_user_update', {
             accountId,
             username: name.trim(),
             phone: account.phone || '',
@@ -542,9 +572,9 @@
     async function deleteAccount(accountId) {
       const account = getAccountById(accountId);
       if (!account || !confirm(`Delete ${account.name}?`)) return;
-      if (account.source === 'MySQL' && window.AdminStore?.api) {
+      if (account.source === 'MySQL') {
         try {
-          await window.AdminStore.api('admin_user_delete', { accountId });
+          await adminApi('admin_user_delete', { accountId });
           await syncServerUsers();
           showMessage('Account deleted.');
         } catch (error) {
@@ -560,9 +590,11 @@
     document.getElementById('create-account-btn').addEventListener('click', createAccount);
     document.getElementById('add-funds-btn').addEventListener('click', addFunds);
     document.getElementById('transfer-funds-btn').addEventListener('click', transferFunds);
+    refreshUsersBtn.addEventListener('click', syncServerUsers);
 
     renderAccounts();
-    window.addEventListener('load', syncServerUsers);
+    bootServerUsers();
+    window.addEventListener('focus', syncServerUsers);
 
   </script>
 <div id="google_translate_element" style="display:none;"></div>

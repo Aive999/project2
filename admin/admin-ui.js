@@ -302,7 +302,6 @@
     const cards = $$(".admin-card");
     if (!cards.length) return;
     const users = Object.values(readUsers());
-    const accounts = readAdminAccounts();
     const today = new Date().toLocaleDateString();
     const userTransactions = users.flatMap((user) => user.transactions || []);
     const totalTopUp = userTransactions
@@ -316,7 +315,7 @@
       return created && new Date(created).toLocaleDateString() === today;
     }).length;
     const values = [
-      users.length + accounts.length,
+      users.length,
       newUsersToday,
       money(totalTopUp),
       money(topUpToday)
@@ -353,7 +352,7 @@
         if (value) value.textContent = values[index] ?? value.textContent;
       });
     } catch {
-      // Local dashboard values are already rendered.
+      console.warn("Unable to load MySQL dashboard stats; showing local registered-user fallback only.");
     }
   }
 
