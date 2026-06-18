@@ -327,11 +327,20 @@
     const cards = $$(".admin-card");
     if (!cards.length) return;
     try {
-      const data = await adminApi("admin_stats", { date: localDateString() });
+      const today = localDateString();
+      const data = await adminApi("admin_stats", { date: today });
       const stats = data.stats || {};
+      let newUsersToday = Number(stats.newUsersToday || 0);
+
+      if (newUsersToday === 0) {
+        const usersData = await adminApi("admin_users");
+        const users = usersData.users || [];
+        newUsersToday = users.filter((user) => String(user.created || "").slice(0, 10) === today).length;
+      }
+
       const values = [
         Number(stats.totalUsers || 0).toLocaleString(),
-        Number(stats.newUsersToday || 0).toLocaleString(),
+        newUsersToday.toLocaleString(),
         money(stats.totalTopUp || 0),
         money(stats.topUpToday || 0)
       ];
