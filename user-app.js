@@ -163,6 +163,7 @@ const DemoExchange = (() => {
       username,
       phone,
       password,
+      createdAt: new Date().toISOString(),
       balances: { USDT: 0, BTC: 0, ETH: 0, EUR: 0, JPY: 0 },
       transactions: []
     };

@@ -322,20 +322,18 @@ try {
 
     if ($action === 'admin_stats') {
         require_admin();
-        $today = date('Y-m-d');
 
         $totalUsers = (int)db()->query('SELECT COUNT(*) FROM users')->fetchColumn();
 
-        $stmt = db()->prepare('SELECT COUNT(*) FROM users WHERE DATE(created_at) = ?');
-        $stmt->execute([$today]);
+        $stmt = db()->query('SELECT COUNT(*) FROM users WHERE DATE(created_at) = CURDATE()');
         $newUsersToday = (int)$stmt->fetchColumn();
 
         $stmt = db()->prepare('SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = ? AND asset = ?');
         $stmt->execute(['Deposit', 'USDT']);
         $totalTopUp = (float)$stmt->fetchColumn();
 
-        $stmt = db()->prepare('SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = ? AND asset = ? AND DATE(created_at) = ?');
-        $stmt->execute(['Deposit', 'USDT', $today]);
+        $stmt = db()->prepare('SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = ? AND asset = ? AND DATE(created_at) = CURDATE()');
+        $stmt->execute(['Deposit', 'USDT']);
         $topUpToday = (float)$stmt->fetchColumn();
 
         respond([
@@ -345,6 +343,7 @@ try {
                 'newUsersToday' => $newUsersToday,
                 'totalTopUp' => $totalTopUp,
                 'topUpToday' => $topUpToday,
+                'currentDate' => date('Y-m-d'),
             ],
         ]);
     }

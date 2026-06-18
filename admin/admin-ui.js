@@ -301,8 +301,8 @@
       .filter((tx) => tx.type === "Deposit" && (tx.asset || "USDT") === "USDT" && new Date(tx.time).toLocaleDateString() === today)
       .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
     const newUsersToday = users.filter((user) => {
-      const firstTime = user.transactions?.[user.transactions.length - 1]?.time;
-      return firstTime && new Date(firstTime).toLocaleDateString() === today;
+      const created = user.createdAt || user.created || user.transactions?.[user.transactions.length - 1]?.time;
+      return created && new Date(created).toLocaleDateString() === today;
     }).length;
     const values = [
       users.length + accounts.length,
