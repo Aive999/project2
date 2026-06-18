@@ -513,6 +513,29 @@ try {
         respond(['ok' => true, 'user' => public_user(user_by_username($username))]);
     }
 
+    if ($action === 'admin_transfer') {
+        require_admin();
+        $fromUsername = preg_replace('/^USER-/', '', (string)($data['fromId'] ?? ''));
+        $toUsername = preg_replace('/^USER-/', '', (string)($data['toId'] ?? ''));
+        $amount = (float)($data['amount'] ?? 0);
+        if ($fromUsername === '' || $toUsername === '' || $fromUsername === $toUsername) fail('Select different accounts.');
+        if ($amount <= 0) fail('Enter a valid amount.');
+        $fromUser = user_by_username($fromUsername);
+        $toUser = user_by_username($toUsername);
+        if (!$fromUser || !$toUser) fail('User not found.', 404);
+        if ($fromUser['status'] !== 'Active') fail('Source account is frozen.', 403);
+        if ($toUser['status'] !== 'Active') fail('Destination account is frozen.', 403);
+        if (balance_amount((int)$fromUser['id'], 'USDT') < $amount) fail('Insufficient balance.');
+
+        db()->beginTransaction();
+        change_balance((int)$fromUser['id'], 'USDT', -$amount);
+        change_balance((int)$toUser['id'], 'USDT', $amount);
+        add_transaction((int)$fromUser['id'], 'Admin Transfer', 'USDT', $amount, 'Completed', 'Admin transferred funds out');
+        add_transaction((int)$toUser['id'], 'Admin Transfer', 'USDT', $amount, 'Completed', 'Admin transferred funds in');
+        db()->commit();
+        respond(['ok' => true]);
+    }
+
     if ($action === 'admin_status') {
         require_admin();
         $username = preg_replace('/^USER-/', '', (string)($data['accountId'] ?? ''));

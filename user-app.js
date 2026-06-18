@@ -3,6 +3,7 @@ const DemoExchange = (() => {
   const SESSION_KEY = "demoExchangeSession";
   const USER_LOG_KEY = "userLoginLog";
   const API_URL = "api/index.php";
+  let accountNotice = "";
   let authMode = "login";
   let walletMode = "Exchange";
   let tradeHistoryMode = "Position order";
@@ -57,9 +58,24 @@ const DemoExchange = (() => {
     if (!currentUsername()) return;
     try {
       const data = await apiRequest("me");
+      accountNotice = "";
       cacheServerUser(data.user);
-    } catch {
-      // Keep local development usable when PHP/MySQL is not configured yet.
+    } catch (error) {
+      if ((error.message || "").toLowerCase().includes("frozen")) {
+        const username = currentUsername();
+        const users = readUsers();
+        if (users[username]) {
+          users[username].status = "Frozen";
+          writeUsers(users);
+        }
+        accountNotice = "Your account is frozen. Please contact support.";
+      }
+    }
+  }
+
+  function ensureActiveAccount(user) {
+    if (user?.status === "Frozen") {
+      throw new Error("Your account is frozen. Please contact support.");
     }
   }
 
@@ -197,6 +213,7 @@ const DemoExchange = (() => {
   async function trade(asset, side, usdtAmount) {
     const user = getUser();
     if (!user) throw new Error("Please register or log in first.");
+    ensureActiveAccount(user);
 
     const amount = Number(usdtAmount);
     if (!amount || amount <= 0) throw new Error("Enter a valid USDT amount.");
@@ -217,6 +234,7 @@ const DemoExchange = (() => {
   async function walletAction(type, amount, asset = "USDT") {
     const user = getUser();
     if (!user) throw new Error("Please register or log in first.");
+    ensureActiveAccount(user);
     const value = Number(amount);
     if (!value || value <= 0) throw new Error("Enter a valid amount.");
 
@@ -233,6 +251,7 @@ const DemoExchange = (() => {
   async function exchange(fromAsset, toAsset, amount) {
     const user = getUser();
     if (!user) throw new Error("Please register or log in first.");
+    ensureActiveAccount(user);
     const value = Number(amount);
     if (!value || value <= 0) throw new Error("Enter a valid amount.");
     if ((user.balances[fromAsset] || 0) < value) throw new Error("Insufficient balance.");
@@ -482,7 +501,7 @@ const DemoExchange = (() => {
       <div class="demo-panel-top">
         <div>
           <strong>Currency account</strong>
-          <span>Currency account</span>
+          <span>${user.status === "Frozen" ? "Account frozen" : "Currency account"}</span>
         </div>
         <button type="button" class="demo-close" aria-label="Close">x</button>
       </div>
@@ -498,7 +517,7 @@ const DemoExchange = (() => {
       <div class="demo-actions">
         <button type="button" id="logoutDemo">Logout</button>
       </div>
-      <div class="demo-message">${message}</div>
+      <div class="demo-message">${message || accountNotice || (user.status === "Frozen" ? "Your account is frozen. Please contact support." : "")}</div>
     `;
     applyAccountModalStyles();
     bindPanelClose();
@@ -774,6 +793,7 @@ const DemoExchange = (() => {
     if (!status) return;
     const user = getUser();
     const available = user ? money(user.balances.USDT) : "0.00";
+    const frozen = user?.status === "Frozen";
 
     status.innerHTML = `
       <div class="trade-ticket-header">
@@ -805,6 +825,7 @@ const DemoExchange = (() => {
         <button type="submit">Place Order</button>
       </form>
       <div class="trade-result" id="tradeResult"></div>
+      ${frozen ? '<div class="trade-result">Your account is frozen. Please contact support.</div>' : ''}
       <div class="transaction-list" id="tradeTransactions"></div>
     `;
     applyTradeTicketStyles();
@@ -1033,7 +1054,9 @@ const DemoExchange = (() => {
       node.textContent = `approx $${money(value)}`;
     });
     const status = document.querySelector(".wallet-status-message");
-    if (status) status.textContent = user ? `${walletMode} wallet active.` : "Please register or log in to use the currency wallet.";
+    if (status) status.textContent = user
+      ? (user.status === "Frozen" ? "Your account is frozen. Please contact support." : `${walletMode} wallet active.`)
+      : "Please register or log in to use the currency wallet.";
     const ledgerLabel = document.querySelector(".ledger-header span");
     if (ledgerLabel) ledgerLabel.textContent = `${walletMode} records`;
     const ledger = document.getElementById("walletTransactions");

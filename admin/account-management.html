@@ -173,11 +173,11 @@
             </div>
             <div id="message-box" class="message-box" style="display:none"></div>
             <div class="account-op-block">
-              <div class="account-op-title">Create New Registered Account</div>
+              <div class="account-op-title">Create Internal Account</div>
               <div class="account-op-row account-op-create">
                 <input type="text" id="new-account-name" placeholder="Account holder name" />
                 <input type="text" id="new-account-balance" placeholder="Initial balance" />
-                <button id="create-account-btn" class="primary-button" type="button">Create Account</button>
+                  <button id="create-account-btn" class="primary-button" type="button">Create Internal Account</button>
               </div>
             </div>
             <div class="form-grid account-op-grid">
@@ -269,44 +269,6 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
     }
 
-    function readLocalUsers() {
-      try {
-        return JSON.parse(localStorage.getItem('demoExchangeUsers') || '{}');
-      } catch {
-        return {};
-      }
-    }
-
-    function userPortfolio(user) {
-      const prices = { BTC: 63670.71, ETH: 3420.35, EUR: 1.0845, JPY: 147.82 };
-      return Object.entries(user.balances || {}).reduce((total, [asset, amount]) => {
-        return total + Number(amount || 0) * (asset === 'USDT' ? 1 : (prices[asset] || 1));
-      }, 0);
-    }
-
-    function syncLocalUsers() {
-      const users = readLocalUsers();
-      Object.values(users).forEach(user => {
-        const id = `USER-${user.username}`;
-        const existing = accounts.find(account => account.id === id);
-        const data = {
-          id,
-          name: user.username,
-          balance: userPortfolio(user),
-          status: existing?.status || 'Active',
-          phone: user.phone || '',
-          email: '',
-          source: 'User'
-        };
-        if (existing) {
-          Object.assign(existing, data);
-        } else {
-          accounts.push(data);
-        }
-      });
-      saveAccounts();
-    }
-
     async function syncServerUsers() {
       if (!window.AdminStore?.api) return;
       try {
@@ -322,8 +284,10 @@
           created: user.created
         }));
         renderAccounts();
-      } catch {
+      } catch (error) {
         serverUserAccounts = [];
+        renderAccounts();
+        showMessage(error.message || 'Unable to load MySQL users. Please log in again.', 'error');
       }
     }
 
@@ -331,27 +295,6 @@
       const byId = new Map();
       accounts.concat(serverUserAccounts).forEach(account => byId.set(account.id, account));
       return Array.from(byId.values());
-    }
-
-    function updateLocalUserBalance(accountId, delta, detail) {
-      if (!accountId.startsWith('USER-')) return;
-      const username = accountId.replace('USER-', '');
-      const users = readLocalUsers();
-      const user = users[username];
-      if (!user) return;
-      user.balances = user.balances || { USDT: 0, BTC: 0, ETH: 0, EUR: 0, JPY: 0 };
-      user.transactions = user.transactions || [];
-      user.balances.USDT = Math.max(0, Number(user.balances.USDT || 0) + Number(delta || 0));
-      user.transactions.unshift({
-        id: 'ADM' + Date.now(),
-        type: 'Admin Adjustment',
-        asset: 'USDT',
-        amount: Math.abs(Number(delta || 0)),
-        status: 'Completed',
-        detail,
-        time: new Date().toLocaleString()
-      });
-      localStorage.setItem('demoExchangeUsers', JSON.stringify(users));
     }
 
     function formatCurrency(value) {
@@ -368,7 +311,6 @@
     }
 
     function renderAccountOptions() {
-      syncLocalUsers();
       const options = allAccounts().map(account => `<option value="${account.id}">${account.id} - ${account.name}</option>`).join('');
       fundSelect.innerHTML = options;
       transferFromSelect.innerHTML = options;
@@ -377,7 +319,8 @@
 
     function renderAccounts() {
       renderAccountOptions();
-      accountTableBody.innerHTML = allAccounts()
+      const visibleAccounts = allAccounts();
+      accountTableBody.innerHTML = visibleAccounts.length ? visibleAccounts
         .map(account => `
           <tr>
             <td>${account.source || 'Admin'}</td>
@@ -406,7 +349,7 @@
             </td>
           </tr>
         `)
-        .join('');
+        .join('') : '<tr><td colspan="20" style="color:#64748b;">No accounts found.</td></tr>';
       saveAccounts();
     }
 
@@ -425,8 +368,8 @@
         return;
       }
 
-      const id = `ACC${Math.floor(1000 + Math.random() * 9000)}`;
-      accounts.push({ id, name, balance: initialBalance, status: 'Active' });
+      const id = `ACC${Date.now()}`;
+      accounts.push({ id, name, balance: initialBalance, status: 'Active', source: 'Admin' });
       nameInput.value = '';
       balanceInput.value = '';
       renderAccounts();
@@ -459,7 +402,6 @@
         return;
       }
       account.balance += amount;
-      updateLocalUserBalance(accountId, amount, `Admin added ${formatCurrency(amount)} USDT`);
       document.getElementById('add-funds-amount').value = '';
       renderAccounts();
       showMessage(`Added $${formatCurrency(amount)} to ${account.name}.`);
@@ -480,8 +422,28 @@
         showMessage(`${fromAccount.name} is frozen and cannot send funds.`, 'error');
         return;
       }
+      if (toAccount.status === 'Frozen') {
+        showMessage(`${toAccount.name} is frozen and cannot receive funds.`, 'error');
+        return;
+      }
       if (amount > fromAccount.balance) {
         showMessage('Insufficient balance in the source account.', 'error');
+        return;
+      }
+
+      if (fromAccount.source === 'MySQL' && toAccount.source === 'MySQL' && window.AdminStore?.api) {
+        try {
+          await window.AdminStore.api('admin_transfer', {
+            fromId,
+            toId,
+            amount
+          });
+          document.getElementById('transfer-amount').value = '';
+          await syncServerUsers();
+          showMessage(`Transferred $${formatCurrency(amount)} from ${fromAccount.name} to ${toAccount.name}.`);
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
         return;
       }
 
@@ -517,8 +479,6 @@
       }
       fromAccount.balance -= amount;
       toAccount.balance += amount;
-      updateLocalUserBalance(fromId, -amount, `Admin transferred ${formatCurrency(amount)} USDT out`);
-      updateLocalUserBalance(toId, amount, `Admin transferred ${formatCurrency(amount)} USDT in`);
       document.getElementById('transfer-amount').value = '';
       renderAccounts();
       showMessage(`Transferred $${formatCurrency(amount)} from ${fromAccount.name} to ${toAccount.name}.`);
@@ -535,14 +495,18 @@
         try {
           await window.AdminStore.api('admin_status', { accountId, status: account.status });
           await syncServerUsers();
-          showMessage(`${account.name} is now ${account.status}.`);
+          showMessage(account.status === 'Frozen'
+            ? `${account.name} is frozen. The user will be notified and cannot use the account.`
+            : `${account.name} is active again.`);
         } catch (error) {
           showMessage(error.message, 'error');
         }
         return;
       }
       renderAccounts();
-      showMessage(`${account.name} is now ${account.status}.`);
+      showMessage(account.status === 'Frozen'
+        ? `${account.name} is frozen.`
+        : `${account.name} is active again.`);
     }
 
     async function editAccount(accountId) {
