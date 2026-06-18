@@ -240,14 +240,43 @@ if(localStorage.getItem("adminLogin") !== "true"){
   </div>
   <script>
     const USER_KEY = 'adminUsers';
-    const defaultUsers = [
-      { id:'U1', username:'erupted', name:'erupted', status:'Enable', overpipe:'Yes', homeMenu:'Home', org:'Head Office', post:'Admin', resetAt:'2023-01-01', lapse:'90 days', role:'Admin', creator:'system', created:'2023-01-01 09:00' },
-      { id:'U2', username:'admin', name:'admin', status:'Enable', overpipe:'Yes', homeMenu:'Home', org:'Head Office', post:'Super', resetAt:'2024-01-01', lapse:'90 days', role:'Super', creator:'system', created:'2024-01-01 09:00' },
-    ];
-
-    let users = JSON.parse(localStorage.getItem(USER_KEY)) || defaultUsers.slice();
+    let users = JSON.parse(localStorage.getItem(USER_KEY) || '[]');
 
     function saveUsers(){ localStorage.setItem(USER_KEY, JSON.stringify(users)); }
+
+    function mapServerUser(user){
+      return {
+        id: user.id,
+        username: user.username,
+        name: user.username,
+        phone: user.phone || '',
+        status: user.status === 'Active' ? 'Enable' : 'Disable',
+        overpipe: 'No',
+        homeMenu: 'Home',
+        org: 'Registered Users',
+        post: 'Currency User',
+        resetAt: '',
+        lapse: 'Active account',
+        role: 'User',
+        creator: 'MySQL',
+        created: user.created || '',
+        source: 'MySQL'
+      };
+    }
+
+    async function loadServerUsers(){
+      if (!window.AdminStore?.api) return;
+      try {
+        const data = await window.AdminStore.api('admin_users');
+        const serverUsers = (data.users || []).map(mapServerUser);
+        const localUsers = users.filter(user => user.source !== 'MySQL');
+        users = localUsers.concat(serverUsers);
+        saveUsers();
+        renderTable(getFilters());
+      } catch {
+        // Keep local admin users available while PHP/MySQL is not configured.
+      }
+    }
 
     function renderTable(filter={}){
       const tbody = document.getElementById('user-table-body');
@@ -275,7 +304,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
           `<td>${u.role||''}</td>`+
           `<td>${u.creator||''}</td>`+
           `<td>${u.created||''}</td>`+
-          `<td style="white-space:nowrap"><button class="icon-button" data-action="view" data-id="${u.id}">👁️</button> <button class="icon-button" data-action="edit" data-id="${u.id}">✏️</button> <button class="icon-button" data-action="reset" data-id="${u.id}">🔑</button> <button class="icon-button" data-action="delete" data-id="${u.id}">🗑️</button></td>`+
+          `<td style="white-space:nowrap"><button class="row-action" data-action="view" data-id="${u.id}">View</button> <button class="row-action" data-action="edit" data-id="${u.id}">Edit</button> <button class="row-action" data-action="reset" data-id="${u.id}">Reset</button> <button class="row-action" data-action="delete" data-id="${u.id}">Delete</button></td>`+
         `</tr>`;
       }).join('') || '<tr><td colspan="14" style="color:#9ca3af">(no data)</td></tr>';
       attachRowEvents();
@@ -310,7 +339,24 @@ if(localStorage.getItem("adminLogin") !== "true"){
         <div style="margin-top:12px"><button id="detail-save" class="primary-button">Save</button> <button id="detail-close" class="secondary-button">Close</button></div>
       `;
       document.getElementById('detail-close').onclick = ()=> document.getElementById('user-detail').innerHTML = '<p>Select a user from the table to edit details here.</p>';
-      document.getElementById('detail-save').onclick = ()=>{
+      document.getElementById('detail-save').onclick = async ()=>{
+        const nextStatus = document.getElementById('detail-status').value;
+        if (u.source === 'MySQL' && window.AdminStore?.api) {
+          try {
+            await window.AdminStore.api('admin_user_update', {
+              accountId: u.id,
+              username: document.getElementById('detail-username').value.trim(),
+              phone: u.phone || '',
+              status: nextStatus === 'Enable' ? 'Active' : 'Frozen'
+            });
+            await loadServerUsers();
+            alert('Saved');
+            return;
+          } catch (error) {
+            alert(error.message);
+            return;
+          }
+        }
         u.username = document.getElementById('detail-username').value.trim();
         u.name = document.getElementById('detail-name').value.trim();
         u.status = document.getElementById('detail-status').value;
@@ -329,8 +375,20 @@ if(localStorage.getItem("adminLogin") !== "true"){
       if (!u) return; u.resetAt = new Date().toLocaleString(); saveUsers(); renderTable(getFilters()); alert('Password reset time updated');
     }
 
-    function deleteUser(id){
-      if (!confirm('Delete user?')) return; users = users.filter(x=>x.id!==id); saveUsers(); renderTable(getFilters());
+    async function deleteUser(id){
+      if (!confirm('Delete user?')) return;
+      const u = users.find(x=>x.id===id);
+      if (u?.source === 'MySQL' && window.AdminStore?.api) {
+        try {
+          await window.AdminStore.api('admin_user_delete', { accountId: id });
+          await loadServerUsers();
+          return;
+        } catch (error) {
+          alert(error.message);
+          return;
+        }
+      }
+      users = users.filter(x=>x.id!==id); saveUsers(); renderTable(getFilters());
     }
 
     function addUser(){
@@ -341,9 +399,15 @@ if(localStorage.getItem("adminLogin") !== "true"){
       users.push(u); saveUsers(); renderTable(getFilters());
     }
 
-    function deleteSelected(){
+    async function deleteSelected(){
       const ids = Array.from(document.querySelectorAll('.row-check:checked')).map(cb=>cb.getAttribute('data-id'));
       if (!ids.length) return alert('No selection'); if (!confirm('Delete selected users?')) return;
+      for (const id of ids) {
+        const u = users.find(x=>x.id===id);
+        if (u?.source === 'MySQL' && window.AdminStore?.api) {
+          await window.AdminStore.api('admin_user_delete', { accountId: id }).catch(error => alert(error.message));
+        }
+      }
       users = users.filter(u=>!ids.includes(u.id)); saveUsers(); renderTable(getFilters());
     }
 
@@ -366,6 +430,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
     });
 
     renderTable();
+    window.addEventListener('load', loadServerUsers);
   </script>
 <div id="google_translate_element" style="display:none;"></div>
 

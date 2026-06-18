@@ -211,13 +211,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
   </div>
 <script>
   const KLINE_KEY = 'adminKlineApiConfig';
-  const sample = [
-    { id:'K1', apikey:'abc123xyz', account:'erupted', password:'P@ssw0rd!', enabled:'2026-06-01 09:00:00', deactivated:'2026-12-31 23:59:59' },
-    { id:'K2', apikey:'qwe456rty', account:'admin', password:'Admin#2026', enabled:'2025-11-10 14:30:00', deactivated:'2026-05-10 14:30:00' },
-    { id:'K3', apikey:'zxc789uio', account:'trader', password:'Trade!2026', enabled:'2026-01-15 08:15:00', deactivated:'2027-01-15 08:15:00' },
-  ];
-
-  let configs = JSON.parse(localStorage.getItem(KLINE_KEY)) || sample.slice();
+  let configs = JSON.parse(localStorage.getItem(KLINE_KEY) || '[]');
 
   function saveConfigs() { localStorage.setItem(KLINE_KEY, JSON.stringify(configs)); }
 

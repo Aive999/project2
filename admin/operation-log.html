@@ -220,13 +220,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
   </div>
 <script>
   const OL_KEY = 'adminOperationLog';
-  const sample = [
-    { id:'O1', operator:'admin', ip:'103.60.171.139', source:'Philippines | Globe-Telecom', functionName:'CreateOrder', params:'{orderId:123}', success:true, error:'', requestTime:'2026-06-13 14:02:54', recordTime:'2026-06-13 14:03:01', requestAddress:'/api/order/create', requestMethod:'POST' },
-    { id:'O2', operator:'john', ip:'192.168.1.23', source:'United States | AT&T', functionName:'UpdateUser', params:'{userId:87}', success:false, error:'Permission denied', requestTime:'2026-06-12 09:45:12', recordTime:'2026-06-12 09:45:18', requestAddress:'/api/user/update', requestMethod:'PUT' },
-    { id:'O3', operator:'jane', ip:'172.16.10.5', source:'Germany | Deutsche Telekom', functionName:'Login', params:'{user:admin}', success:true, error:'', requestTime:'2026-06-11 18:20:30', recordTime:'2026-06-11 18:20:35', requestAddress:'/api/auth/login', requestMethod:'POST' },
-  ];
-
-  let logs = JSON.parse(localStorage.getItem(OL_KEY)) || sample.slice();
+  let logs = JSON.parse(localStorage.getItem(OL_KEY) || '[]');
 
   function saveLogs(){ localStorage.setItem(OL_KEY, JSON.stringify(logs)); }
 

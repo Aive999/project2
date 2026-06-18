@@ -276,6 +276,7 @@
   <script>
     const STORAGE_KEY = 'adminAccountData';
     let accounts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    let serverUserAccounts = [];
 
     const messageBox = document.getElementById('message-box');
     const accountTableBody = document.getElementById('account-table-body');
@@ -325,6 +326,32 @@
       saveAccounts();
     }
 
+    async function syncServerUsers() {
+      if (!window.AdminStore?.api) return;
+      try {
+        const data = await window.AdminStore.api('admin_users');
+        serverUserAccounts = (data.users || []).map(user => ({
+          id: user.id,
+          name: user.username,
+          balance: user.balance,
+          status: user.status,
+          phone: user.phone || '',
+          email: '',
+          source: 'MySQL',
+          created: user.created
+        }));
+        renderAccounts();
+      } catch {
+        serverUserAccounts = [];
+      }
+    }
+
+    function allAccounts() {
+      const byId = new Map();
+      accounts.concat(serverUserAccounts).forEach(account => byId.set(account.id, account));
+      return Array.from(byId.values());
+    }
+
     function updateLocalUserBalance(accountId, delta, detail) {
       if (!accountId.startsWith('USER-')) return;
       const username = accountId.replace('USER-', '');
@@ -361,7 +388,7 @@
 
     function renderAccountOptions() {
       syncLocalUsers();
-      const options = accounts.map(account => `<option value="${account.id}">${account.id} - ${account.name}</option>`).join('');
+      const options = allAccounts().map(account => `<option value="${account.id}">${account.id} - ${account.name}</option>`).join('');
       fundSelect.innerHTML = options;
       transferFromSelect.innerHTML = options;
       transferToSelect.innerHTML = options;
@@ -369,7 +396,7 @@
 
     function renderAccounts() {
       renderAccountOptions();
-      accountTableBody.innerHTML = accounts
+      accountTableBody.innerHTML = allAccounts()
         .map(account => `
           <tr>
             <td>${account.source || 'Admin'}</td>
@@ -392,7 +419,9 @@
             <td>${account.id}</td>
             <td><span class="status-badge ${account.status === 'Active' ? 'status-active' : 'status-frozen'}">${account.status}</span></td>
             <td>
+              <button class="secondary-button" type="button" onclick="editAccount('${account.id}')">Edit</button>
               <button class="secondary-button" type="button" onclick="toggleStatus('${account.id}')">${account.status === 'Active' ? 'Freeze' : 'Enable'}</button>
+              <button class="secondary-button" type="button" onclick="deleteAccount('${account.id}')">Delete</button>
             </td>
           </tr>
         `)
@@ -401,7 +430,7 @@
     }
 
     function getAccountById(id) {
-      return accounts.find(account => account.id === id);
+      return allAccounts().find(account => account.id === id);
     }
 
     function createAccount() {
@@ -423,7 +452,7 @@
       showMessage(`Created account ${id} for ${name}.`);
     }
 
-    function addFunds() {
+    async function addFunds() {
       const accountId = fundSelect.value;
       const amount = parseFloat(document.getElementById('add-funds-amount').value);
       const account = getAccountById(accountId);
@@ -433,6 +462,21 @@
         return;
       }
 
+      if (account.source === 'MySQL' && window.AdminStore?.api) {
+        try {
+          await window.AdminStore.api('admin_adjust', {
+            accountId,
+            amount,
+            detail: `Admin added ${formatCurrency(amount)} USDT`
+          });
+          document.getElementById('add-funds-amount').value = '';
+          await syncServerUsers();
+          showMessage(`Added $${formatCurrency(amount)} to ${account.name}.`);
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+        return;
+      }
       account.balance += amount;
       updateLocalUserBalance(accountId, amount, `Admin added ${formatCurrency(amount)} USDT`);
       document.getElementById('add-funds-amount').value = '';
@@ -440,7 +484,7 @@
       showMessage(`Added $${formatCurrency(amount)} to ${account.name}.`);
     }
 
-    function transferFunds() {
+    async function transferFunds() {
       const fromId = transferFromSelect.value;
       const toId = transferToSelect.value;
       const amount = parseFloat(document.getElementById('transfer-amount').value);
@@ -460,6 +504,36 @@
         return;
       }
 
+      if (fromAccount.source === 'MySQL' && window.AdminStore?.api) {
+        try {
+          await window.AdminStore.api('admin_adjust', {
+            accountId: fromId,
+            amount: -amount,
+            detail: `Admin transferred ${formatCurrency(amount)} USDT out`
+          });
+        } catch (error) {
+          showMessage(error.message, 'error');
+          return;
+        }
+      }
+      if (toAccount.source === 'MySQL' && window.AdminStore?.api) {
+        try {
+          await window.AdminStore.api('admin_adjust', {
+            accountId: toId,
+            amount,
+            detail: `Admin transferred ${formatCurrency(amount)} USDT in`
+          });
+        } catch (error) {
+          showMessage(error.message, 'error');
+          return;
+        }
+      }
+      if (fromAccount.source === 'MySQL' || toAccount.source === 'MySQL') {
+        document.getElementById('transfer-amount').value = '';
+        await syncServerUsers();
+        showMessage(`Transferred $${formatCurrency(amount)} from ${fromAccount.name} to ${toAccount.name}.`);
+        return;
+      }
       fromAccount.balance -= amount;
       toAccount.balance += amount;
       updateLocalUserBalance(fromId, -amount, `Admin transferred ${formatCurrency(amount)} USDT out`);
@@ -469,15 +543,73 @@
       showMessage(`Transferred $${formatCurrency(amount)} from ${fromAccount.name} to ${toAccount.name}.`);
     }
 
-    function toggleStatus(accountId) {
+    async function toggleStatus(accountId) {
       const account = getAccountById(accountId);
       if (!account) {
         showMessage('Account not found.', 'error');
         return;
       }
       account.status = account.status === 'Active' ? 'Frozen' : 'Active';
+      if (account.source === 'MySQL' && window.AdminStore?.api) {
+        try {
+          await window.AdminStore.api('admin_status', { accountId, status: account.status });
+          await syncServerUsers();
+          showMessage(`${account.name} is now ${account.status}.`);
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+        return;
+      }
       renderAccounts();
       showMessage(`${account.name} is now ${account.status}.`);
+    }
+
+    async function editAccount(accountId) {
+      const account = getAccountById(accountId);
+      if (!account) {
+        showMessage('Account not found.', 'error');
+        return;
+      }
+      const name = prompt('Account name', account.name);
+      if (!name) return;
+      if (account.source === 'MySQL' && window.AdminStore?.api) {
+        try {
+          await window.AdminStore.api('admin_user_update', {
+            accountId,
+            username: name.trim(),
+            phone: account.phone || '',
+            status: account.status
+          });
+          await syncServerUsers();
+          showMessage('Account updated.');
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+        return;
+      }
+      const balance = parseFloat(prompt('Balance', account.balance));
+      account.name = name.trim();
+      if (!isNaN(balance) && balance >= 0) account.balance = balance;
+      renderAccounts();
+      showMessage('Account updated.');
+    }
+
+    async function deleteAccount(accountId) {
+      const account = getAccountById(accountId);
+      if (!account || !confirm(`Delete ${account.name}?`)) return;
+      if (account.source === 'MySQL' && window.AdminStore?.api) {
+        try {
+          await window.AdminStore.api('admin_user_delete', { accountId });
+          await syncServerUsers();
+          showMessage('Account deleted.');
+        } catch (error) {
+          showMessage(error.message, 'error');
+        }
+        return;
+      }
+      accounts = accounts.filter(item => item.id !== accountId);
+      renderAccounts();
+      showMessage('Account deleted.');
     }
 
     document.getElementById('create-account-btn').addEventListener('click', createAccount);
@@ -485,6 +617,7 @@
     document.getElementById('transfer-funds-btn').addEventListener('click', transferFunds);
 
     renderAccounts();
+    window.addEventListener('load', syncServerUsers);
 
   </script>
 <div id="google_translate_element" style="display:none;"></div>

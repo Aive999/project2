@@ -223,20 +223,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
   </div>
 <script>
   const JOB_KEY = 'adminJobConfig';
-  const sampleJobs = [
-    { id:'J1', coding:'i5dOPxJV', name:'Synchronize 24-hour price', cron:'0/30 * * * * ?', cls:'Synchronized Coin 24-hour minimum and maximum price', status:'Open', email:'', params:'', description:'Synchronize every 15 seconds', updater:'erupted', updated:'2023-05-29 09:35:58' },
-    { id:'J2', coding:'8J1EEMn', name:'Synchronize real-time coin prices', cron:'0 */1 * * * ?', cls:'Synchronized coin real-time price', status:'Open', email:'', params:'', description:'', updater:'admin', updated:'2025-01-13 03:31:23' },
-    { id:'J3', coding:'PrsnWoyR', name:'Automatic matchmaking for spot orders', cron:'0/1 * * * * ?', cls:'Automatic matchmaking for spot orders', status:'Open', email:'', params:'', description:'Execute every 1 second', updater:'erupted', updated:'2023-04-23 21:32:48' },
-    { id:'J4', coding:'Hpk4mdGP', name:'Automatic matching of cycle contract orders', cron:'0/1 * * * * ?', cls:'Automatic matching of cycle contract orders', status:'Open', email:'', params:'', description:'Execute once every 1 second', updater:'erupted', updated:'2023-04-23 21:32:39' },
-    { id:'J5', coding:'HpRjq4Y', name:'Automatic matchmaking of contract orders', cron:'0/1 * * * * ?', cls:'Automatic matchmaking of contract orders', status:'Open', email:'', params:'1 second', description:'Execute once every 1 second', updater:'erupted', updated:'2023-04-23 21:33:14' },
-    { id:'J6', coding:'gUPzy7oi', name:'Automatic matching of locked mining orders', cron:'0/1 * * * * ?', cls:'Automatic matching of locked mining orders', status:'Open', email:'', params:'1 second', description:'', updater:'erupted', updated:'2023-04-23 21:33:25' },
-    { id:'J7', coding:'ElQiaun', name:'Clean up timed task execution logs', cron:'0/59 * * * * ?', cls:'Clean up timed task execution logs', status:'Open', email:'', params:'1 minute', description:'', updater:'erupted', updated:'2023-04-19 14:56:28' },
-    { id:'J8', coding:'nS21sS3n', name:'websocket push k-line data', cron:'0/1 * * * * ?', cls:'Broadcast currency price k-line data', status:'Open', email:'', params:'Execute every 1 second', description:'', updater:'erupted', updated:'2023-04-20 18:13:54' },
-    { id:'J9', coding:'BQ5398ou', name:'websocket push gear data', cron:'0/1 * * * * ?', cls:'Broadcast currency price range data', status:'Open', email:'', params:'Execute every 1 second', description:'', updater:'erupted', updated:'2023-04-20 13:46:10' },
-    { id:'J10', coding:'5GZqyVBJ', name:'websocket push transaction volume data', cron:'0/1 * * * * ?', cls:'Broadcast currency price transaction data', status:'Open', email:'', params:'Execute every 1 second', description:'', updater:'erupted', updated:'2023-04-20 15:11:37' },
-  ];
-
-  let jobs = JSON.parse(localStorage.getItem(JOB_KEY)) || sampleJobs.slice();
+  let jobs = JSON.parse(localStorage.getItem(JOB_KEY) || '[]');
 
   function saveJobs() {
     localStorage.setItem(JOB_KEY, JSON.stringify(jobs));

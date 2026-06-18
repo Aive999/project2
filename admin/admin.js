@@ -15,7 +15,31 @@ function writeLoginLog(username, status) {
     localStorage.setItem(key, JSON.stringify(logs.slice(0, 100)));
 }
 
-document.getElementById("loginForm").addEventListener("submit", function(e){
+async function adminApi(action, payload = {}) {
+    const response = await fetch("../api/index.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ action, ...payload })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.ok === false) {
+        throw new Error(data.error || "Server request failed.");
+    }
+    return data;
+}
+
+function backendUnavailable(error) {
+    const message = error?.message || "";
+    return message.includes("Failed to fetch")
+        || message.includes("Server request failed")
+        || message.includes("SQLSTATE")
+        || message.includes("Access denied")
+        || message.includes("Unknown database")
+        || message.includes("your_database_");
+}
+
+document.getElementById("loginForm").addEventListener("submit", async function(e){
 
 e.preventDefault();
 
@@ -24,7 +48,19 @@ let username = document.getElementById("username").value;
 let password = document.getElementById("password").value;
 
 
-// temporary login
+try {
+    await adminApi("admin_login", { username, password });
+    localStorage.setItem("adminLogin","true");
+    window.location.href="admin.html";
+    return;
+} catch (error) {
+    if (!backendUnavailable(error)) {
+        document.getElementById("error").innerHTML=error.message || "Invalid login";
+        return;
+    }
+}
+
+// local setup fallback
 if(username === "admin" && password === "admin@12345"){
 
 localStorage.setItem("adminLogin","true");

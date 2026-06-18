@@ -219,16 +219,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
       </main>
   <script>
     const OU_KEY = 'adminOnlineUsers';
-    const sample = [
-      { id:'OU1', user:'admin', login:'2026-06-13 14:02:54', ip:'103.60.171.139', source:'Philippines | 0 | 0 | 0 | Globe-Telecom', os:'Windows 10', browser:'Chrome 14 149', type:'Computer' },
-      { id:'OU2', user:'admin', login:'2026-06-13 11:12:07', ip:'103.60.171.139', source:'Philippines | 0 | 0 | 0 | Globe-Telecom', os:'Android 1.x', browser:'Chrome Mobile 149', type:'Mobile' },
-      { id:'OU3', user:'admin', login:'2026-06-13 11:11:31', ip:'103.60.171.139', source:'Philippines | 0 | 0 | 0 | Globe-Telecom', os:'Android 1.x', browser:'Chrome Mobile 149', type:'Mobile' },
-      { id:'OU4', user:'admin', login:'2026-06-13 10:58:33', ip:'136.158.39.193', source:'Philippines | 0 | 0 | 0 | 0', os:'Android 1.x', browser:'Chrome Mobile 149', type:'Mobile' },
-      { id:'OU5', user:'admin', login:'2026-06-13 10:55:48', ip:'136.158.39.193', source:'Philippines | 0 | 0 | 0 | 0', os:'Android 1.x', browser:'Chrome Mobile 149', type:'Mobile' },
-      { id:'OU6', user:'admin', login:'2026-06-13 10:29:38', ip:'2001:4f0:974:2bd9:7838:9a60:d81d:192b', source:'Philippines | 0 | 0 | 0 | 0', os:'Windows 10', browser:'Chrome 14 149', type:'Computer' },
-    ];
-
-    let online = JSON.parse(localStorage.getItem(OU_KEY)) || sample.slice();
+    let online = JSON.parse(localStorage.getItem(OU_KEY) || '[]');
 
     function saveOnline(){ localStorage.setItem(OU_KEY, JSON.stringify(online)); }
 

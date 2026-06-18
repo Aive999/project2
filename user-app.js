@@ -2,6 +2,7 @@ const DemoExchange = (() => {
   const USERS_KEY = "demoExchangeUsers";
   const SESSION_KEY = "demoExchangeSession";
   const USER_LOG_KEY = "userLoginLog";
+  const API_URL = "api/index.php";
   let authMode = "login";
   let walletMode = "Exchange";
   let tradeHistoryMode = "Position order";
@@ -18,6 +19,48 @@ const DemoExchange = (() => {
 
   function writeUsers(users) {
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  }
+
+  async function apiRequest(action, payload = {}) {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ action, ...payload })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.ok === false) {
+      throw new Error(data.error || "Server request failed.");
+    }
+    return data;
+  }
+
+  function backendUnavailable(error) {
+    const message = error?.message || "";
+    return message.includes("Failed to fetch")
+      || message.includes("Server request failed")
+      || message.includes("SQLSTATE")
+      || message.includes("Access denied")
+      || message.includes("Unknown database")
+      || message.includes("your_database_");
+  }
+
+  function cacheServerUser(user) {
+    if (!user?.username) return;
+    const users = readUsers();
+    users[user.username] = user;
+    writeUsers(users);
+    localStorage.setItem(SESSION_KEY, user.username);
+  }
+
+  async function syncCurrentUser() {
+    if (!currentUsername()) return;
+    try {
+      const data = await apiRequest("me");
+      cacheServerUser(data.user);
+    } catch {
+      // Keep local development usable when PHP/MySQL is not configured yet.
+    }
   }
 
   function addUserLog(username, action, status) {
@@ -101,10 +144,20 @@ const DemoExchange = (() => {
     }, 0);
   }
 
-  function createUser(username, phone, password) {
+  async function createUser(username, phone, password) {
     const users = readUsers();
     if (!/^\d+$/.test(phone)) throw new Error("Phone number must contain numbers only.");
     if (users[username]) throw new Error("Username already exists.");
+
+    try {
+      const data = await apiRequest("register", { username, phone, password });
+      cacheServerUser(data.user);
+      return;
+    } catch (error) {
+      if (!backendUnavailable(error)) {
+        throw error;
+      }
+    }
 
     const user = {
       username,
@@ -120,7 +173,19 @@ const DemoExchange = (() => {
     addUserLog(username, "Register", "Success");
   }
 
-  function login(username, password) {
+  async function login(username, password) {
+    try {
+      const data = await apiRequest("login", { username, password });
+      cacheServerUser(data.user);
+      addUserLog(username, "Login", "Success");
+      return;
+    } catch (error) {
+      if (!backendUnavailable(error)) {
+        addUserLog(username, "Login", "Failed");
+        throw error;
+      }
+    }
+
     const user = readUsers()[username];
     if (!user || user.password !== password) {
       addUserLog(username, "Login", "Failed");
@@ -131,6 +196,7 @@ const DemoExchange = (() => {
   }
 
   function logout() {
+    apiRequest("logout").catch(() => {});
     localStorage.removeItem(SESSION_KEY);
   }
 
@@ -142,7 +208,7 @@ const DemoExchange = (() => {
     saveUser(user);
   }
 
-  function trade(asset, side, usdtAmount) {
+  async function trade(asset, side, usdtAmount) {
     const user = getUser();
     if (!user) throw new Error("Please register or log in first.");
 
@@ -151,6 +217,17 @@ const DemoExchange = (() => {
     if (user.balances.USDT < amount) throw new Error("Not enough USDT.");
 
     const units = amount / prices[asset];
+
+    try {
+      const data = await apiRequest("trade", { asset, side, amount });
+      cacheServerUser(data.user);
+      return { user: data.user, units: data.units };
+    } catch (error) {
+      if (!backendUnavailable(error)) {
+        throw error;
+      }
+    }
+
     user.balances.USDT -= amount;
     if (side.toLowerCase().includes("short")) {
       addTransaction(user, side, asset, units, "Open", `${side} ${asset}/USDT margin at ${money(prices[asset])}`);
@@ -162,11 +239,21 @@ const DemoExchange = (() => {
     return { user, units };
   }
 
-  function walletAction(type, amount, asset = "USDT") {
+  async function walletAction(type, amount, asset = "USDT") {
     const user = getUser();
     if (!user) throw new Error("Please register or log in first.");
     const value = Number(amount);
     if (!value || value <= 0) throw new Error("Enter a valid amount.");
+
+    try {
+      const data = await apiRequest("wallet_action", { type, amount: value, asset });
+      cacheServerUser(data.user);
+      return;
+    } catch (error) {
+      if (!backendUnavailable(error)) {
+        throw error;
+      }
+    }
 
     if (type === "Deposit") {
       user.balances[asset] = (user.balances[asset] || 0) + value;
@@ -195,12 +282,22 @@ const DemoExchange = (() => {
     saveUser(user);
   }
 
-  function exchange(fromAsset, toAsset, amount) {
+  async function exchange(fromAsset, toAsset, amount) {
     const user = getUser();
     if (!user) throw new Error("Please register or log in first.");
     const value = Number(amount);
     if (!value || value <= 0) throw new Error("Enter a valid amount.");
     if ((user.balances[fromAsset] || 0) < value) throw new Error("Insufficient balance.");
+
+    try {
+      const data = await apiRequest("exchange", { fromAsset, toAsset, amount: value });
+      cacheServerUser(data.user);
+      return;
+    } catch (error) {
+      if (!backendUnavailable(error)) {
+        throw error;
+      }
+    }
 
     const fromUsdt = fromAsset === "USDT" ? value : value * prices[fromAsset];
     const received = toAsset === "USDT" ? fromUsdt : fromUsdt / prices[toAsset];
@@ -526,10 +623,10 @@ const DemoExchange = (() => {
     const registerForm = document.getElementById("registerForm");
     const loginForm = document.getElementById("loginForm");
 
-    registerForm?.addEventListener("submit", (event) => {
+    registerForm?.addEventListener("submit", async (event) => {
       event.preventDefault();
       try {
-        createUser(
+        await createUser(
           document.getElementById("registerUsername").value.trim(),
           document.getElementById("registerPhone").value.trim(),
           document.getElementById("registerPassword").value
@@ -540,10 +637,10 @@ const DemoExchange = (() => {
       }
     });
 
-    loginForm?.addEventListener("submit", (event) => {
+    loginForm?.addEventListener("submit", async (event) => {
       event.preventDefault();
       try {
-        login(
+        await login(
           document.getElementById("loginUsername").value.trim(),
           document.getElementById("loginPassword").value
         );
@@ -780,10 +877,10 @@ const DemoExchange = (() => {
       document.getElementById("tradeAmount").focus();
     });
 
-    document.getElementById("mockTradeForm").addEventListener("submit", (event) => {
+    document.getElementById("mockTradeForm").addEventListener("submit", async (event) => {
       event.preventDefault();
       try {
-        const result = trade(
+        const result = await trade(
           document.getElementById("tradeAsset").value,
           document.getElementById("tradeSide").value,
           document.getElementById("tradeAmount").value
@@ -809,9 +906,9 @@ const DemoExchange = (() => {
   function enhanceOptionsPage() {
     const button = document.querySelector(".options-card .primary-button");
     if (!button) return;
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       try {
-        trade("BTC", "Leveraged Buy", 100);
+        await trade("BTC", "Leveraged Buy", 100);
         refresh("Leveraged order opened.");
       } catch (error) {
         refresh(error.message);
@@ -847,19 +944,19 @@ const DemoExchange = (() => {
     `);
 
     document.querySelectorAll(".wallet-action").forEach((button) => {
-      button.addEventListener("click", () => {
+      button.addEventListener("click", async () => {
         const action = button.textContent.trim();
         try {
           if (action.includes("Withdraw")) {
-            walletAction("Withdraw", prompt("Withdrawal amount", "100"), "USDT");
+            await walletAction("Withdraw", prompt("Withdrawal amount", "100"), "USDT");
           } else if (action.includes("Deposit")) {
-            walletAction("Deposit", prompt("Deposit amount", "500"), "USDT");
+            await walletAction("Deposit", prompt("Deposit amount", "500"), "USDT");
           } else if (action.includes("Transfer")) {
-            walletAction("Transfer", prompt("Transfer amount", "100"), "USDT");
+            await walletAction("Transfer", prompt("Transfer amount", "100"), "USDT");
           } else if (action.includes("Exchange")) {
-            exchange("USDT", "BTC", prompt("Convert USDT to BTC", "100"));
+            await exchange("USDT", "BTC", prompt("Convert USDT to BTC", "100"));
           } else if (action.includes("Loan")) {
-            walletAction("Loan", prompt("Loan amount", "1000"), "USDT");
+            await walletAction("Loan", prompt("Loan amount", "1000"), "USDT");
           }
           refresh(`${action} transaction recorded.`);
         } catch (error) {
@@ -1033,7 +1130,8 @@ const DemoExchange = (() => {
     renderTradeTransactions();
   }
 
-  function init() {
+  async function init() {
+    await syncCurrentUser();
     renderAccountPanel();
     bindAccountButtons();
     bindUserTabs();

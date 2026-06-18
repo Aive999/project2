@@ -218,6 +218,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
   const USER_LL_KEY = 'userLoginLog';
   let logs = JSON.parse(localStorage.getItem(LL_KEY) || '[]');
   let userLogs = JSON.parse(localStorage.getItem(USER_LL_KEY) || '[]');
+  let serverLogs = [];
 
   function saveLogs(){ localStorage.setItem(LL_KEY, JSON.stringify(logs)); }
   function saveUserLogs(){ localStorage.setItem(USER_LL_KEY, JSON.stringify(userLogs)); }
@@ -239,8 +240,19 @@ if(localStorage.getItem("adminLogin") !== "true"){
 
   function allLogs(){
     const byId = new Map();
-    logs.concat(userLogs, localUserRows()).forEach(log => byId.set(log.id, log));
+    logs.concat(userLogs, localUserRows(), serverLogs).forEach(log => byId.set(log.id, log));
     return Array.from(byId.values());
+  }
+
+  async function loadServerLogs(){
+    if (!window.AdminStore?.api) return;
+    try {
+      const data = await window.AdminStore.api('admin_logs');
+      serverLogs = data.logs || [];
+      renderLogs();
+    } catch {
+      serverLogs = [];
+    }
   }
 
   function renderLogs(){
@@ -278,8 +290,8 @@ if(localStorage.getItem("adminLogin") !== "true"){
     document.getElementById('ll-select-all').onchange = e=> document.querySelectorAll('.ll-check').forEach(cb=>cb.checked = e.target.checked);
   }
 
-  function deleteLog(id){ if (!confirm('Delete log?')) return; logs = logs.filter(x=>x.id!==id); userLogs = userLogs.filter(x=>x.id!==id); saveLogs(); saveUserLogs(); renderLogs(); }
-  function deleteSelected(){ const ids = Array.from(document.querySelectorAll('.ll-check:checked')).map(cb=>cb.getAttribute('data-id')); if (!ids.length) return alert('No selection'); if (!confirm('Delete selected logs?')) return; logs = logs.filter(l=>!ids.includes(l.id)); userLogs = userLogs.filter(l=>!ids.includes(l.id)); saveLogs(); saveUserLogs(); renderLogs(); }
+  async function deleteLog(id){ if (!confirm('Delete log?')) return; if (id.startsWith('LOG-') && window.AdminStore?.api) await window.AdminStore.api('admin_log_delete', { ids:[id] }).catch(error=>alert(error.message)); logs = logs.filter(x=>x.id!==id); userLogs = userLogs.filter(x=>x.id!==id); serverLogs = serverLogs.filter(x=>x.id!==id); saveLogs(); saveUserLogs(); renderLogs(); }
+  async function deleteSelected(){ const ids = Array.from(document.querySelectorAll('.ll-check:checked')).map(cb=>cb.getAttribute('data-id')); if (!ids.length) return alert('No selection'); if (!confirm('Delete selected logs?')) return; const serverIds = ids.filter(id=>id.startsWith('LOG-')); if (serverIds.length && window.AdminStore?.api) await window.AdminStore.api('admin_log_delete', { ids:serverIds }).catch(error=>alert(error.message)); logs = logs.filter(l=>!ids.includes(l.id)); userLogs = userLogs.filter(l=>!ids.includes(l.id)); serverLogs = serverLogs.filter(l=>!ids.includes(l.id)); saveLogs(); saveUserLogs(); renderLogs(); }
   function downloadCSV(){ const rows=[['user','login','ip','source','os','browser','type']].concat(allLogs().map(o=>[o.user,o.login,o.ip,o.source,o.os,o.browser,o.type])); const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='login-log.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
 
   document.getElementById('ll-download').addEventListener('click', downloadCSV);
@@ -288,6 +300,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
   ['filter-user','filter-ip','filter-ip-source','filter-os','filter-browser','filter-type'].forEach(id=>document.getElementById(id).addEventListener('input', renderLogs));
 
   renderLogs();
+  window.addEventListener('load', loadServerLogs);
 </script>
 <div id="google_translate_element" style="display:none;"></div>
 

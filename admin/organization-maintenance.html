@@ -226,13 +226,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
   </div>
   <script>
     const ORG_KEY = 'adminOrgs';
-    const defaultOrgs = [
-      { id: 'O1', coding: 'root', name: 'Head Office', parent: '', order: 10, updated: '2026-06-01 10:00' },
-      { id: 'O2', coding: 'sales', name: 'Sales', parent: 'O1', order: 20, updated: '2026-06-02 12:00' },
-      { id: 'O3', coding: 'ops', name: 'Operations', parent: 'O1', order: 30, updated: '2026-06-03 14:00' },
-    ];
-
-    let orgs = JSON.parse(localStorage.getItem(ORG_KEY)) || defaultOrgs.slice();
+    let orgs = JSON.parse(localStorage.getItem(ORG_KEY) || '[]');
     let selectedOrgId = null;
 
     const orgTree = document.getElementById('org-tree');

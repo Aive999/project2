@@ -231,13 +231,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
   <script>
     const ROLE_KEY = 'adminRoles';
     const nowIso = () => new Date().toISOString();
-    const defaultRoles = [
-      { id: 'R001', coding: 'sys_manager', name: 'System Administrator', order: 20, status: 'Open', updater: 'erupted', updated: '2023-09-12 01:46:17' },
-      { id: 'R002', coding: 'sys_user', name: 'Team Member', order: 30, status: 'Open', updater: 'erupted', updated: '2023-09-23 16:51:11' },
-      { id: 'R003', coding: 'kong_dan', name: 'Control order', order: 50, status: 'Open', updater: 'admin', updated: '2026-02-24 21:31:32' },
-    ];
-
-    let roles = JSON.parse(localStorage.getItem(ROLE_KEY)) || defaultRoles.slice();
+    let roles = JSON.parse(localStorage.getItem(ROLE_KEY) || '[]');
 
     const rolesTbody = document.getElementById('roles-tbody');
     const roleMessage = document.getElementById('role-message');
