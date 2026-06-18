@@ -320,6 +320,35 @@ try {
         respond(['ok' => true, 'users' => $users]);
     }
 
+    if ($action === 'admin_stats') {
+        require_admin();
+        $today = date('Y-m-d');
+
+        $totalUsers = (int)db()->query('SELECT COUNT(*) FROM users')->fetchColumn();
+
+        $stmt = db()->prepare('SELECT COUNT(*) FROM users WHERE DATE(created_at) = ?');
+        $stmt->execute([$today]);
+        $newUsersToday = (int)$stmt->fetchColumn();
+
+        $stmt = db()->prepare('SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = ? AND asset = ?');
+        $stmt->execute(['Deposit', 'USDT']);
+        $totalTopUp = (float)$stmt->fetchColumn();
+
+        $stmt = db()->prepare('SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = ? AND asset = ? AND DATE(created_at) = ?');
+        $stmt->execute(['Deposit', 'USDT', $today]);
+        $topUpToday = (float)$stmt->fetchColumn();
+
+        respond([
+            'ok' => true,
+            'stats' => [
+                'totalUsers' => $totalUsers,
+                'newUsersToday' => $newUsersToday,
+                'totalTopUp' => $totalTopUp,
+                'topUpToday' => $topUpToday,
+            ],
+        ]);
+    }
+
     if ($action === 'admin_logs') {
         require_admin();
         $rows = db()->query('SELECT * FROM login_logs ORDER BY created_at DESC LIMIT 200')->fetchAll();

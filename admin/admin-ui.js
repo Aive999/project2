@@ -292,13 +292,23 @@
     if (!cards.length) return;
     const users = Object.values(readUsers());
     const accounts = readAdminAccounts();
-    const portfolioTotal = users.reduce((sum, user) => sum + Number(user.balances?.USDT || 0), 0) +
-      accounts.reduce((sum, account) => sum + Number(account.balance || 0), 0);
+    const today = new Date().toLocaleDateString();
+    const userTransactions = users.flatMap((user) => user.transactions || []);
+    const totalTopUp = userTransactions
+      .filter((tx) => tx.type === "Deposit" && (tx.asset || "USDT") === "USDT")
+      .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+    const topUpToday = userTransactions
+      .filter((tx) => tx.type === "Deposit" && (tx.asset || "USDT") === "USDT" && new Date(tx.time).toLocaleDateString() === today)
+      .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+    const newUsersToday = users.filter((user) => {
+      const firstTime = user.transactions?.[user.transactions.length - 1]?.time;
+      return firstTime && new Date(firstTime).toLocaleDateString() === today;
+    }).length;
     const values = [
       users.length + accounts.length,
-      users.length,
-      money(portfolioTotal),
-      money(portfolioTotal)
+      newUsersToday,
+      money(totalTopUp),
+      money(topUpToday)
     ];
     cards.forEach((card, index) => {
       const value = $(".card-value", card);
@@ -310,10 +320,14 @@
     const cards = $$(".admin-card");
     if (!cards.length) return;
     try {
-      const data = await adminApi("admin_users");
-      const users = data.users || [];
-      const portfolioTotal = users.reduce((sum, user) => sum + Number(user.balance || 0), 0);
-      const values = [users.length, users.length, money(portfolioTotal), money(portfolioTotal)];
+      const data = await adminApi("admin_stats");
+      const stats = data.stats || {};
+      const values = [
+        Number(stats.totalUsers || 0).toLocaleString(),
+        Number(stats.newUsersToday || 0).toLocaleString(),
+        money(stats.totalTopUp || 0),
+        money(stats.topUpToday || 0)
+      ];
       cards.forEach((card, index) => {
         const value = $(".card-value", card);
         if (value) value.textContent = values[index] ?? value.textContent;
