@@ -54,25 +54,10 @@ try {
     window.location.href="admin.html";
     return;
 } catch (error) {
-    if (!backendUnavailable(error)) {
-        document.getElementById("error").innerHTML=error.message || "Invalid login";
-        return;
-    }
-}
-
-// local setup fallback
-if(username === "admin" && password === "admin@12345"){
-
-localStorage.setItem("adminLogin","true");
-writeLoginLog(username, "Success");
-
-window.location.href="admin.html";
-
-}else{
-
-document.getElementById("error").innerHTML="Invalid login";
-writeLoginLog(username, "Failed");
-
+    document.getElementById("error").innerHTML = backendUnavailable(error)
+        ? "Cannot connect to MySQL. Check api/db.php and schema import."
+        : (error.message || "Invalid login");
+    writeLoginLog(username, "Failed");
 }
 
 });

@@ -156,9 +156,7 @@ const DemoExchange = (() => {
   }
 
   async function createUser(username, phone, password) {
-    const users = readUsers();
     if (!/^\d+$/.test(phone)) throw new Error("Phone number must contain numbers only.");
-    if (users[username]) throw new Error("Username already exists.");
 
     try {
       const data = await apiRequest("register", { username, phone, password });

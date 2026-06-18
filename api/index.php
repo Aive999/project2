@@ -95,6 +95,7 @@ function public_user(array $user): array
         'username' => $user['username'],
         'phone' => $user['phone'],
         'status' => $user['status'],
+        'created' => $user['created_at'] ?? '',
         'balances' => $balances,
         'transactions' => $transactions,
     ];
@@ -224,10 +225,15 @@ try {
         $password = (string)($data['password'] ?? '');
         if ($username === '' || $phone === '' || $password === '') fail('All fields are required.');
         if (!preg_match('/^[0-9]+$/', $phone)) fail('Phone number must contain numbers only.');
-        if (user_by_username($username)) fail('Username already exists.');
-
-        $stmt = db()->prepare('INSERT INTO users (username, phone, password_hash) VALUES (?, ?, ?)');
-        $stmt->execute([$username, $phone, password_hash($password, PASSWORD_DEFAULT)]);
+        try {
+            $stmt = db()->prepare('INSERT INTO users (username, phone, password_hash) VALUES (?, ?, ?)');
+            $stmt->execute([$username, $phone, password_hash($password, PASSWORD_DEFAULT)]);
+        } catch (PDOException $e) {
+            if ($e->getCode() === '23000') {
+                fail('Username already exists.', 409);
+            }
+            throw $e;
+        }
         $user = user_by_username($username);
         ensure_balances((int)$user['id']);
         $_SESSION['username'] = $username;
