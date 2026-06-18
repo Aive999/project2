@@ -329,17 +329,26 @@ try {
 
         $totalUsers = (int)db()->query('SELECT COUNT(*) FROM users')->fetchColumn();
 
-        $stmt = db()->prepare('SELECT COUNT(*) FROM users WHERE DATE(created_at) = ?');
-        $stmt->execute([$requestedDate]);
-        $newUsersToday = (int)$stmt->fetchColumn();
+        $createdRows = db()->query('SELECT created_at FROM users')->fetchAll();
+        $newUsersToday = 0;
+        foreach ($createdRows as $row) {
+            if (substr((string)$row['created_at'], 0, 10) === $requestedDate) {
+                $newUsersToday++;
+            }
+        }
 
         $stmt = db()->prepare('SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = ? AND asset = ?');
         $stmt->execute(['Deposit', 'USDT']);
         $totalTopUp = (float)$stmt->fetchColumn();
 
-        $stmt = db()->prepare('SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = ? AND asset = ? AND DATE(created_at) = ?');
-        $stmt->execute(['Deposit', 'USDT', $requestedDate]);
-        $topUpToday = (float)$stmt->fetchColumn();
+        $stmt = db()->prepare('SELECT amount, created_at FROM transactions WHERE type = ? AND asset = ?');
+        $stmt->execute(['Deposit', 'USDT']);
+        $topUpToday = 0;
+        foreach ($stmt as $row) {
+            if (substr((string)$row['created_at'], 0, 10) === $requestedDate) {
+                $topUpToday += (float)$row['amount'];
+            }
+        }
 
         respond([
             'ok' => true,
@@ -349,6 +358,7 @@ try {
                 'totalTopUp' => $totalTopUp,
                 'topUpToday' => $topUpToday,
                 'currentDate' => $requestedDate,
+                'createdDates' => array_map(fn($row) => substr((string)$row['created_at'], 0, 10), $createdRows),
             ],
         ]);
     }

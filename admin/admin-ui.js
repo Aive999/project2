@@ -154,6 +154,10 @@
     return `${year}-${month}-${day}`;
   }
 
+  function dateOnly(value) {
+    return String(value || "").trim().slice(0, 10);
+  }
+
   function readUsers() {
     return readJSON("demoExchangeUsers", {});
   }
@@ -330,16 +334,16 @@
       const today = localDateString();
       const data = await adminApi("admin_stats", { date: today });
       const stats = data.stats || {};
+      const targetDate = stats.currentDate || today;
       let newUsersToday = Number(stats.newUsersToday || 0);
 
-      if (newUsersToday === 0) {
-        const usersData = await adminApi("admin_users");
-        const users = usersData.users || [];
-        newUsersToday = users.filter((user) => String(user.created || "").slice(0, 10) === today).length;
-      }
+      const usersData = await adminApi("admin_users");
+      const users = usersData.users || [];
+      const rowCount = users.filter((user) => dateOnly(user.created) === targetDate).length;
+      newUsersToday = rowCount || newUsersToday;
 
       const values = [
-        Number(stats.totalUsers || 0).toLocaleString(),
+        Number(stats.totalUsers || users.length || 0).toLocaleString(),
         newUsersToday.toLocaleString(),
         money(stats.totalTopUp || 0),
         money(stats.topUpToday || 0)
