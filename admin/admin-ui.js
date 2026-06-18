@@ -147,6 +147,13 @@
     });
   }
 
+  function localDateString(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
   function readUsers() {
     return readJSON("demoExchangeUsers", {});
   }
@@ -320,7 +327,7 @@
     const cards = $$(".admin-card");
     if (!cards.length) return;
     try {
-      const data = await adminApi("admin_stats");
+      const data = await adminApi("admin_stats", { date: localDateString() });
       const stats = data.stats || {};
       const values = [
         Number(stats.totalUsers || 0).toLocaleString(),
