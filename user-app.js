@@ -788,7 +788,7 @@ const DemoExchange = (() => {
     const rate = exchangeEstimate(from, to, 1);
     quote.textContent = from === to
       ? "Choose two different currencies."
-      : `Rate 1 ${from} = ${coin(rate)} ${to} · Estimated receive ${coin(estimate)} ${to}`;
+      : `Rate 1 ${from} = ${coin(rate)} ${to} - Estimated receive ${coin(estimate)} ${to}`;
   }
 
   async function submitExchange() {

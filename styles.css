@@ -566,6 +566,11 @@ body {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   margin-top: 24px;
+  padding: 10px;
+  border-radius: 24px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  backdrop-filter: blur(20px);
 }
 
 .main-nav a {
@@ -634,34 +639,6 @@ body {
   font-size: 1.75rem;
 }
 
-/* ===== MOBILE BOTTOM NAV FIX ===== */
-
-.main-nav {
-    position: fixed;
-    bottom: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-
-    width: calc(100% - 24px);
-    max-width: 600px;
-
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    grid-template-rows: 1fr;
-
-    gap: 5px;
-    padding: 8px;
-
-    background: rgba(15,23,42,.92);
-    backdrop-filter: blur(20px);
-
-    border: 1px solid rgba(148,163,184,.18);
-    border-radius: 24px;
-
-    z-index: 9999;
-}
-
-
 .nav-item {
     display: flex !important;
     flex-direction: column !important;
@@ -678,6 +655,24 @@ body {
     text-align:center;
 }
 
+@media (max-width: 780px) {
+    body {
+        padding-bottom: 92px;
+    }
+
+    .main-nav {
+        position: fixed;
+        right: 12px;
+        bottom: 12px;
+        left: 12px;
+        z-index: 9999;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 5px;
+        margin-top: 0;
+        padding: 8px;
+    }
+}
+
 
 .nav-item span:first-child {
     font-size: 20px;
@@ -689,17 +684,12 @@ body {
 }
 
 
-/* stop content covering nav */
-body {
-    padding-bottom: 90px !important;
-}
-
-
 @media(max-width:600px){
 
     .main-nav {
         bottom: 8px;
-        width: calc(100% - 16px);
+        right: 8px;
+        left: 8px;
     }
 
 }
@@ -738,10 +728,6 @@ body {
 .market-header {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-.main-nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
 }
@@ -2689,6 +2675,80 @@ body.demo-modal-open .main-nav {
 }
 
 /* account final layout */
+.account-header {
+    display: grid !important;
+    gap: 18px !important;
+    margin-top: 24px !important;
+    padding: 22px !important;
+    border-radius: 26px !important;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(14, 116, 144, 0.72)) !important;
+    border: 1px solid rgba(56, 189, 248, 0.2) !important;
+    color: #f8fafc !important;
+    box-shadow: 0 18px 50px rgba(2, 6, 23, 0.28) !important;
+}
+
+.account-balance {
+    margin: 0 !important;
+}
+
+.account-title {
+    color: #bae6fd !important;
+    font-size: 0.95rem !important;
+    line-height: 1.35 !important;
+    opacity: 1 !important;
+}
+
+.account-amount {
+    margin-top: 8px !important;
+    font-size: clamp(2.2rem, 5vw, 3.25rem) !important;
+    line-height: 1 !important;
+    font-weight: 800 !important;
+    letter-spacing: 0 !important;
+}
+
+.account-usd {
+    margin-top: 8px !important;
+    color: #cbd5e1 !important;
+    opacity: 1 !important;
+}
+
+.account-actions {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+}
+
+.account-action {
+    display: grid !important;
+    place-items: center !important;
+    gap: 7px !important;
+    min-width: 0 !important;
+    min-height: 76px !important;
+    padding: 12px 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, 0.11) !important;
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    line-height: 1.15 !important;
+    cursor: pointer;
+    box-shadow: none !important;
+}
+
+.account-action > span:first-child {
+    display: grid !important;
+    place-items: center !important;
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 12px !important;
+    background: rgba(56, 189, 248, 0.16) !important;
+}
+
+.account-action:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.16) !important;
+}
+
 .account-panel {
     display: grid !important;
     gap: 18px !important;
@@ -2739,6 +2799,80 @@ body.demo-modal-open .main-nav {
     background: rgba(56, 189, 248, 0.1) !important;
     border: 1px solid rgba(56, 189, 248, 0.16) !important;
     text-align: left !important;
+}
+
+.exchange-panel {
+    display: grid !important;
+    gap: 12px !important;
+    margin: 0 !important;
+    padding: 16px !important;
+    border-radius: 20px !important;
+    background: rgba(8, 14, 31, 0.72) !important;
+    border: 1px solid rgba(148, 163, 184, 0.14) !important;
+}
+
+.exchange-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(160px, 0.7fr) auto !important;
+    gap: 12px !important;
+    align-items: end !important;
+}
+
+.exchange-grid label {
+    display: grid !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+    color: #94a3b8 !important;
+    font-size: 0.88rem !important;
+}
+
+.exchange-grid select,
+.exchange-grid input {
+    appearance: none;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    padding: 0 14px !important;
+    border: 1px solid rgba(148, 163, 184, 0.24) !important;
+    border-radius: 14px !important;
+    background: #111827 !important;
+    color: #f8fafc !important;
+    outline: none !important;
+}
+
+.exchange-grid select {
+    padding-right: 38px !important;
+    background-color: #111827 !important;
+    background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%), linear-gradient(135deg, #94a3b8 50%, transparent 50%) !important;
+    background-position: calc(100% - 18px) 19px, calc(100% - 12px) 19px !important;
+    background-repeat: no-repeat !important;
+    background-size: 6px 6px, 6px 6px !important;
+}
+
+.exchange-grid input::placeholder {
+    color: #94a3b8 !important;
+    opacity: 1;
+}
+
+.exchange-grid button {
+    height: 46px !important;
+    min-height: 46px !important;
+    padding: 0 18px !important;
+    border: 0 !important;
+    border-radius: 14px !important;
+    background: linear-gradient(135deg, #14b8a6, #2563eb) !important;
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+    cursor: pointer;
+}
+
+.exchange-quote {
+    min-height: 22px !important;
+    color: #bae6fd !important;
+    font-size: 0.92rem !important;
 }
 
 .account-controls {
@@ -2795,9 +2929,29 @@ body.demo-modal-open .main-nav {
 }
 
 @media (max-width: 700px) {
+    .account-header {
+        padding: 18px !important;
+        border-radius: 22px !important;
+    }
+
+    .account-actions {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 8px !important;
+    }
+
+    .account-action {
+        min-height: 64px !important;
+        padding: 10px 6px !important;
+        font-size: 0.86rem !important;
+    }
+
     .account-tabs {
         width: 100% !important;
         grid-template-columns: 1fr 1fr !important;
+    }
+
+    .exchange-grid {
+        grid-template-columns: 1fr !important;
     }
 
     .account-controls {
