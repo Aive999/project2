@@ -662,9 +662,11 @@ body {
 
     .main-nav {
         position: fixed;
-        right: 12px;
+        left: 50%;
         bottom: 12px;
-        left: 12px;
+        right: auto;
+        width: min(750px, calc(100vw - 32px));
+        transform: translateX(-50%);
         z-index: 9999;
         grid-template-columns: repeat(3, 1fr) !important;
         gap: 5px;
@@ -688,8 +690,10 @@ body {
 
     .main-nav {
         bottom: 8px;
-        right: 8px;
-        left: 8px;
+        left: 50%;
+        right: auto;
+        width: min(560px, calc(100vw - 16px));
+        transform: translateX(-50%);
     }
 
 }
@@ -743,6 +747,10 @@ body {
 .rates-grid,
   .main-nav {
     grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  .main-nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 
 .hero-copy h1 {
@@ -3182,6 +3190,254 @@ body.demo-modal-open .main-nav {
 
 tr[style*="display: none"] {
     pointer-events: none;
+}
+
+/* Account page hard override */
+body.account-page .page-shell {
+    width: min(100%, 1240px);
+    padding: 24px;
+}
+
+body.account-page .account-header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 380px) !important;
+    align-items: center !important;
+    gap: 20px !important;
+    margin: 0 0 18px !important;
+    padding: 24px !important;
+    border-radius: 26px !important;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(14, 116, 144, 0.72)) !important;
+    border: 1px solid rgba(56, 189, 248, 0.2) !important;
+    color: #f8fafc !important;
+    box-shadow: 0 18px 50px rgba(2, 6, 23, 0.28) !important;
+}
+
+body.account-page .account-balance {
+    display: grid !important;
+    gap: 8px !important;
+    margin: 0 !important;
+}
+
+body.account-page .account-title,
+body.account-page .account-summary-title {
+    color: #bae6fd !important;
+    font-size: 0.95rem !important;
+    line-height: 1.35 !important;
+}
+
+body.account-page .account-amount,
+body.account-page .account-summary-value {
+    margin: 0 !important;
+    color: #ffffff !important;
+    font-size: clamp(2.15rem, 4.4vw, 3.3rem) !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+}
+
+body.account-page .account-usd,
+body.account-page .account-summary-usd {
+    margin: 0 !important;
+    color: #cbd5e1 !important;
+}
+
+body.account-page .account-actions {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+}
+
+body.account-page .account-action {
+    display: grid !important;
+    place-items: center !important;
+    gap: 7px !important;
+    min-width: 0 !important;
+    min-height: 76px !important;
+    padding: 12px 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, 0.11) !important;
+    color: #ffffff !important;
+    font: inherit !important;
+    font-weight: 800 !important;
+    line-height: 1.15 !important;
+    cursor: pointer !important;
+}
+
+body.account-page .account-action > span:first-child {
+    display: grid !important;
+    place-items: center !important;
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 12px !important;
+    background: rgba(56, 189, 248, 0.16) !important;
+}
+
+body.account-page .account-panel {
+    display: grid !important;
+    gap: 18px !important;
+    padding: 18px !important;
+    border-radius: 24px !important;
+    background: rgba(15, 23, 42, 0.56) !important;
+    border: 1px solid rgba(148, 163, 184, 0.12) !important;
+}
+
+body.account-page .account-summary {
+    display: grid !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 20px !important;
+    border-radius: 20px !important;
+    background: rgba(8, 14, 31, 0.76) !important;
+}
+
+body.account-page .account-status {
+    margin: 0 !important;
+    padding: 16px 18px !important;
+    border-radius: 18px !important;
+    background: rgba(56, 189, 248, 0.1) !important;
+    border: 1px solid rgba(56, 189, 248, 0.18) !important;
+    color: #f8fafc !important;
+}
+
+body.account-page .exchange-panel {
+    display: grid !important;
+    gap: 12px !important;
+    margin: 0 !important;
+    padding: 16px !important;
+    border-radius: 20px !important;
+    background: rgba(8, 14, 31, 0.78) !important;
+    border: 1px solid rgba(148, 163, 184, 0.14) !important;
+}
+
+body.account-page .exchange-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(150px, 0.62fr) auto !important;
+    gap: 12px !important;
+    align-items: end !important;
+}
+
+body.account-page .exchange-grid label {
+    display: grid !important;
+    gap: 7px !important;
+    min-width: 0 !important;
+    color: #94a3b8 !important;
+    font-size: 0.88rem !important;
+}
+
+body.account-page .exchange-grid select,
+body.account-page .exchange-grid input {
+    appearance: none !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    padding: 0 14px !important;
+    border: 1px solid rgba(148, 163, 184, 0.24) !important;
+    border-radius: 14px !important;
+    background-color: #111827 !important;
+    color: #f8fafc !important;
+    font: inherit !important;
+    outline: none !important;
+}
+
+body.account-page .exchange-grid select {
+    padding-right: 38px !important;
+    background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%), linear-gradient(135deg, #94a3b8 50%, transparent 50%) !important;
+    background-position: calc(100% - 18px) 19px, calc(100% - 12px) 19px !important;
+    background-repeat: no-repeat !important;
+    background-size: 6px 6px, 6px 6px !important;
+}
+
+body.account-page .exchange-grid button {
+    height: 46px !important;
+    min-height: 46px !important;
+    padding: 0 18px !important;
+    border: 0 !important;
+    border-radius: 14px !important;
+    background: linear-gradient(135deg, #14b8a6, #2563eb) !important;
+    color: #ffffff !important;
+    font: inherit !important;
+    font-weight: 800 !important;
+    cursor: pointer !important;
+}
+
+body.account-page .exchange-quote {
+    min-height: 22px !important;
+    color: #bae6fd !important;
+}
+
+body.account-page .account-controls {
+    display: grid !important;
+    grid-template-columns: minmax(190px, auto) minmax(260px, 1fr) !important;
+    gap: 14px !important;
+    align-items: center !important;
+}
+
+body.account-page .checkbox-row,
+body.account-page .search-row {
+    min-height: 48px !important;
+    border-radius: 16px !important;
+    background: rgba(148, 163, 184, 0.08) !important;
+    border: 1px solid rgba(148, 163, 184, 0.08) !important;
+}
+
+body.account-page .search-row input {
+    height: 46px !important;
+    color: #f8fafc !important;
+    font: inherit !important;
+}
+
+@media (max-width: 820px) {
+    body.account-page .page-shell {
+        padding: 14px;
+    }
+
+    body.account-page .account-header {
+        grid-template-columns: 1fr !important;
+        padding: 18px !important;
+    }
+
+    body.account-page .exchange-grid,
+    body.account-page .account-controls {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Floating public navigation */
+body:not(.admin-body) .main-nav {
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: 24px !important;
+    width: min(620px, calc(100vw - 40px)) !important;
+    max-width: calc(100vw - 40px) !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 10px !important;
+    transform: translateX(-50%) !important;
+    z-index: 9999 !important;
+    border-radius: 26px !important;
+    background: rgba(15, 23, 42, 0.92) !important;
+    border: 1px solid rgba(148, 163, 184, 0.18) !important;
+    box-shadow: 0 22px 60px rgba(2, 6, 23, 0.42) !important;
+    backdrop-filter: blur(20px);
+}
+
+body:not(.admin-body) {
+    padding-bottom: 118px;
+}
+
+@media (max-width: 520px) {
+    body:not(.admin-body) .main-nav {
+        bottom: 16px !important;
+        width: min(430px, calc(100vw - 24px)) !important;
+        max-width: calc(100vw - 24px) !important;
+        gap: 6px !important;
+        padding: 8px !important;
+    }
 }
 
 
