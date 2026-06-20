@@ -25,7 +25,7 @@ template = '''<!DOCTYPE html>
     <aside class="admin-sidebar">
       <div class="admin-brand">
         <div class="admin-logo">K</div>
-        <a href="admin.html" class="admin-title">Coinbase Backstage Management System</a>
+        <a href="admin.html" class="admin-title">currencybase Backstage Management System</a>
       </div>
       <nav class="admin-menu">
         <!-- nav will be replaced -->
@@ -42,7 +42,7 @@ template = '''<!DOCTYPE html>
           <button class="admin-pill">Primary certification audit (0)</button>
           <button class="admin-pill">Advanced Certification Audit (0)</button>
           <button class="admin-pill">Withdrawal Review (0)</button>
-          <button class="admin-pill">Cycle contracts (0)</button>
+          <button class="admin-pill">Currency orders (0)</button>
           <button class="admin-pill">Recharge Review (0)</button>
         </div>
         <div class="admin-profile">
@@ -79,3 +79,4 @@ for fname, title in new_pages:
     if not path.exists():
         path.write_text(template.format(title=title), encoding='utf-8')
 print('created', len(new_pages), 'exchange submenu pages')
+

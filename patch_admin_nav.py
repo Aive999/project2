@@ -16,7 +16,7 @@ nav_groups = [
             ('online-users.html', 'Online Users'),
             ('login-log.html', 'Login Log'),
             ('operation-log.html', 'Operation Log'),
-            ('kline-api-config.html', 'K-line API Configuration'),
+            ('CurrencyRate-api-config.html', 'Currency Rate Management'),
         ],
     },
     {
@@ -59,38 +59,38 @@ nav_groups = [
         ],
     },
     {
-        'label': 'Loan Management',
-        'href': 'loan-management.html',
+        'label': 'Account Services',
+        'href': 'account-services.html',
         'children': [
-            ('loan-setup.html', 'Loan Setup'),
-            ('loan-review.html', 'Loan Review'),
+            ('service-setup.html', 'Service Setup'),
+            ('service-review.html', 'Service Review'),
         ],
     },
     {
         'label': 'Asset Management',
         'href': 'asset-management.html',
         'children': [
-            ('seconds-contracts.html', 'Seconds Contract'),
-            ('new-spot-points.html', 'New Spot Points'),
-            ('spot-asset-list.html', 'List of Spot Assets'),
-            ('contract-asset-list.html', 'List of Contract Assets'),
-            ('locked-mining-assets.html', 'Locked Mining Assets'),
+            ('seconds-contracts.html', 'Timed Exchange'),
+            ('new-currency-points.html', 'New Currency Points'),
+            ('currency-asset-list.html', 'Currency Asset List'),
+            ('contract-asset-list.html', 'Order Asset List'),
+            ('reserved-currency-assets.html', 'Reserved Currency Assets'),
         ],
     },
     {
         'label': 'Order Management',
         'href': 'order-management.html',
         'children': [
-            ('spot-flow-records.html', 'Spot Flow Records'),
-            ('spot-exchange-trades.html', 'Spot Exchange Trades'),
-            ('cycle-contracts-trades.html', 'Cycle Contracts Trades'),
+            ('currency-flow-records.html', 'Currency Flow Records'),
+            ('currency-exchange-records.html', 'Currency Exchange Records'),
+            ('cycle-contracts-trades.html', 'Currency orders Trades'),
         ],
     },
     {
         'label': 'Content Management',
         'href': 'content-management.html',
         'children': [
-            ('locked-mining.html', 'Locked Mining'),
+            ('reserved-currency.html', 'Reserved Currency'),
             ('copywriting-management.html', 'Copywriting Management'),
         ],
     },
@@ -136,3 +136,5 @@ for path in sorted(root.glob('*.html')):
         print(f'WARN: {path.name} replaced {n} nav blocks')
     path.write_text(content_new, encoding='utf-8')
 print('Updated nav on', len(list(root.glob('*.html'))), 'files')
+
+

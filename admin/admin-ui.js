@@ -7,7 +7,7 @@
     "adminAccountData",
     "adminDataDictionary",
     "adminJobConfig",
-    "adminKlineApiConfig",
+    "adminCurrencySettings",
     "adminOnlineUsers",
     "adminOperationLog",
     "adminOrgs",
@@ -44,7 +44,7 @@
     });
     removeMatching("adminDataDictionary", (row) => ["D1", "D2", "D3", "D4", "D5"].includes(row.id));
     removeMatching("adminJobConfig", (row) => /^J([1-9]|10)$/.test(row.id || ""));
-    removeMatching("adminKlineApiConfig", (row) => ["K1", "K2", "K3"].includes(row.id));
+    removeMatching("adminCurrencySettings", (row) => ["K1", "K2", "K3"].includes(row.id));
     removeMatching("adminOnlineUsers", (row) => /^OU[1-6]$/.test(row.id || ""));
     removeMatching("adminOperationLog", (row) => ["O1", "O2", "O3"].includes(row.id));
     removeMatching("adminOrgs", (row) => ["root", "sales", "ops"].includes(row.coding));
@@ -200,8 +200,8 @@
         account: user.username,
         name: user.username,
         network: "Local",
-        coin: tx.asset || "USDT",
-        address: "local-wallet",
+        currency: tx.asset || "USD",
+        address: "local-account",
         amount: tx.amount,
         time: tx.time,
         status: tx.status || "Pending"
@@ -305,10 +305,10 @@
     const today = new Date().toLocaleDateString();
     const userTransactions = users.flatMap((user) => user.transactions || []);
     const totalTopUp = userTransactions
-      .filter((tx) => tx.type === "Deposit" && (tx.asset || "USDT") === "USDT")
+      .filter((tx) => tx.type === "Deposit" && (tx.asset || "USD") === "USD")
       .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
     const topUpToday = userTransactions
-      .filter((tx) => tx.type === "Deposit" && (tx.asset || "USDT") === "USDT" && new Date(tx.time).toLocaleDateString() === today)
+      .filter((tx) => tx.type === "Deposit" && (tx.asset || "USD") === "USD" && new Date(tx.time).toLocaleDateString() === today)
       .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
     const newUsersToday = users.filter((user) => {
       const created = user.createdAt || user.created || user.transactions?.[user.transactions.length - 1]?.time;
@@ -417,10 +417,10 @@
         <td>${record.account}</td>
         <td>${record.name}</td>
         <td>${record.network}</td>
-        <td>${record.coin}</td>
+        <td>${record.currency}</td>
         ${isDeposit
           ? `<td>${record.address}</td><td>${money(record.amount)}</td><td>${record.detail || "Server"}</td><td>${record.time}</td><td>${record.status}</td>`
-          : `<td>${record.coin}</td><td>${record.address}</td><td>${money(record.amount)}</td><td>${record.time}</td>`}
+          : `<td>${record.currency}</td><td>${record.address}</td><td>${money(record.amount)}</td><td>${record.time}</td>`}
         <td><button class="row-action" data-action="view">View</button><button class="row-action" data-action="edit">Edit</button></td>
       </tr>
     `).join("");
@@ -485,7 +485,7 @@
       ["Primary certification", "primary-real-name.html"],
       ["Advanced Certification", "advanced-real-name.html"],
       ["Withdrawal Review", "withdrawal-records.html"],
-      ["Cycle contracts", "cycle-contracts-trades.html"],
+      ["Currency orders", "cycle-contracts-trades.html"],
       ["Recharge Review", "recharge-review.html"]
     ];
     $$(".admin-pill").forEach((button) => {
@@ -650,3 +650,5 @@
     init();
   }
 })();
+
+

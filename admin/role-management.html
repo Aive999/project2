@@ -19,7 +19,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
     <aside class="admin-sidebar">
       <div class="admin-brand">
         <div class="admin-logo">K</div>
-        <a href="admin.html" class="admin-title">Coinbase Backstage Management System</a>
+        <a href="admin.html" class="admin-title">Gemini Currency Backstage Management System</a>
       </div>
                                                                         <nav class="admin-menu">
         <details class="admin-menu-group" open>
@@ -37,7 +37,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
             <a href="online-users.html" class="admin-submenu-item">Online Users</a>
             <a href="login-log.html" class="admin-submenu-item">Login Log</a>
             <a href="operation-log.html" class="admin-submenu-item">Operation Log</a>
-            <a href="kline-api-config.html" class="admin-submenu-item">K-line API Configuration</a>
+            <a href="kline-api-config.html" class="admin-submenu-item">Currency Rate Management</a>
           </div>
         </details>
         <details class="admin-menu-group">
@@ -89,12 +89,12 @@ if(localStorage.getItem("adminLogin") !== "true"){
         </details>
         <details class="admin-menu-group">
           <summary class="admin-menu-item">
-            <a href="loan-management.html">Loan Management</a>
+            <a href="account-services.html">Account Services</a>
             <span class="menu-arrow"></span>
           </summary>
           <div class="admin-submenu">
-            <a href="loan-setup.html" class="admin-submenu-item">Loan Setup</a>
-            <a href="loan-review.html" class="admin-submenu-item">Loan Review</a>
+            <a href="service-setup.html" class="admin-submenu-item">Service Setup</a>
+            <a href="service-review.html" class="admin-submenu-item">Service Review</a>
           </div>
         </details>
         <details class="admin-menu-group">
@@ -103,11 +103,11 @@ if(localStorage.getItem("adminLogin") !== "true"){
             <span class="menu-arrow"></span>
           </summary>
           <div class="admin-submenu">
-            <a href="seconds-contracts.html" class="admin-submenu-item">Seconds Contract</a>
-            <a href="new-spot-points.html" class="admin-submenu-item">New Spot Points</a>
-            <a href="spot-asset-list.html" class="admin-submenu-item">List of Spot Assets</a>
-            <a href="contract-asset-list.html" class="admin-submenu-item">List of Contract Assets</a>
-            <a href="locked-mining-assets.html" class="admin-submenu-item">Locked Mining Assets</a>
+            <a href="seconds-contracts.html" class="admin-submenu-item">Timed Exchange</a>
+            <a href="new-currency-points.html" class="admin-submenu-item">New Currency Points</a>
+            <a href="currency-asset-list.html" class="admin-submenu-item">Currency Asset List</a>
+            <a href="contract-asset-list.html" class="admin-submenu-item">Order Asset List</a>
+            <a href="reserved-currency-assets.html" class="admin-submenu-item">Reserved Currency Assets</a>
           </div>
         </details>
         <details class="admin-menu-group">
@@ -116,9 +116,9 @@ if(localStorage.getItem("adminLogin") !== "true"){
             <span class="menu-arrow"></span>
           </summary>
           <div class="admin-submenu">
-            <a href="spot-flow-records.html" class="admin-submenu-item">Spot Flow Records</a>
-            <a href="spot-exchange-trades.html" class="admin-submenu-item">Spot Exchange Trades</a>
-            <a href="cycle-contracts-trades.html" class="admin-submenu-item">Cycle Contracts Trades</a>
+            <a href="currency-flow-records.html" class="admin-submenu-item">Currency Flow Records</a>
+            <a href="currency-exchange-records.html" class="admin-submenu-item">Currency Exchange Records</a>
+            <a href="cycle-contracts-trades.html" class="admin-submenu-item">Currency Order Records</a>
           </div>
         </details>
         <details class="admin-menu-group">
@@ -127,7 +127,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
             <span class="menu-arrow"></span>
           </summary>
           <div class="admin-submenu">
-            <a href="locked-mining.html" class="admin-submenu-item">Locked Mining</a>
+            <a href="reserved-currency.html" class="admin-submenu-item">Reserved Currency</a>
             <a href="copywriting-management.html" class="admin-submenu-item">Copywriting Management</a>
           </div>
         </details>
@@ -154,7 +154,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
           <button class="admin-pill">Primary certification audit (0)</button>
           <button class="admin-pill">Advanced Certification Audit (0)</button>
           <button class="admin-pill">Withdrawal Review (0)</button>
-          <button class="admin-pill">Cycle contracts (0)</button>
+          <button class="admin-pill">Currency orders (0)</button>
           <button class="admin-pill">Recharge Review (0)</button>
         </div>
         <div class="admin-profile">
@@ -398,4 +398,8 @@ if(localStorage.getItem("adminLogin") !== "true"){
   <script src="admin-ui.js?v=mysql-20260618"></script>
 </body>
 </html>
+
+
+
+
 

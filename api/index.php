@@ -6,8 +6,35 @@ header('Content-Type: application/json; charset=utf-8');
 
 require __DIR__ . '/db.php';
 
-const ASSETS = ['USDT', 'BTC', 'ETH', 'EUR', 'JPY'];
-const PRICES = ['BTC' => 63670.71, 'ETH' => 3420.35, 'EUR' => 1.0845, 'JPY' => 147.82];
+const ASSETS = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'NZD', 'SGD', 'HKD', 'CNY', 'PHP'];
+const PRICES = [
+    'USD' => 1.0000,
+    'EUR' => 1.0845,
+    'GBP' => 1.2783,
+    'JPY' => 0.00676,
+    'AUD' => 0.7082,
+    'CAD' => 0.7424,
+    'CHF' => 1.0940,
+    'NZD' => 0.6308,
+    'SGD' => 0.7395,
+    'HKD' => 0.1278,
+    'CNY' => 0.1382,
+    'PHP' => 0.0171,
+];
+const CURRENCY_NAMES = [
+    'USD' => 'US Dollar',
+    'EUR' => 'Euro',
+    'GBP' => 'British Pound',
+    'JPY' => 'Japanese Yen',
+    'AUD' => 'Australian Dollar',
+    'CAD' => 'Canadian Dollar',
+    'CHF' => 'Swiss Franc',
+    'NZD' => 'New Zealand Dollar',
+    'SGD' => 'Singapore Dollar',
+    'HKD' => 'Hong Kong Dollar',
+    'CNY' => 'Chinese Yuan',
+    'PHP' => 'Philippine Peso',
+];
 
 function input(): array
 {
@@ -57,6 +84,40 @@ function ensure_balances(int $userId): void
     }
 }
 
+function currency_rows(): array
+{
+    $stmt = db()->prepare('SELECT value_json FROM admin_storage WHERE storage_key = ? LIMIT 1');
+    $stmt->execute(['adminCurrencySettings']);
+    $stored = json_decode((string)$stmt->fetchColumn(), true);
+    if (is_array($stored) && $stored) {
+        return array_values(array_filter($stored, fn($row) => is_array($row) && !empty($row['code'])));
+    }
+
+    $rows = [];
+    foreach (ASSETS as $index => $code) {
+        $rows[] = [
+            'code' => $code,
+            'name' => CURRENCY_NAMES[$code] ?? $code,
+            'rate' => PRICES[$code] ?? 1,
+            'change' => round(sin(($index + 1) * 1.7) * 0.38, 2),
+            'visible' => true,
+        ];
+    }
+    return $rows;
+}
+
+function rates_map(): array
+{
+    $rates = [];
+    foreach (currency_rows() as $row) {
+        $code = strtoupper((string)($row['code'] ?? ''));
+        if ($code !== '') {
+            $rates[$code] = (float)($row['rate'] ?? 1);
+        }
+    }
+    return $rates + PRICES;
+}
+
 function user_by_username(string $username): ?array
 {
     $stmt = db()->prepare('SELECT * FROM users WHERE username = ? LIMIT 1');
@@ -69,7 +130,7 @@ function public_user(array $user): array
 {
     ensure_balances((int)$user['id']);
 
-    $balanceStmt = db()->prepare('SELECT asset, amount FROM balances WHERE user_id = ? ORDER BY FIELD(asset, "USDT", "BTC", "ETH", "EUR", "JPY")');
+    $balanceStmt = db()->prepare('SELECT asset, amount FROM balances WHERE user_id = ? ORDER BY FIELD(asset, "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "NZD", "SGD", "HKD", "CNY", "PHP")');
     $balanceStmt->execute([(int)$user['id']]);
     $balances = array_fill_keys(ASSETS, 0);
     foreach ($balanceStmt as $row) {
@@ -166,7 +227,7 @@ function import_public_user(array $incoming): void
         add_transaction(
             $userId,
             (string)($tx['type'] ?? 'Import'),
-            (string)($tx['asset'] ?? 'USDT'),
+            (string)($tx['asset'] ?? 'USD'),
             (float)($tx['amount'] ?? 0),
             (string)($tx['status'] ?? 'Completed'),
             (string)($tx['detail'] ?? 'Imported from browser')
@@ -176,8 +237,8 @@ function import_public_user(array $incoming): void
 
 function portfolio_value(array $balances): float
 {
-    $total = (float)($balances['USDT'] ?? 0);
-    foreach (PRICES as $asset => $price) {
+    $total = 0;
+    foreach (rates_map() as $asset => $price) {
         $total += (float)($balances[$asset] ?? 0) * $price;
     }
     return $total;
@@ -200,6 +261,37 @@ function clean_admin_storage_value(string $key, mixed $value): mixed
         return !in_array($row['id'] ?? '', $dummyIds, true)
             && !in_array($row['name'] ?? '', $dummyNames, true);
     }));
+}
+
+function admin_adjust_usd(string $accountId, float $amount, string $detail): array
+{
+    require_admin();
+    $username = preg_replace('/^USER-/', '', $accountId);
+    if ($username === '') fail('User is required.');
+    if ($amount == 0.0) fail('Enter a valid amount.');
+    $user = user_by_username($username);
+    if (!$user) fail('User not found.', 404);
+    if ($amount < 0 && balance_amount((int)$user['id'], 'USD') < abs($amount)) {
+        fail('Insufficient USD balance.');
+    }
+
+    db()->beginTransaction();
+    change_balance((int)$user['id'], 'USD', $amount);
+    add_transaction((int)$user['id'], 'Admin Adjustment', 'USD', abs($amount), 'Completed', $detail);
+    db()->commit();
+
+    $updated = user_by_username($username);
+    return $updated ? public_user($updated) : [];
+}
+
+function admin_set_balance_status(string $accountId, string $status): void
+{
+    require_admin();
+    $username = preg_replace('/^USER-/', '', $accountId);
+    if ($username === '') fail('User is required.');
+    if (!in_array($status, ['Active', 'Frozen'], true)) fail('Invalid status.');
+    $stmt = db()->prepare('UPDATE users SET status = ? WHERE username = ?');
+    $stmt->execute([$status, $username]);
 }
 
 $data = input();
@@ -268,7 +360,7 @@ try {
     if ($action === 'wallet_action') {
         $user = require_user();
         $type = (string)($data['type'] ?? '');
-        $asset = (string)($data['asset'] ?? 'USDT');
+        $asset = (string)($data['asset'] ?? 'USD');
         $amount = (float)($data['amount'] ?? 0);
         if ($amount <= 0) fail('Enter a valid amount.');
 
@@ -281,10 +373,7 @@ try {
             change_balance((int)$user['id'], $asset, -$amount);
             add_transaction((int)$user['id'], 'Withdraw', $asset, $amount, 'Pending', 'Withdrawal request');
         } elseif ($type === 'Transfer') {
-            add_transaction((int)$user['id'], 'Transfer', $asset, $amount, 'Completed', 'Moved between wallets');
-        } elseif ($type === 'Loan') {
-            change_balance((int)$user['id'], 'USDT', $amount);
-            add_transaction((int)$user['id'], 'Loan', 'USDT', $amount, 'Approved', 'Credit line');
+            add_transaction((int)$user['id'], 'Transfer', $asset, $amount, 'Completed', 'Internal account movement');
         } else {
             fail('Unknown wallet action.');
         }
@@ -294,36 +383,34 @@ try {
 
     if ($action === 'trade') {
         $user = require_user();
-        $asset = (string)($data['asset'] ?? 'BTC');
+        $asset = (string)($data['asset'] ?? 'EUR');
         $side = (string)($data['side'] ?? 'Buy');
         $amount = (float)($data['amount'] ?? 0);
-        if (!isset(PRICES[$asset])) fail('Unsupported trading pair.');
-        if ($amount <= 0) fail('Enter a valid USDT amount.');
-        if (balance_amount((int)$user['id'], 'USDT') < $amount) fail('Not enough USDT.');
-        $units = $amount / PRICES[$asset];
+        $rates = rates_map();
+        if (!isset($rates[$asset])) fail('Unsupported currency pair.');
+        if ($amount <= 0) fail('Enter a valid USD amount.');
+        if (balance_amount((int)$user['id'], 'USD') < $amount) fail('Not enough USD.');
+        $units = $amount / $rates[$asset];
 
         db()->beginTransaction();
-        change_balance((int)$user['id'], 'USDT', -$amount);
-        if (stripos($side, 'short') === false) {
-            change_balance((int)$user['id'], $asset, $units);
-            add_transaction((int)$user['id'], $side, $asset, $units, 'Filled', $side . ' ' . $asset . '/USDT');
-        } else {
-            add_transaction((int)$user['id'], $side, $asset, $units, 'Open', $side . ' ' . $asset . '/USDT margin');
-        }
+        change_balance((int)$user['id'], 'USD', -$amount);
+        change_balance((int)$user['id'], $asset, $units);
+        add_transaction((int)$user['id'], 'Exchange Order', $asset, $units, 'Completed', $side . ' ' . $asset . '/USD');
         db()->commit();
         respond(['ok' => true, 'units' => $units, 'user' => public_user(user_by_username($user['username']))]);
     }
 
     if ($action === 'exchange') {
         $user = require_user();
-        $from = (string)($data['fromAsset'] ?? 'USDT');
-        $to = (string)($data['toAsset'] ?? 'BTC');
+        $from = (string)($data['fromAsset'] ?? 'USD');
+        $to = (string)($data['toAsset'] ?? 'EUR');
         $amount = (float)($data['amount'] ?? 0);
         if (!in_array($from, ASSETS, true) || !in_array($to, ASSETS, true)) fail('Unsupported asset.');
         if ($amount <= 0) fail('Enter a valid amount.');
         if (balance_amount((int)$user['id'], $from) < $amount) fail('Insufficient balance.');
-        $fromUsdt = $from === 'USDT' ? $amount : $amount * (PRICES[$from] ?? 1);
-        $received = $to === 'USDT' ? $fromUsdt : $fromUsdt / (PRICES[$to] ?? 1);
+        $rates = rates_map();
+        $fromUsd = $amount * ($rates[$from] ?? 1);
+        $received = $fromUsd / ($rates[$to] ?? 1);
 
         db()->beginTransaction();
         change_balance((int)$user['id'], $from, -$amount);
@@ -373,6 +460,39 @@ try {
         respond(['ok' => true, 'users' => $users]);
     }
 
+    if ($action === 'currencies') {
+        respond(['ok' => true, 'currencies' => currency_rows()]);
+    }
+
+    if ($action === 'admin_currencies') {
+        require_admin();
+        respond(['ok' => true, 'currencies' => currency_rows()]);
+    }
+
+    if ($action === 'admin_currency_save') {
+        require_admin();
+        $currencies = $data['currencies'] ?? [];
+        if (!is_array($currencies)) fail('Invalid currencies payload.');
+        $clean = [];
+        foreach ($currencies as $row) {
+            if (!is_array($row)) continue;
+            $code = strtoupper(trim((string)($row['code'] ?? '')));
+            if ($code === '' || !preg_match('/^[A-Z]{3}$/', $code)) continue;
+            $clean[] = [
+                'code' => $code,
+                'name' => trim((string)($row['name'] ?? $code)) ?: $code,
+                'rate' => max(0.000001, (float)($row['rate'] ?? 1)),
+                'change' => (float)($row['change'] ?? 0),
+                'visible' => ($row['visible'] ?? true) ? true : false,
+            ];
+        }
+        if (!$clean) fail('At least one currency is required.');
+        $stmt = db()->prepare('INSERT INTO admin_storage (storage_key, value_json) VALUES (?, ?)
+            ON DUPLICATE KEY UPDATE value_json = VALUES(value_json)');
+        $stmt->execute(['adminCurrencySettings', json_encode($clean)]);
+        respond(['ok' => true, 'currencies' => $clean]);
+    }
+
     if ($action === 'admin_stats') {
         require_admin();
         $requestedDate = trim((string)($data['date'] ?? date('Y-m-d')));
@@ -391,11 +511,11 @@ try {
         }
 
         $stmt = db()->prepare('SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = ? AND asset = ?');
-        $stmt->execute(['Deposit', 'USDT']);
+        $stmt->execute(['Deposit', 'USD']);
         $totalTopUp = (float)$stmt->fetchColumn();
 
         $stmt = db()->prepare('SELECT amount, created_at FROM transactions WHERE type = ? AND asset = ?');
-        $stmt->execute(['Deposit', 'USDT']);
+        $stmt->execute(['Deposit', 'USD']);
         $topUpToday = 0;
         foreach ($stmt as $row) {
             if (substr((string)$row['created_at'], 0, 10) === $requestedDate) {
@@ -465,8 +585,8 @@ try {
                 'account' => $row['username'],
                 'name' => $row['username'],
                 'network' => 'MySQL',
-                'coin' => $row['asset'],
-                'address' => 'server-wallet',
+                'currency' => $row['asset'],
+                'address' => 'customer-account',
                 'amount' => (float)$row['amount'],
                 'time' => $row['created_at'],
                 'status' => $row['status'],
@@ -500,49 +620,47 @@ try {
     }
 
     if ($action === 'admin_adjust') {
-        require_admin();
-        $username = preg_replace('/^USER-/', '', (string)($data['accountId'] ?? ''));
         $amount = (float)($data['amount'] ?? 0);
         $detail = (string)($data['detail'] ?? 'Admin adjustment');
-        $user = user_by_username($username);
-        if (!$user) fail('User not found.', 404);
-        db()->beginTransaction();
-        change_balance((int)$user['id'], 'USDT', $amount);
-        add_transaction((int)$user['id'], 'Admin Adjustment', 'USDT', abs($amount), 'Completed', $detail);
-        db()->commit();
-        respond(['ok' => true, 'user' => public_user(user_by_username($username))]);
+        $user = admin_adjust_usd((string)($data['accountId'] ?? ''), $amount, $detail);
+        respond(['ok' => true, 'user' => $user]);
     }
 
-    if ($action === 'admin_transfer') {
-        require_admin();
-        $fromUsername = preg_replace('/^USER-/', '', (string)($data['fromId'] ?? ''));
-        $toUsername = preg_replace('/^USER-/', '', (string)($data['toId'] ?? ''));
+    if ($action === 'admin_recharge') {
         $amount = (float)($data['amount'] ?? 0);
-        if ($fromUsername === '' || $toUsername === '' || $fromUsername === $toUsername) fail('Select different accounts.');
-        if ($amount <= 0) fail('Enter a valid amount.');
-        $fromUser = user_by_username($fromUsername);
-        $toUser = user_by_username($toUsername);
-        if (!$fromUser || !$toUser) fail('User not found.', 404);
-        if ($fromUser['status'] !== 'Active') fail('Source account is frozen.', 403);
-        if ($toUser['status'] !== 'Active') fail('Destination account is frozen.', 403);
-        if (balance_amount((int)$fromUser['id'], 'USDT') < $amount) fail('Insufficient balance.');
+        if ($amount <= 0) fail('Enter a valid recharge amount.');
+        $user = admin_adjust_usd(
+            (string)($data['accountId'] ?? ''),
+            $amount,
+            'Admin recharged ' . $amount . ' USD'
+        );
+        respond(['ok' => true, 'user' => $user]);
+    }
 
-        db()->beginTransaction();
-        change_balance((int)$fromUser['id'], 'USDT', -$amount);
-        change_balance((int)$toUser['id'], 'USDT', $amount);
-        add_transaction((int)$fromUser['id'], 'Admin Transfer', 'USDT', $amount, 'Completed', 'Admin transferred funds out');
-        add_transaction((int)$toUser['id'], 'Admin Transfer', 'USDT', $amount, 'Completed', 'Admin transferred funds in');
-        db()->commit();
-        respond(['ok' => true]);
+    if ($action === 'admin_reduce') {
+        $amount = (float)($data['amount'] ?? 0);
+        if ($amount <= 0) fail('Enter a valid reduction amount.');
+        $user = admin_adjust_usd(
+            (string)($data['accountId'] ?? ''),
+            -$amount,
+            'Admin reduced ' . $amount . ' USD'
+        );
+        respond(['ok' => true, 'user' => $user]);
     }
 
     if ($action === 'admin_status') {
-        require_admin();
-        $username = preg_replace('/^USER-/', '', (string)($data['accountId'] ?? ''));
         $status = (string)($data['status'] ?? 'Active');
-        if (!in_array($status, ['Active', 'Frozen'], true)) fail('Invalid status.');
-        $stmt = db()->prepare('UPDATE users SET status = ? WHERE username = ?');
-        $stmt->execute([$status, $username]);
+        admin_set_balance_status((string)($data['accountId'] ?? ''), $status);
+        respond(['ok' => true]);
+    }
+
+    if ($action === 'admin_freeze_balance') {
+        admin_set_balance_status((string)($data['accountId'] ?? ''), 'Frozen');
+        respond(['ok' => true]);
+    }
+
+    if ($action === 'admin_unfreeze_balance') {
+        admin_set_balance_status((string)($data['accountId'] ?? ''), 'Active');
         respond(['ok' => true]);
     }
 

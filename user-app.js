@@ -5,14 +5,63 @@ const DemoExchange = (() => {
   const API_URL = "api/index.php";
   let accountNotice = "";
   let authMode = "login";
-  let walletMode = "Exchange";
+  let walletMode = "Balances";
   let tradeHistoryMode = "Position order";
-  const prices = {
-    BTC: 63670.71,
-    ETH: 3420.35,
-    EUR: 1.0845,
-    JPY: 147.82
-  };
+  const CURRENCY_KEY = "demoCurrencySettings";
+  const defaultCurrencies = [
+    { code: "USD", name: "US Dollar", rate: 1.0000, change: 0.04, visible: true },
+    { code: "EUR", name: "Euro", rate: 1.0845, change: 0.12, visible: true },
+    { code: "GBP", name: "British Pound", rate: 1.2783, change: 0.09, visible: true },
+    { code: "JPY", name: "Japanese Yen", rate: 0.00676, change: -0.06, visible: true },
+    { code: "AUD", name: "Australian Dollar", rate: 0.7082, change: -0.08, visible: true },
+    { code: "CAD", name: "Canadian Dollar", rate: 0.7424, change: 0.05, visible: true },
+    { code: "CHF", name: "Swiss Franc", rate: 1.0940, change: 0.07, visible: true },
+    { code: "NZD", name: "New Zealand Dollar", rate: 0.6308, change: -0.04, visible: true },
+    { code: "SGD", name: "Singapore Dollar", rate: 0.7395, change: 0.03, visible: true },
+    { code: "HKD", name: "Hong Kong Dollar", rate: 0.1278, change: 0.01, visible: true },
+    { code: "CNY", name: "Chinese Yuan", rate: 0.1382, change: -0.03, visible: true },
+    { code: "PHP", name: "Philippine Peso", rate: 0.0171, change: 0.06, visible: true }
+  ];
+
+  function currencySettings() {
+    try {
+      const stored = JSON.parse(localStorage.getItem(CURRENCY_KEY) || "[]");
+      if (Array.isArray(stored) && stored.length) return stored;
+    } catch {}
+    return defaultCurrencies;
+  }
+
+  function priceMap() {
+    return Object.fromEntries(currencySettings().map((item) => [item.code, Number(item.rate) || 1]));
+  }
+
+  function visibleCurrencies() {
+    return currencySettings().filter((item) => item.visible !== false);
+  }
+
+  function fluctuationSeed(code, offset = 0) {
+    const now = Math.floor(Date.now() / 45000) + offset;
+    const codeValue = code.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    return Math.sin(now * 0.83 + codeValue * 1.37);
+  }
+
+  function floatingRate(currency, offset = 0) {
+    const base = Number(currency.rate) || 1;
+    const move = fluctuationSeed(currency.code, offset) * 0.0018;
+    return base * (1 + move);
+  }
+
+  function floatingChange(currency, offset = 0) {
+    const base = Number(currency.change) || 0;
+    return base + fluctuationSeed(currency.code, offset + 7) * 0.18;
+  }
+
+  function currencyOptions(exclude = "") {
+    return visibleCurrencies()
+      .filter((currency) => currency.code !== exclude)
+      .map((currency) => `<option value="${currency.code}">${currency.code} - ${currency.name}</option>`)
+      .join("");
+  }
 
   function readUsers() {
     return JSON.parse(localStorage.getItem(USERS_KEY) || "{}");
@@ -73,6 +122,17 @@ const DemoExchange = (() => {
     }
   }
 
+  async function syncCurrencies() {
+    try {
+      const data = await apiRequest("currencies");
+      if (Array.isArray(data.currencies) && data.currencies.length) {
+        localStorage.setItem(CURRENCY_KEY, JSON.stringify(data.currencies));
+      }
+    } catch {
+      // Static fallback currencies keep the interface usable before MySQL is configured.
+    }
+  }
+
   function ensureActiveAccount(user) {
     if (user?.status === "Frozen") {
       throw new Error("Your account is frozen. Please contact support.");
@@ -118,10 +178,11 @@ const DemoExchange = (() => {
     const user = users[username] || null;
     if (!user) return null;
 
+    user.balances = { ...Object.fromEntries(defaultCurrencies.map((currency) => [currency.code, 0])), ...(user.balances || {}) };
     const oldCreditIndex = user.transactions?.findIndex((tx) => tx.type === "Demo Credit" && tx.detail === "Starting demo balance") ?? -1;
     if (oldCreditIndex >= 0) {
       user.transactions.splice(oldCreditIndex, 1);
-      user.balances.USDT = Math.max(0, Number(user.balances.USDT || 0) - 10000);
+      user.balances.USD = Math.max(0, Number(user.balances.USD || 0) - 10000);
       users[username] = user;
       writeUsers(users);
     }
@@ -144,8 +205,8 @@ const DemoExchange = (() => {
 
   function coin(value) {
     return Number(value || 0).toLocaleString(undefined, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 8
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4
     });
   }
 
@@ -165,8 +226,8 @@ const DemoExchange = (() => {
 
   function portfolioValue(user) {
     if (!user) return 0;
+    const prices = priceMap();
     return Object.entries(user.balances).reduce((total, [asset, amount]) => {
-      if (asset === "USDT") return total + amount;
       return total + amount * (prices[asset] || 1);
     }, 0);
   }
@@ -205,21 +266,21 @@ const DemoExchange = (() => {
   function resetDemo() {
     const user = getUser();
     if (!user) return;
-    user.balances = { USDT: 0, BTC: 0, ETH: 0, EUR: 0, JPY: 0 };
+    user.balances = Object.fromEntries(defaultCurrencies.map((currency) => [currency.code, 0]));
     user.transactions = [];
     saveUser(user);
   }
 
-  async function trade(asset, side, usdtAmount) {
+  async function trade(asset, side, usdAmount) {
     const user = getUser();
     if (!user) throw new Error("Please register or log in first.");
     ensureActiveAccount(user);
 
-    const amount = Number(usdtAmount);
-    if (!amount || amount <= 0) throw new Error("Enter a valid USDT amount.");
-    if (user.balances.USDT < amount) throw new Error("Not enough USDT.");
+    const amount = Number(usdAmount);
+    if (!amount || amount <= 0) throw new Error("Enter a valid USD amount.");
+    if ((user.balances.USD || 0) < amount) throw new Error("Not enough USD.");
 
-    const units = amount / prices[asset];
+    const units = amount / (priceMap()[asset] || 1);
 
     try {
       const data = await apiRequest("trade", { asset, side, amount });
@@ -231,7 +292,7 @@ const DemoExchange = (() => {
     }
   }
 
-  async function walletAction(type, amount, asset = "USDT") {
+  async function walletAction(type, amount, asset = "USD") {
     const user = getUser();
     if (!user) throw new Error("Please register or log in first.");
     ensureActiveAccount(user);
@@ -507,12 +568,12 @@ const DemoExchange = (() => {
       </div>
       <div class="demo-copy">
         <strong>${user.username}</strong>
-        <span>Portfolio: ${money(portfolioValue(user))} USDT</span>
+        <span>Portfolio: ${money(portfolioValue(user))} USD</span>
       </div>
       <div class="demo-balances">
-        <span>USDT ${money(user.balances.USDT)}</span>
-        <span>BTC ${coin(user.balances.BTC)}</span>
-        <span>ETH ${coin(user.balances.ETH)}</span>
+        <span>USD ${money(user.balances.USD)}</span>
+        <span>EUR ${coin(user.balances.EUR)}</span>
+        <span>JPY ${coin(user.balances.JPY)}</span>
       </div>
       <div class="demo-actions">
         <button type="button" id="logoutDemo">Logout</button>
@@ -792,7 +853,7 @@ const DemoExchange = (() => {
     const status = document.querySelector(".status-card");
     if (!status) return;
     const user = getUser();
-    const available = user ? money(user.balances.USDT) : "0.00";
+    const available = user ? money(user.balances.USD) : "0.00";
     const frozen = user?.status === "Frozen";
 
     status.innerHTML = `
@@ -803,26 +864,25 @@ const DemoExchange = (() => {
         </div>
         <div class="trade-ticket-balance">
           <span>Available</span>
-          <strong>${available} USDT</strong>
+          <strong>${available} USD</strong>
         </div>
       </div>
       <form class="mock-trade-form" id="mockTradeForm">
         <label>Pair
           <select id="tradeAsset">
-            <option value="BTC">BTC/USDT</option>
-            <option value="ETH">ETH/USDT</option>
+            ${currencyOptions("USD").replaceAll(" - ", "/USD - ")}
           </select>
         </label>
         <label>Side
           <select id="tradeSide">
-            <option value="Buy">Buy/long</option>
-            <option value="Short">Buy/short</option>
+            <option value="Buy">Buy</option>
+            <option value="Sell">Sell</option>
           </select>
         </label>
-        <label>Amount USDT
+        <label>Amount USD
           <input id="tradeAmount" type="number" min="1" step="1" value="100">
         </label>
-        <button type="submit">Place Order</button>
+        <button type="submit">Place Exchange Order</button>
       </form>
       <div class="trade-result" id="tradeResult"></div>
       ${frozen ? '<div class="trade-result">Your account is frozen. Please contact support.</div>' : ''}
@@ -847,7 +907,7 @@ const DemoExchange = (() => {
           document.getElementById("tradeSide").value,
           document.getElementById("tradeAmount").value
         );
-        document.getElementById("tradeResult").textContent = `Filled ${coin(result.units)} ${document.getElementById("tradeAsset").value}.`;
+        document.getElementById("tradeResult").textContent = `Exchanged into ${coin(result.units)} ${document.getElementById("tradeAsset").value}.`;
         refresh();
       } catch (error) {
         document.getElementById("tradeResult").textContent = error.message;
@@ -870,8 +930,8 @@ const DemoExchange = (() => {
     if (!button) return;
     button.addEventListener("click", async () => {
       try {
-        await trade("BTC", "Leveraged Buy", 100);
-        refresh("Leveraged order opened.");
+        await trade("EUR", "Buy", 100);
+        refresh("Exchange order completed.");
       } catch (error) {
         refresh(error.message);
       }
@@ -910,15 +970,13 @@ const DemoExchange = (() => {
         const action = button.textContent.trim();
         try {
           if (action.includes("Withdraw")) {
-            await walletAction("Withdraw", prompt("Withdrawal amount", "100"), "USDT");
+            await walletAction("Withdraw", prompt("Withdrawal amount", "100"), "USD");
           } else if (action.includes("Deposit")) {
-            await walletAction("Deposit", prompt("Deposit amount", "500"), "USDT");
+            await walletAction("Deposit", prompt("Deposit amount", "500"), "USD");
           } else if (action.includes("Transfer")) {
-            await walletAction("Transfer", prompt("Transfer amount", "100"), "USDT");
+            await walletAction("Transfer", prompt("Transfer amount", "100"), "USD");
           } else if (action.includes("Exchange")) {
-            await exchange("USDT", "BTC", prompt("Convert USDT to BTC", "100"));
-          } else if (action.includes("Loan")) {
-            await walletAction("Loan", prompt("Loan amount", "1000"), "USDT");
+            await exchange("USD", "EUR", prompt("Convert USD to EUR", "100"));
           }
           refresh(`${action} transaction recorded.`);
         } catch (error) {
@@ -1046,7 +1104,7 @@ const DemoExchange = (() => {
 
   function renderWallet() {
     const user = getUser();
-    const value = walletMode === "Futures" ? 0 : portfolioValue(user);
+    const value = portfolioValue(user);
     document.querySelectorAll(".wallet-amount, .wallet-summary-value").forEach((node) => {
       node.textContent = money(value);
     });
@@ -1055,8 +1113,8 @@ const DemoExchange = (() => {
     });
     const status = document.querySelector(".wallet-status-message");
     if (status) status.textContent = user
-      ? (user.status === "Frozen" ? "Your account is frozen. Please contact support." : `${walletMode} wallet active.`)
-      : "Please register or log in to use the currency wallet.";
+      ? (user.status === "Frozen" ? "Your account is frozen. Please contact support." : `${walletMode} view active.`)
+      : "Please register or log in to use the currency account.";
     const ledgerLabel = document.querySelector(".ledger-header span");
     if (ledgerLabel) ledgerLabel.textContent = `${walletMode} records`;
     const ledger = document.getElementById("walletTransactions");
@@ -1065,16 +1123,17 @@ const DemoExchange = (() => {
     if (assets) {
       const query = document.querySelector(".search-row input")?.value.trim().toLowerCase() || "";
       const hideSmall = document.querySelector(".checkbox-row input")?.checked;
-      const balances = user?.balances || { USDT: 0, BTC: 0, ETH: 0, EUR: 0, JPY: 0 };
+      const balances = user?.balances || Object.fromEntries(defaultCurrencies.map((currency) => [currency.code, 0]));
       const rows = Object.entries(balances)
         .filter(([asset, amount]) => (!query || asset.toLowerCase().includes(query)) && (!hideSmall || Number(amount) > 0))
         .map(([asset, amount]) => {
-          const value = asset === "USDT" ? amount : amount * (prices[asset] || 1);
+          const currency = currencySettings().find((item) => item.code === asset);
+          const value = amount * (priceMap()[asset] || 1);
           return `
             <div class="asset-row">
               <div>
                 <strong>${asset}</strong>
-                <span>${asset === "USDT" ? "Tether USD" : "Currency balance"}</span>
+                <span>${currency?.name || "Currency balance"}</span>
               </div>
               <div>
                 <strong>${coin(amount)}</strong>
@@ -1088,13 +1147,87 @@ const DemoExchange = (() => {
     applyWalletStyles();
   }
 
+  function formatRate(value) {
+    const numeric = Number(value) || 0;
+    if (numeric >= 100) return numeric.toFixed(2);
+    if (numeric >= 1) return numeric.toFixed(4);
+    return numeric.toFixed(5);
+  }
+
+  function renderRateCards() {
+    const grid = document.querySelector(".rates-grid");
+    if (!grid) return;
+    grid.innerHTML = visibleCurrencies().slice(0, 6).map((currency, index) => {
+      const change = floatingChange(currency, index);
+      return `
+        <article class="rate-card">
+          <div class="rate-label">${currency.code}</div>
+          <div class="rate-value">${formatRate(floatingRate(currency, index))}</div>
+          <div class="rate-sub">${currency.name}</div>
+          <div class="rate-change ${change >= 0 ? "positive" : "negative"}">${change >= 0 ? "+" : ""}${change.toFixed(2)}%</div>
+        </article>
+      `;
+    }).join("");
+  }
+
+  function renderMarketRows() {
+    document.querySelectorAll(".market-list-card").forEach((card) => {
+      const header = card.querySelector(".market-list-header")?.outerHTML || '<div class="market-list-header"><span>Pair</span><span>Last Price</span><span>Change</span></div>';
+      const rows = visibleCurrencies()
+        .filter((currency) => currency.code !== "USD")
+        .map((currency, index) => {
+          const change = floatingChange(currency, index);
+          const volume = (Math.abs(fluctuationSeed(currency.code, index)) * 900000 + 12000).toLocaleString(undefined, { maximumFractionDigits: 3 });
+          return `
+            <div class="market-row">
+              <div class="market-pair"><span class="pair-icon" aria-hidden="true">&#128181;</span><div><div class="pair-name">${currency.code}/USD</div><div class="pair-sub">VOL ${volume}</div></div></div>
+              <div class="market-price">${formatRate(floatingRate(currency, index))}</div>
+              <div class="market-change ${change >= 0 ? "positive" : "negative"}">${change >= 0 ? "+" : ""}${change.toFixed(2)}%</div>
+            </div>
+          `;
+        }).join("");
+      card.innerHTML = header + rows;
+    });
+    filterMarketRows();
+  }
+
+  function renderTradeHeader() {
+    const eur = currencySettings().find((currency) => currency.code === "EUR") || defaultCurrencies[1];
+    const change = floatingChange(eur);
+    const symbol = document.querySelector(".symbol-label");
+    const sub = document.querySelector(".symbol-sub");
+    const price = document.querySelector(".trade-price");
+    const changeNode = document.querySelector(".trade-change");
+    const meta = document.querySelector(".trade-meta-row");
+    if (symbol) symbol.textContent = "EUR/USD";
+    if (sub) sub.textContent = "Currency Exchange";
+    if (price) price.textContent = formatRate(floatingRate(eur));
+    if (changeNode) {
+      changeNode.textContent = `${change >= 0 ? "+" : ""}${change.toFixed(2)}%`;
+      changeNode.classList.toggle("positive", change >= 0);
+      changeNode.classList.toggle("negative", change < 0);
+    }
+    if (meta) {
+      const current = floatingRate(eur);
+      meta.innerHTML = `<div>High ${formatRate(current * 1.002)}</div><div>Low ${formatRate(current * 0.998)}</div><div>24H ${(Math.abs(change) * 100000 + 18000).toFixed(2)}</div>`;
+    }
+  }
+
+  function renderDynamicMarkets() {
+    renderRateCards();
+    renderMarketRows();
+    renderTradeHeader();
+  }
+
   function refresh(message = "") {
     drawAccountPanel(message);
     renderWallet();
     renderTradeTransactions();
+    renderDynamicMarkets();
   }
 
   async function init() {
+    await syncCurrencies();
     await migrateLocalUsersToMysql();
     await syncCurrentUser();
     renderAccountPanel();
@@ -1105,6 +1238,8 @@ const DemoExchange = (() => {
     enhanceTradePage();
     enhanceOptionsPage();
     enhanceWalletPage();
+    renderDynamicMarkets();
+    setInterval(renderDynamicMarkets, 45000);
   }
 
   return { init };

@@ -73,3 +73,4 @@ if (togglePassword && passwordInput) {
         togglePassword.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
     });
 }
+
