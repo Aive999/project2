@@ -485,7 +485,7 @@
       ["Primary certification", "primary-real-name.html"],
       ["Advanced Certification", "advanced-real-name.html"],
       ["Withdrawal Review", "withdrawal-records.html"],
-      ["Currency orders", "cycle-contracts-trades.html"],
+      ["Currency orders", "currency-order-records.html"],
       ["Recharge Review", "recharge-review.html"]
     ];
     $$(".admin-pill").forEach((button) => {
@@ -650,5 +650,7 @@
     init();
   }
 })();
+
+
 
 

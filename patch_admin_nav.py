@@ -70,10 +70,10 @@ nav_groups = [
         'label': 'Asset Management',
         'href': 'asset-management.html',
         'children': [
-            ('seconds-contracts.html', 'Timed Exchange'),
+            ('timed-exchange.html', 'Timed Exchange'),
             ('new-currency-points.html', 'New Currency Points'),
             ('currency-asset-list.html', 'Currency Asset List'),
-            ('contract-asset-list.html', 'Order Asset List'),
+            ('order-asset-list.html', 'Order Asset List'),
             ('reserved-currency-assets.html', 'Reserved Currency Assets'),
         ],
     },
@@ -83,7 +83,7 @@ nav_groups = [
         'children': [
             ('currency-flow-records.html', 'Currency Flow Records'),
             ('currency-exchange-records.html', 'Currency Exchange Records'),
-            ('cycle-contracts-trades.html', 'Currency orders Trades'),
+            ('currency-order-records.html', 'Currency Order Records'),
         ],
     },
     {
@@ -136,5 +136,8 @@ for path in sorted(root.glob('*.html')):
         print(f'WARN: {path.name} replaced {n} nav blocks')
     path.write_text(content_new, encoding='utf-8')
 print('Updated nav on', len(list(root.glob('*.html'))), 'files')
+
+
+
 
 

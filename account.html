@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gemini Currency Account</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="account-header">
+      <div class="account-balance">
+        <div class="account-title">Total balance conversion (USD)</div>
+        <div class="account-amount">0</div>
+        <div class="account-usd">approx $0</div>
+      </div>
+      <div class="account-actions">
+        <button class="account-action"><span aria-hidden="true">&#11015;</span><span>Deposit</span></button>
+        <button class="account-action"><span aria-hidden="true">&#11014;</span><span>Withdraw</span></button>
+        <button class="account-action"><span aria-hidden="true">&#128177;</span><span>Exchange</span></button>
+      </div>
+    </header>
+
+    <main>
+      <section class="account-panel">
+        <div class="account-tabs">
+          <button class="account-tab active">Balances</button>
+          <button class="account-tab">Records</button>
+        </div>
+        <div class="account-summary">
+          <div class="account-summary-title">Account balance conversion (USD)</div>
+          <div class="account-summary-value">0</div>
+          <div class="account-summary-usd">approx $0</div>
+        </div>
+        <div class="account-status">
+          <div class="account-status-message">Login status expired, please log in again!</div>
+        </div>
+        <section class="exchange-panel" aria-label="Currency exchange">
+          <div class="exchange-grid">
+            <label>
+              <span>From</span>
+              <select id="exchangeFrom"></select>
+            </label>
+            <label>
+              <span>To</span>
+              <select id="exchangeTo"></select>
+            </label>
+            <label>
+              <span>Amount</span>
+              <input id="exchangeAmount" type="number" min="0" step="0.01" placeholder="100.00" inputmode="decimal" />
+            </label>
+            <button id="exchangeSubmit" type="button">Exchange</button>
+          </div>
+          <div class="exchange-quote" id="exchangeQuote"></div>
+        </section>
+        <div class="account-controls">
+          <label class="checkbox-row"><input type="checkbox" /> Hide Small Currency</label>
+          <div class="search-row">
+            <span class="search-icon" aria-hidden="true">&#128269;</span>
+            <input type="text" placeholder="search" aria-label="Search" />
+          </div>
+        </div>
+      </section>
+
+      <nav class="main-nav">
+        <a href="index.html" class="nav-item"><span aria-hidden="true">&#127968;</span><span>Home</span></a>
+        <a href="market.html" class="nav-item"><span aria-hidden="true">&#128200;</span><span>Market</span></a>
+        <a href="account.html" class="nav-item active"><span aria-hidden="true">&#128188;</span><span>Account</span></a>
+      </nav>
+    </main>
+  </div>
+  <script src="user-app.js?v=mysql-20260618"></script>
+</body>
+</html>
+

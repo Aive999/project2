@@ -357,7 +357,7 @@ try {
         respond(['ok' => true, 'user' => public_user($user)]);
     }
 
-    if ($action === 'wallet_action') {
+    if ($action === 'account_action') {
         $user = require_user();
         $type = (string)($data['type'] ?? '');
         $asset = (string)($data['asset'] ?? 'USD');
@@ -375,29 +375,10 @@ try {
         } elseif ($type === 'Transfer') {
             add_transaction((int)$user['id'], 'Transfer', $asset, $amount, 'Completed', 'Internal account movement');
         } else {
-            fail('Unknown wallet action.');
+            fail('Unknown account action.');
         }
         db()->commit();
         respond(['ok' => true, 'user' => public_user(user_by_username($user['username']))]);
-    }
-
-    if ($action === 'trade') {
-        $user = require_user();
-        $asset = (string)($data['asset'] ?? 'EUR');
-        $side = (string)($data['side'] ?? 'Buy');
-        $amount = (float)($data['amount'] ?? 0);
-        $rates = rates_map();
-        if (!isset($rates[$asset])) fail('Unsupported currency pair.');
-        if ($amount <= 0) fail('Enter a valid USD amount.');
-        if (balance_amount((int)$user['id'], 'USD') < $amount) fail('Not enough USD.');
-        $units = $amount / $rates[$asset];
-
-        db()->beginTransaction();
-        change_balance((int)$user['id'], 'USD', -$amount);
-        change_balance((int)$user['id'], $asset, $units);
-        add_transaction((int)$user['id'], 'Exchange Order', $asset, $units, 'Completed', $side . ' ' . $asset . '/USD');
-        db()->commit();
-        respond(['ok' => true, 'units' => $units, 'user' => public_user(user_by_username($user['username']))]);
     }
 
     if ($action === 'exchange') {
@@ -701,3 +682,4 @@ try {
     }
     fail($e->getMessage(), 500);
 }
+

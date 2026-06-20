@@ -11,7 +11,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Currency Rate Management</title>
+  <title>Timed Exchange</title>
   <link rel="stylesheet" href="../styles.css" />
 </head>
 <body>
@@ -21,9 +21,9 @@ if(localStorage.getItem("adminLogin") !== "true"){
         <div class="admin-logo">K</div>
         <a href="admin.html" class="admin-title">Gemini Currency Backstage Management System</a>
       </div>
-            <nav class="admin-menu">
-        <details class="admin-menu-group" open>
-          <summary class="admin-menu-item active">
+                                                <nav class="admin-menu">
+        <details class="admin-menu-group">
+          <summary class="admin-menu-item">
             <a href="admin.html">System Management</a>
             <span class="menu-arrow"></span>
           </summary>
@@ -37,7 +37,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
             <a href="online-users.html" class="admin-submenu-item">Online Users</a>
             <a href="login-log.html" class="admin-submenu-item">Login Log</a>
             <a href="operation-log.html" class="admin-submenu-item">Operation Log</a>
-            <a href="kline-api-config.html" class="admin-submenu-item active">Currency Rate Management</a>
+            <a href="currency-rate-management.html" class="admin-submenu-item">Currency Rate Management</a>
           </div>
         </details>
         <details class="admin-menu-group">
@@ -97,16 +97,16 @@ if(localStorage.getItem("adminLogin") !== "true"){
             <a href="service-review.html" class="admin-submenu-item">Service Review</a>
           </div>
         </details>
-        <details class="admin-menu-group">
-          <summary class="admin-menu-item">
+        <details class="admin-menu-group" open>
+          <summary class="admin-menu-item active">
             <a href="asset-management.html">Asset Management</a>
             <span class="menu-arrow"></span>
           </summary>
           <div class="admin-submenu">
-            <a href="seconds-contracts.html" class="admin-submenu-item">Timed Exchange</a>
+            <a href="timed-exchange.html" class="admin-submenu-item active">Timed Exchange</a>
             <a href="new-currency-points.html" class="admin-submenu-item">New Currency Points</a>
             <a href="currency-asset-list.html" class="admin-submenu-item">Currency Asset List</a>
-            <a href="contract-asset-list.html" class="admin-submenu-item">Order Asset List</a>
+            <a href="order-asset-list.html" class="admin-submenu-item">Order Asset List</a>
             <a href="reserved-currency-assets.html" class="admin-submenu-item">Reserved Currency Assets</a>
           </div>
         </details>
@@ -118,7 +118,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
           <div class="admin-submenu">
             <a href="currency-flow-records.html" class="admin-submenu-item">Currency Flow Records</a>
             <a href="currency-exchange-records.html" class="admin-submenu-item">Currency Exchange Records</a>
-            <a href="cycle-contracts-trades.html" class="admin-submenu-item">Currency Order Records</a>
+            <a href="currency-order-records.html" class="admin-submenu-item">Currency Order Records</a>
           </div>
         </details>
         <details class="admin-menu-group">
@@ -149,6 +149,14 @@ if(localStorage.getItem("adminLogin") !== "true"){
           <span class="search-icon">🔎</span>
           <input type="text" placeholder="Search Menu" aria-label="Search Menu" />
         </div>
+        <div class="admin-header-actions">
+          <button class="admin-pill">Start voice broadcast</button>
+          <button class="admin-pill">Primary certification audit (0)</button>
+          <button class="admin-pill">Advanced Certification Audit (0)</button>
+          <button class="admin-pill">Withdrawal Review (0)</button>
+          <button class="admin-pill">Currency orders (0)</button>
+          <button class="admin-pill">Recharge Review (0)</button>
+        </div>
         <div class="admin-profile">
           <button class="icon-button" onclick="changeLanguage()">
           中文
@@ -161,166 +169,22 @@ if(localStorage.getItem("adminLogin") !== "true"){
       </header>
       <div class="admin-page-header">
         <div>
-          <div class="admin-page-title">Currency Rate Management</div>
-          <div class="admin-breadcrumb">Home / System Management / Currency Rate Management</div>
+          <div class="admin-page-title">Timed Exchange</div>
+          <div class="admin-breadcrumb">Home / Asset Management / Timed Exchange</div>
         </div>
       </div>
-
       <main class="admin-dashboard admin-menu-management">
-        <section class="admin-panel">
-          <div class="panel-header"><div>Currency Rate Management</div></div>
-
-          <div id="currency-message" class="message-box" style="display:none"></div>
-          <div class="form-grid account-op-grid" style="margin-bottom:12px">
-            <label><span>Currency code</span><input id="currency-code" maxlength="3" placeholder="PHP" /></label>
-            <label><span>Name</span><input id="currency-name" placeholder="Philippine Peso" /></label>
-            <label><span>USD rate</span><input id="currency-rate" type="number" step="0.000001" placeholder="0.0171" /></label>
-          </div>
-          <div class="form-grid account-op-grid" style="margin-bottom:12px">
-            <label><span>Change %</span><input id="currency-change" type="number" step="0.01" placeholder="0.06" /></label>
-            <label><span>Display</span><select id="currency-visible"><option value="true">Visible</option><option value="false">Hidden</option></select></label>
-            <label><span>&nbsp;</span><button id="currency-add" class="primary-button" type="button">Add Currency</button></label>
-          </div>
-
-          <div style="background:#fff; padding:12px; border-radius:8px; border:1px solid #e5e7eb">
-            <div class="account-table-wrapper">
-              <table class="account-table" style="width:100%; border-collapse:collapse">
-                <thead>
-                  <tr>
-                    <th>Code</th>
-                    <th>Name</th>
-                    <th>USD Rate</th>
-                    <th>Change %</th>
-                    <th>Display</th>
-                    <th>Operation</th>
-                  </tr>
-                </thead>
-                <tbody id="currency-body"></tbody>
-              </table>
+        <div class="admin-layout-grid">
+          <section class="admin-panel">
+            <div class="panel-header">
+              <div>Timed Exchange</div>
             </div>
-          </div>
-        </section>
+            <p>Placeholder content for Timed Exchange.</p>
+          </section>
+        </div>
       </main>
     </div>
   </div>
-<script>
-  const CURRENCY_KEY = 'adminCurrencySettings';
-  let currencies = JSON.parse(localStorage.getItem(CURRENCY_KEY) || '[]');
-
-  function showCurrencyMessage(text, type = 'success') {
-    const box = document.getElementById('currency-message');
-    box.textContent = text;
-    box.className = `message-box ${type}`;
-    box.style.display = 'block';
-  }
-
-  async function adminApi(action, payload = {}) {
-    if (window.AdminStore?.api) return window.AdminStore.api(action, payload);
-    const response = await fetch('../api/index.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify({ action, ...payload })
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || data.ok === false) throw new Error(data.error || 'Server request failed.');
-    return data;
-  }
-
-  async function saveCurrencies() {
-    localStorage.setItem(CURRENCY_KEY, JSON.stringify(currencies));
-    try {
-      await adminApi('admin_currency_save', { currencies });
-      showCurrencyMessage('Currency settings saved.');
-    } catch (error) {
-      showCurrencyMessage(error.message || 'Saved locally. Backend unavailable.', 'error');
-    }
-  }
-
-  function renderCurrencies() {
-    const tbody = document.getElementById('currency-body');
-    tbody.innerHTML = currencies.map(item => `
-      <tr>
-        <td>${item.code}</td>
-        <td contenteditable="true" data-field="name" data-code="${item.code}">${item.name}</td>
-        <td contenteditable="true" data-field="rate" data-code="${item.code}">${Number(item.rate).toFixed(6)}</td>
-        <td contenteditable="true" data-field="change" data-code="${item.code}">${Number(item.change || 0).toFixed(2)}</td>
-        <td><select data-field="visible" data-code="${item.code}"><option value="true" ${item.visible !== false ? 'selected' : ''}>Visible</option><option value="false" ${item.visible === false ? 'selected' : ''}>Hidden</option></select></td>
-        <td>
-          <button class="secondary-button" onclick="saveCurrencies()">Save</button>
-          <button class="secondary-button" onclick="removeCurrency('${item.code}')">Delete</button>
-        </td>
-      </tr>
-    `).join('');
-  }
-
-  function removeCurrency(code) {
-    currencies = currencies.filter(item => item.code !== code);
-    saveCurrencies();
-    renderCurrencies();
-  }
-
-  function addCurrency() {
-    const code = document.getElementById('currency-code').value.trim().toUpperCase();
-    const name = document.getElementById('currency-name').value.trim();
-    const rate = Number(document.getElementById('currency-rate').value);
-    const change = Number(document.getElementById('currency-change').value || 0);
-    const visible = document.getElementById('currency-visible').value === 'true';
-    if (!/^[A-Z]{3}$/.test(code) || !name || !rate || rate <= 0) {
-      showCurrencyMessage('Enter a valid 3-letter code, name, and positive rate.', 'error');
-      return;
-    }
-    currencies = currencies.filter(item => item.code !== code).concat({ code, name, rate, change, visible });
-    saveCurrencies();
-    renderCurrencies();
-  }
-
-  async function loadCurrencies() {
-    try {
-      const data = await adminApi('admin_currencies');
-      currencies = data.currencies || currencies;
-      localStorage.setItem(CURRENCY_KEY, JSON.stringify(currencies));
-    } catch {
-      if (!currencies.length) {
-        currencies = [
-          { code: 'USD', name: 'US Dollar', rate: 1, change: 0.04, visible: true },
-          { code: 'EUR', name: 'Euro', rate: 1.0845, change: 0.12, visible: true },
-          { code: 'GBP', name: 'British Pound', rate: 1.2783, change: 0.09, visible: true },
-          { code: 'JPY', name: 'Japanese Yen', rate: 0.00676, change: -0.06, visible: true },
-          { code: 'AUD', name: 'Australian Dollar', rate: 0.7082, change: -0.08, visible: true },
-          { code: 'CAD', name: 'Canadian Dollar', rate: 0.7424, change: 0.05, visible: true },
-          { code: 'CHF', name: 'Swiss Franc', rate: 1.094, change: 0.07, visible: true },
-          { code: 'NZD', name: 'New Zealand Dollar', rate: 0.6308, change: -0.04, visible: true },
-          { code: 'SGD', name: 'Singapore Dollar', rate: 0.7395, change: 0.03, visible: true },
-          { code: 'HKD', name: 'Hong Kong Dollar', rate: 0.1278, change: 0.01, visible: true },
-          { code: 'CNY', name: 'Chinese Yuan', rate: 0.1382, change: -0.03, visible: true },
-          { code: 'PHP', name: 'Philippine Peso', rate: 0.0171, change: 0.06, visible: true }
-        ];
-      }
-    }
-    renderCurrencies();
-  }
-
-  document.getElementById('currency-add').addEventListener('click', addCurrency);
-  document.getElementById('currency-body').addEventListener('input', event => {
-    const cell = event.target.closest('[data-field]');
-    if (!cell) return;
-    const row = currencies.find(item => item.code === cell.dataset.code);
-    if (!row) return;
-    row[cell.dataset.field] = cell.dataset.field === 'name' ? cell.textContent.trim() : Number(cell.textContent.trim() || 0);
-    localStorage.setItem(CURRENCY_KEY, JSON.stringify(currencies));
-  });
-  document.getElementById('currency-body').addEventListener('change', event => {
-    const select = event.target.closest('select[data-field="visible"]');
-    if (!select) return;
-    const row = currencies.find(item => item.code === select.dataset.code);
-    if (!row) return;
-    row.visible = select.value === 'true';
-    saveCurrencies();
-  });
-
-  loadCurrencies();
-</script>
 <div id="google_translate_element" style="display:none;"></div>
 
 <script>
@@ -381,6 +245,8 @@ if(localStorage.getItem("adminLogin") !== "true"){
   <script src="admin-ui.js?v=mysql-20260618"></script>
 </body>
 </html>
+
+
 
 
 

@@ -5,8 +5,7 @@ const DemoExchange = (() => {
   const API_URL = "api/index.php";
   let accountNotice = "";
   let authMode = "login";
-  let walletMode = "Balances";
-  let tradeHistoryMode = "Position order";
+  let accountMode = "Balances";
   const CURRENCY_KEY = "demoCurrencySettings";
   const defaultCurrencies = [
     { code: "USD", name: "US Dollar", rate: 1.0000, change: 0.04, visible: true },
@@ -39,6 +38,12 @@ const DemoExchange = (() => {
     return currencySettings().filter((item) => item.visible !== false);
   }
 
+  function currencyOptions(selected = "") {
+    return visibleCurrencies()
+      .map((currency) => `<option value="${currency.code}" ${currency.code === selected ? "selected" : ""}>${currency.code} - ${currency.name}</option>`)
+      .join("");
+  }
+
   function fluctuationSeed(code, offset = 0) {
     const now = Math.floor(Date.now() / 45000) + offset;
     const codeValue = code.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
@@ -56,12 +61,6 @@ const DemoExchange = (() => {
     return base + fluctuationSeed(currency.code, offset + 7) * 0.18;
   }
 
-  function currencyOptions(exclude = "") {
-    return visibleCurrencies()
-      .filter((currency) => currency.code !== exclude)
-      .map((currency) => `<option value="${currency.code}">${currency.code} - ${currency.name}</option>`)
-      .join("");
-  }
 
   function readUsers() {
     return JSON.parse(localStorage.getItem(USERS_KEY) || "{}");
@@ -271,28 +270,7 @@ const DemoExchange = (() => {
     saveUser(user);
   }
 
-  async function trade(asset, side, usdAmount) {
-    const user = getUser();
-    if (!user) throw new Error("Please register or log in first.");
-    ensureActiveAccount(user);
-
-    const amount = Number(usdAmount);
-    if (!amount || amount <= 0) throw new Error("Enter a valid USD amount.");
-    if ((user.balances.USD || 0) < amount) throw new Error("Not enough USD.");
-
-    const units = amount / (priceMap()[asset] || 1);
-
-    try {
-      const data = await apiRequest("trade", { asset, side, amount });
-      cacheServerUser(data.user);
-      return { user: data.user, units: data.units };
-    } catch (error) {
-      if (backendUnavailable(error)) throw new Error("Cannot connect to MySQL. Trade was not saved.");
-      throw error;
-    }
-  }
-
-  async function walletAction(type, amount, asset = "USD") {
+  async function accountAction(type, amount, asset = "USD") {
     const user = getUser();
     if (!user) throw new Error("Please register or log in first.");
     ensureActiveAccount(user);
@@ -300,7 +278,7 @@ const DemoExchange = (() => {
     if (!value || value <= 0) throw new Error("Enter a valid amount.");
 
     try {
-      const data = await apiRequest("wallet_action", { type, amount: value, asset });
+      const data = await apiRequest("account_action", { type, amount: value, asset });
       cacheServerUser(data.user);
       return;
     } catch (error) {
@@ -325,6 +303,13 @@ const DemoExchange = (() => {
       if (backendUnavailable(error)) throw new Error("Cannot connect to MySQL. Exchange was not saved.");
       throw error;
     }
+  }
+
+  function exchangeEstimate(fromAsset, toAsset, amount) {
+    const rates = priceMap();
+    const value = Number(amount || 0);
+    if (!fromAsset || !toAsset || fromAsset === toAsset || !value || value <= 0) return 0;
+    return (value * (rates[fromAsset] || 1)) / (rates[toAsset] || 1);
   }
 
   function transactionRows(user, mode = "all") {
@@ -672,109 +657,10 @@ const DemoExchange = (() => {
     });
   }
 
-  function applyTradeTicketStyles() {
-    const ticket = document.querySelector(".status-card");
-    if (!ticket) return;
-
-    Object.assign(ticket.style, {
-      display: "grid",
-      gap: "14px",
-      padding: "18px",
-      borderRadius: "22px",
-      background: "rgba(8, 14, 31, 0.94)",
-      border: "1px solid rgba(148, 163, 184, 0.14)",
-      color: "#e2e8f0"
-    });
-
-    document.querySelectorAll(".trade-ticket-header").forEach((header) => {
-      Object.assign(header.style, {
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "space-between",
-        gap: "16px",
-        paddingBottom: "14px",
-        borderBottom: "1px solid rgba(148, 163, 184, 0.14)"
-      });
-    });
-
-    document.querySelectorAll(".mock-trade-form").forEach((form) => {
-      Object.assign(form.style, {
-        display: "grid",
-        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-        gap: "12px",
-        padding: "14px",
-        borderRadius: "18px",
-        background: "rgba(15, 23, 42, 0.82)",
-        border: "1px solid rgba(148, 163, 184, 0.12)"
-      });
-    });
-
-    document.querySelectorAll(".mock-trade-form label").forEach((label) => {
-      Object.assign(label.style, {
-        display: "grid",
-        gap: "6px",
-        color: "#9fb3d1",
-        fontSize: "0.9rem"
-      });
-    });
-
-    document.querySelectorAll(".mock-trade-form input, .mock-trade-form select").forEach((control) => {
-      Object.assign(control.style, {
-        width: "100%",
-        height: "48px",
-        minWidth: "0",
-        padding: "0 14px",
-        borderRadius: "14px",
-        border: "1px solid rgba(148, 163, 184, 0.24)",
-        background: "#111827",
-        color: "#f8fafc",
-        outline: "none",
-        boxSizing: "border-box"
-      });
-    });
-
-    document.querySelectorAll(".mock-trade-form button").forEach((button) => {
-      Object.assign(button.style, {
-        gridColumn: "1 / -1",
-        minHeight: "50px",
-        padding: "0 16px",
-        border: "0",
-        borderRadius: "14px",
-        background: "linear-gradient(135deg, #14b8a6, #2563eb)",
-        color: "#ffffff",
-        fontWeight: "800",
-        cursor: "pointer"
-      });
-    });
-
-    document.querySelectorAll("#tradeTransactions .transaction-row").forEach((row) => {
-      Object.assign(row.style, {
-        display: "grid",
-        gridTemplateColumns: "minmax(0, 1.25fr) minmax(160px, 0.75fr)",
-        gap: "12px",
-        alignItems: "center",
-        padding: "14px",
-        borderRadius: "16px",
-        background: "rgba(15, 23, 42, 0.78)",
-        border: "1px solid rgba(148, 163, 184, 0.12)"
-      });
-    });
-
-    if (window.matchMedia("(max-width: 780px)").matches) {
-      document.querySelectorAll(".mock-trade-form, #tradeTransactions .transaction-row").forEach((node) => {
-        node.style.gridTemplateColumns = "1fr";
-      });
-    }
-  }
-
   function bindUserTabs() {
     const tabGroups = [
       ".market-selection",
-      ".market-toggle",
-      ".options-tabs",
-      ".trade-mode-card",
-      ".chart-toolbar",
-      ".trade-tab-row"
+      ".market-toggle"
     ];
 
     tabGroups.forEach((selector) => {
@@ -789,21 +675,8 @@ const DemoExchange = (() => {
               item.classList.toggle("active", isActive);
               item.setAttribute("aria-selected", isActive ? "true" : "false");
             });
-            if (button.closest(".trade-tab-row")) {
-              tradeHistoryMode = button.textContent.trim();
-              renderTradeTransactions();
-            }
-            if (button.closest(".trade-mode-card")) {
-              document.querySelector(".options-card .primary-button") && (document.querySelector(".options-card .primary-button").textContent = button.textContent.trim());
-            }
-            if (button.closest(".options-tabs")) {
-              renderOptionsState(button.textContent.trim());
-            }
             if (button.closest(".market-selection") || button.closest(".market-toggle")) {
               filterMarketRows();
-            }
-            if (button.closest(".chart-toolbar")) {
-              updateChartLabel(button.textContent.trim());
             }
           });
         });
@@ -829,154 +702,47 @@ const DemoExchange = (() => {
     filterMarketRows();
   }
 
-  function updateChartLabel(label) {
-    const marker = document.querySelector(".chart-placeholder span");
-    if (marker) marker.textContent = label === "Index" ? "Index" : "8.45k";
-  }
-
-  function renderOptionsState(mode = "Open") {
-    const order = document.querySelector(".order-card p");
-    if (!order) return;
-    order.textContent = mode === "Position" ? "No open positions" : "No active orders";
-  }
-
-  function bindOptionsControls() {
-    document.querySelectorAll(".risk-buttons button").forEach((button) => {
-      button.addEventListener("click", () => {
-        document.querySelectorAll(".risk-buttons button").forEach((item) => item.classList.toggle("active", item === button));
-      });
-    });
-    renderOptionsState();
-  }
-
-  function enhanceTradePage() {
-    const status = document.querySelector(".status-card");
-    if (!status) return;
-    const user = getUser();
-    const available = user ? money(user.balances.USD) : "0.00";
-    const frozen = user?.status === "Frozen";
-
-    status.innerHTML = `
-      <div class="trade-ticket-header">
-        <div>
-          <strong>Order ticket</strong>
-          <span>Currency order</span>
-        </div>
-        <div class="trade-ticket-balance">
-          <span>Available</span>
-          <strong>${available} USD</strong>
-        </div>
-      </div>
-      <form class="mock-trade-form" id="mockTradeForm">
-        <label>Pair
-          <select id="tradeAsset">
-            ${currencyOptions("USD").replaceAll(" - ", "/USD - ")}
-          </select>
-        </label>
-        <label>Side
-          <select id="tradeSide">
-            <option value="Buy">Buy</option>
-            <option value="Sell">Sell</option>
-          </select>
-        </label>
-        <label>Amount USD
-          <input id="tradeAmount" type="number" min="1" step="1" value="100">
-        </label>
-        <button type="submit">Place Exchange Order</button>
-      </form>
-      <div class="trade-result" id="tradeResult"></div>
-      ${frozen ? '<div class="trade-result">Your account is frozen. Please contact support.</div>' : ''}
-      <div class="transaction-list" id="tradeTransactions"></div>
-    `;
-    applyTradeTicketStyles();
-
-    document.querySelector(".trade-button.buy")?.addEventListener("click", () => {
-      document.getElementById("tradeSide").value = "Buy";
-      document.getElementById("tradeAmount").focus();
-    });
-    document.querySelector(".trade-button.sell")?.addEventListener("click", () => {
-      document.getElementById("tradeSide").value = "Short";
-      document.getElementById("tradeAmount").focus();
-    });
-
-    document.getElementById("mockTradeForm").addEventListener("submit", async (event) => {
-      event.preventDefault();
-      try {
-        const result = await trade(
-          document.getElementById("tradeAsset").value,
-          document.getElementById("tradeSide").value,
-          document.getElementById("tradeAmount").value
-        );
-        document.getElementById("tradeResult").textContent = `Exchanged into ${coin(result.units)} ${document.getElementById("tradeAsset").value}.`;
-        refresh();
-      } catch (error) {
-        document.getElementById("tradeResult").textContent = error.message;
-      }
-    });
-
-    renderTradeTransactions();
-  }
-
-  function renderTradeTransactions() {
-    const list = document.getElementById("tradeTransactions");
-    if (list) {
-      list.innerHTML = transactionRows(getUser(), tradeHistoryMode);
-      applyTradeTicketStyles();
-    }
-  }
-
-  function enhanceOptionsPage() {
-    const button = document.querySelector(".options-card .primary-button");
-    if (!button) return;
-    button.addEventListener("click", async () => {
-      try {
-        await trade("EUR", "Buy", 100);
-        refresh("Exchange order completed.");
-      } catch (error) {
-        refresh(error.message);
-      }
-    });
-  }
-
-  function enhanceWalletPage() {
-    const header = document.querySelector(".wallet-header");
+  function enhanceAccountPage() {
+    const header = document.querySelector(".account-header");
     if (!header) return;
 
-    document.querySelectorAll(".wallet-tab").forEach((tab) => {
+    document.querySelectorAll(".account-tab").forEach((tab) => {
       tab.addEventListener("click", () => {
-        walletMode = tab.textContent.trim();
-        document.querySelectorAll(".wallet-tab").forEach((item) => {
+        accountMode = tab.textContent.trim();
+        document.querySelectorAll(".account-tab").forEach((item) => {
           item.classList.toggle("active", item === tab);
         });
-        renderWallet();
+        renderAccount();
       });
     });
 
-    const panel = document.querySelector(".wallet-panel");
-    const controls = document.querySelector(".wallet-controls");
-    controls?.insertAdjacentHTML("afterend", '<section class="wallet-assets" id="walletAssets"></section>');
+    const panel = document.querySelector(".account-panel");
+    const controls = document.querySelector(".account-controls");
+    controls?.insertAdjacentHTML("afterend", '<section class="account-assets" id="accountAssets"></section>');
     panel?.insertAdjacentHTML("beforeend", `
-      <section class="wallet-ledger">
+      <section class="account-ledger">
         <div class="ledger-header">
           <strong>Transaction History</strong>
           <span>Currency records</span>
         </div>
-        <div id="walletTransactions"></div>
+        <div id="accountTransactions"></div>
       </section>
     `);
 
-    document.querySelectorAll(".wallet-action").forEach((button) => {
+    document.querySelectorAll(".account-action").forEach((button) => {
       button.addEventListener("click", async () => {
         const action = button.textContent.trim();
         try {
           if (action.includes("Withdraw")) {
-            await walletAction("Withdraw", prompt("Withdrawal amount", "100"), "USD");
+            await accountAction("Withdraw", prompt("Withdrawal amount", "100"), "USD");
           } else if (action.includes("Deposit")) {
-            await walletAction("Deposit", prompt("Deposit amount", "500"), "USD");
+            await accountAction("Deposit", prompt("Deposit amount", "500"), "USD");
           } else if (action.includes("Transfer")) {
-            await walletAction("Transfer", prompt("Transfer amount", "100"), "USD");
+            await accountAction("Transfer", prompt("Transfer amount", "100"), "USD");
           } else if (action.includes("Exchange")) {
-            await exchange("USD", "EUR", prompt("Convert USD to EUR", "100"));
+            document.getElementById("exchangeAmount")?.focus();
+            renderExchangeQuote();
+            return;
           }
           refresh(`${action} transaction recorded.`);
         } catch (error) {
@@ -985,14 +751,62 @@ const DemoExchange = (() => {
       });
     });
 
-    document.querySelector(".checkbox-row input")?.addEventListener("change", renderWallet);
-    document.querySelector(".search-row input")?.addEventListener("input", renderWallet);
+    document.querySelector(".checkbox-row input")?.addEventListener("change", renderAccount);
+    document.querySelector(".search-row input")?.addEventListener("input", renderAccount);
+    document.getElementById("exchangeFrom")?.addEventListener("change", renderExchangeQuote);
+    document.getElementById("exchangeTo")?.addEventListener("change", renderExchangeQuote);
+    document.getElementById("exchangeAmount")?.addEventListener("input", renderExchangeQuote);
+    document.getElementById("exchangeSubmit")?.addEventListener("click", submitExchange);
 
-    renderWallet();
+    renderAccount();
   }
 
-  function applyWalletStyles() {
-    const panel = document.querySelector(".wallet-panel");
+  function renderExchangeControls() {
+    const fromSelect = document.getElementById("exchangeFrom");
+    const toSelect = document.getElementById("exchangeTo");
+    if (!fromSelect || !toSelect) return;
+    const fromValue = fromSelect.value || "USD";
+    const toValue = toSelect.value || "EUR";
+    fromSelect.innerHTML = currencyOptions(fromValue);
+    toSelect.innerHTML = currencyOptions(toValue === fromValue ? "EUR" : toValue);
+    if (fromSelect.value === toSelect.value) {
+      toSelect.value = visibleCurrencies().find((currency) => currency.code !== fromSelect.value)?.code || "";
+    }
+    renderExchangeQuote();
+  }
+
+  function renderExchangeQuote() {
+    const quote = document.getElementById("exchangeQuote");
+    const fromSelect = document.getElementById("exchangeFrom");
+    const toSelect = document.getElementById("exchangeTo");
+    const amountInput = document.getElementById("exchangeAmount");
+    if (!quote || !fromSelect || !toSelect || !amountInput) return;
+    const from = fromSelect.value;
+    const to = toSelect.value;
+    const amount = Number(amountInput.value || 0);
+    const estimate = exchangeEstimate(from, to, amount);
+    const rate = exchangeEstimate(from, to, 1);
+    quote.textContent = from === to
+      ? "Choose two different currencies."
+      : `Rate 1 ${from} = ${coin(rate)} ${to} · Estimated receive ${coin(estimate)} ${to}`;
+  }
+
+  async function submitExchange() {
+    const from = document.getElementById("exchangeFrom")?.value;
+    const to = document.getElementById("exchangeTo")?.value;
+    const amount = document.getElementById("exchangeAmount")?.value;
+    try {
+      if (!from || !to || from === to) throw new Error("Choose two different currencies.");
+      await exchange(from, to, amount);
+      document.getElementById("exchangeAmount").value = "";
+      refresh("Exchange completed.");
+    } catch (error) {
+      refresh(error.message);
+    }
+  }
+
+  function applyAccountStyles() {
+    const panel = document.querySelector(".account-panel");
     if (!panel) return;
 
     Object.assign(panel.style, {
@@ -1002,7 +816,7 @@ const DemoExchange = (() => {
       borderRadius: "24px"
     });
 
-    document.querySelectorAll(".wallet-tabs").forEach((tabs) => {
+    document.querySelectorAll(".account-tabs").forEach((tabs) => {
       Object.assign(tabs.style, {
         display: "inline-grid",
         gridTemplateColumns: "1fr 1fr",
@@ -1015,7 +829,7 @@ const DemoExchange = (() => {
       });
     });
 
-    document.querySelectorAll(".wallet-tab").forEach((tab) => {
+    document.querySelectorAll(".account-tab").forEach((tab) => {
       const active = tab.classList.contains("active");
       Object.assign(tab.style, {
         minHeight: "42px",
@@ -1028,7 +842,7 @@ const DemoExchange = (() => {
       });
     });
 
-    document.querySelectorAll(".wallet-status").forEach((status) => {
+    document.querySelectorAll(".account-status").forEach((status) => {
       Object.assign(status.style, {
         display: "flex",
         alignItems: "center",
@@ -1042,7 +856,7 @@ const DemoExchange = (() => {
       });
     });
 
-    document.querySelectorAll(".wallet-controls").forEach((controls) => {
+    document.querySelectorAll(".account-controls").forEach((controls) => {
       Object.assign(controls.style, {
         display: "grid",
         gridTemplateColumns: "auto minmax(220px, 1fr)",
@@ -1075,14 +889,14 @@ const DemoExchange = (() => {
       });
     });
 
-    document.querySelectorAll(".wallet-assets, #walletTransactions").forEach((list) => {
+    document.querySelectorAll(".account-assets, #accountTransactions").forEach((list) => {
       Object.assign(list.style, {
         display: "grid",
         gap: "10px"
       });
     });
 
-    document.querySelectorAll(".asset-row, #walletTransactions .transaction-row").forEach((row) => {
+    document.querySelectorAll(".asset-row, #accountTransactions .transaction-row").forEach((row) => {
       Object.assign(row.style, {
         display: "grid",
         gridTemplateColumns: "minmax(0, 1.25fr) minmax(150px, 0.75fr)",
@@ -1096,30 +910,30 @@ const DemoExchange = (() => {
     });
 
     if (window.matchMedia("(max-width: 700px)").matches) {
-      document.querySelectorAll(".wallet-controls, .asset-row, #walletTransactions .transaction-row").forEach((node) => {
+      document.querySelectorAll(".account-controls, .exchange-grid, .asset-row, #accountTransactions .transaction-row").forEach((node) => {
         node.style.gridTemplateColumns = "1fr";
       });
     }
   }
 
-  function renderWallet() {
+  function renderAccount() {
     const user = getUser();
     const value = portfolioValue(user);
-    document.querySelectorAll(".wallet-amount, .wallet-summary-value").forEach((node) => {
+    document.querySelectorAll(".account-amount, .account-summary-value").forEach((node) => {
       node.textContent = money(value);
     });
-    document.querySelectorAll(".wallet-usd, .wallet-summary-usd").forEach((node) => {
+    document.querySelectorAll(".account-usd, .account-summary-usd").forEach((node) => {
       node.textContent = `approx $${money(value)}`;
     });
-    const status = document.querySelector(".wallet-status-message");
+    const status = document.querySelector(".account-status-message");
     if (status) status.textContent = user
-      ? (user.status === "Frozen" ? "Your account is frozen. Please contact support." : `${walletMode} view active.`)
+      ? (user.status === "Frozen" ? "Your account is frozen. Please contact support." : `${accountMode} view active.`)
       : "Please register or log in to use the currency account.";
     const ledgerLabel = document.querySelector(".ledger-header span");
-    if (ledgerLabel) ledgerLabel.textContent = `${walletMode} records`;
-    const ledger = document.getElementById("walletTransactions");
+    if (ledgerLabel) ledgerLabel.textContent = `${accountMode} records`;
+    const ledger = document.getElementById("accountTransactions");
     if (ledger) ledger.innerHTML = transactionRows(user);
-    const assets = document.getElementById("walletAssets");
+    const assets = document.getElementById("accountAssets");
     if (assets) {
       const query = document.querySelector(".search-row input")?.value.trim().toLowerCase() || "";
       const hideSmall = document.querySelector(".checkbox-row input")?.checked;
@@ -1144,7 +958,8 @@ const DemoExchange = (() => {
         }).join("");
       assets.innerHTML = rows || '<div class="empty-state">No matching assets</div>';
     }
-    applyWalletStyles();
+    renderExchangeControls();
+    applyAccountStyles();
   }
 
   function formatRate(value) {
@@ -1191,38 +1006,14 @@ const DemoExchange = (() => {
     filterMarketRows();
   }
 
-  function renderTradeHeader() {
-    const eur = currencySettings().find((currency) => currency.code === "EUR") || defaultCurrencies[1];
-    const change = floatingChange(eur);
-    const symbol = document.querySelector(".symbol-label");
-    const sub = document.querySelector(".symbol-sub");
-    const price = document.querySelector(".trade-price");
-    const changeNode = document.querySelector(".trade-change");
-    const meta = document.querySelector(".trade-meta-row");
-    if (symbol) symbol.textContent = "EUR/USD";
-    if (sub) sub.textContent = "Currency Exchange";
-    if (price) price.textContent = formatRate(floatingRate(eur));
-    if (changeNode) {
-      changeNode.textContent = `${change >= 0 ? "+" : ""}${change.toFixed(2)}%`;
-      changeNode.classList.toggle("positive", change >= 0);
-      changeNode.classList.toggle("negative", change < 0);
-    }
-    if (meta) {
-      const current = floatingRate(eur);
-      meta.innerHTML = `<div>High ${formatRate(current * 1.002)}</div><div>Low ${formatRate(current * 0.998)}</div><div>24H ${(Math.abs(change) * 100000 + 18000).toFixed(2)}</div>`;
-    }
-  }
-
   function renderDynamicMarkets() {
     renderRateCards();
     renderMarketRows();
-    renderTradeHeader();
   }
 
   function refresh(message = "") {
     drawAccountPanel(message);
-    renderWallet();
-    renderTradeTransactions();
+    renderAccount();
     renderDynamicMarkets();
   }
 
@@ -1234,10 +1025,7 @@ const DemoExchange = (() => {
     bindAccountButtons();
     bindUserTabs();
     bindMarketSearch();
-    bindOptionsControls();
-    enhanceTradePage();
-    enhanceOptionsPage();
-    enhanceWalletPage();
+    enhanceAccountPage();
     renderDynamicMarkets();
     setInterval(renderDynamicMarkets, 45000);
   }
@@ -1246,3 +1034,4 @@ const DemoExchange = (() => {
 })();
 
 document.addEventListener("DOMContentLoaded", DemoExchange.init);
+

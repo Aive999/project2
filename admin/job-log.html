@@ -37,7 +37,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
             <a href="online-users.html" class="admin-submenu-item">Online Users</a>
             <a href="login-log.html" class="admin-submenu-item">Login Log</a>
             <a href="operation-log.html" class="admin-submenu-item">Operation Log</a>
-            <a href="kline-api-config.html" class="admin-submenu-item">Currency Rate Management</a>
+            <a href="currency-rate-management.html" class="admin-submenu-item">Currency Rate Management</a>
           </div>
         </details>
         <details class="admin-menu-group">
@@ -103,10 +103,10 @@ if(localStorage.getItem("adminLogin") !== "true"){
             <span class="menu-arrow"></span>
           </summary>
           <div class="admin-submenu">
-            <a href="seconds-contracts.html" class="admin-submenu-item">Timed Exchange</a>
+            <a href="timed-exchange.html" class="admin-submenu-item">Timed Exchange</a>
             <a href="new-currency-points.html" class="admin-submenu-item">New Currency Points</a>
             <a href="currency-asset-list.html" class="admin-submenu-item">Currency Asset List</a>
-            <a href="contract-asset-list.html" class="admin-submenu-item">Order Asset List</a>
+            <a href="order-asset-list.html" class="admin-submenu-item">Order Asset List</a>
             <a href="reserved-currency-assets.html" class="admin-submenu-item">Reserved Currency Assets</a>
           </div>
         </details>
@@ -118,7 +118,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
           <div class="admin-submenu">
             <a href="currency-flow-records.html" class="admin-submenu-item">Currency Flow Records</a>
             <a href="currency-exchange-records.html" class="admin-submenu-item">Currency Exchange Records</a>
-            <a href="cycle-contracts-trades.html" class="admin-submenu-item">Currency Order Records</a>
+            <a href="currency-order-records.html" class="admin-submenu-item">Currency Order Records</a>
           </div>
         </details>
         <details class="admin-menu-group">
@@ -232,7 +232,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
                 </tr>
                 <tr>
                   <td style="padding:12px;"><input type="checkbox" /></td>
-                  <td style="padding:12px;">Automatic matching of cycle contract orders</td>
+                  <td style="padding:12px;">Automatic matching of cycle currency orders</td>
                   <td style="padding:12px;">--</td>
                   <td style="padding:12px;"><span style="display:inline-flex; padding:4px 10px; border-radius:999px; background:#d1fae5; color:#166534; font-size:12px;">Success</span></td>
                   <td style="padding:12px;">2026-06-13 15:56:43</td>
@@ -254,7 +254,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
                 </tr>
                 <tr>
                   <td style="padding:12px;"><input type="checkbox" /></td>
-                  <td style="padding:12px;">Automatic matchmaking of contract orders</td>
+                  <td style="padding:12px;">Automatic matchmaking of currency orders</td>
                   <td style="padding:12px;">--</td>
                   <td style="padding:12px;"><span style="display:inline-flex; padding:4px 10px; border-radius:999px; background:#d1fae5; color:#166534; font-size:12px;">Success</span></td>
                   <td style="padding:12px;">2026-06-13 15:56:43</td>
@@ -357,6 +357,8 @@ if(localStorage.getItem("adminLogin") !== "true"){
   <script src="admin-ui.js?v=mysql-20260618"></script>
 </body>
 </html>
+
+
 
 
 
