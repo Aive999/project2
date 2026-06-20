@@ -7,6 +7,7 @@ const DemoExchange = (() => {
   let authMode = "login";
   let accountMode = "Balances";
   const CURRENCY_KEY = "demoCurrencySettings";
+  const FLUCTUATION_INTERVAL_MS = 12000;
   const defaultCurrencies = [
     { code: "USD", name: "US Dollar", rate: 1.0000, change: 0.04, visible: true },
     { code: "EUR", name: "Euro", rate: 1.0845, change: 0.12, visible: true },
@@ -45,7 +46,7 @@ const DemoExchange = (() => {
   }
 
   function fluctuationSeed(code, offset = 0) {
-    const now = Math.floor(Date.now() / 45000) + offset;
+    const now = Math.floor(Date.now() / FLUCTUATION_INTERVAL_MS) + offset;
     const codeValue = code.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
     return Math.sin(now * 0.83 + codeValue * 1.37);
   }
@@ -1027,7 +1028,7 @@ const DemoExchange = (() => {
     bindMarketSearch();
     enhanceAccountPage();
     renderDynamicMarkets();
-    setInterval(renderDynamicMarkets, 45000);
+    setInterval(renderDynamicMarkets, FLUCTUATION_INTERVAL_MS);
   }
 
   return { init };
