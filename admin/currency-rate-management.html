@@ -1,4 +1,4 @@
-<script>
+﻿<script>
 
 if(localStorage.getItem("adminLogin") !== "true"){
     window.location.href="login.html";
@@ -146,14 +146,14 @@ if(localStorage.getItem("adminLogin") !== "true"){
     <div class="admin-main">
       <header class="admin-header">
         <div class="admin-search">
-          <span class="search-icon">🔎</span>
+          <span class="search-icon">ðŸ”Ž</span>
           <input type="text" placeholder="Search Menu" aria-label="Search Menu" />
         </div>
         <div class="admin-profile">
           <button class="icon-button" onclick="changeLanguage()">
-          中文
+          ä¸­æ–‡
           </button>
-          <button class="icon-button">⚙️</button>
+          <button class="icon-button">âš™ï¸</button>
           <div class="profile-badge">a</div>
           <span>admin</span>
           <button onclick="logout()">Logout</button>
@@ -239,6 +239,9 @@ if(localStorage.getItem("adminLogin") !== "true"){
 
   function renderCurrencies() {
     const tbody = document.getElementById('currency-body');
+    currencies = currencies.map(item => item.code === 'CNY'
+      ? { ...item, name: 'Chinese Yuan Renminbi' }
+      : item);
     tbody.innerHTML = currencies.map(item => `
       <tr>
         <td>${item.code}</td>
@@ -284,16 +287,16 @@ if(localStorage.getItem("adminLogin") !== "true"){
       if (!currencies.length) {
         currencies = [
           { code: 'USD', name: 'US Dollar', rate: 1, change: 0.04, visible: true },
-          { code: 'EUR', name: 'Euro', rate: 1.0845, change: 0.12, visible: true },
-          { code: 'GBP', name: 'British Pound', rate: 1.2783, change: 0.09, visible: true },
-          { code: 'JPY', name: 'Japanese Yen', rate: 0.00676, change: -0.06, visible: true },
-          { code: 'AUD', name: 'Australian Dollar', rate: 0.7082, change: -0.08, visible: true },
-          { code: 'CAD', name: 'Canadian Dollar', rate: 0.7424, change: 0.05, visible: true },
-          { code: 'CHF', name: 'Swiss Franc', rate: 1.094, change: 0.07, visible: true },
+          { code: 'EUR', name: 'Euro', rate: 1.14760, change: 0.12, visible: true },
+          { code: 'GBP', name: 'British Pound', rate: 1.32321, change: 0.09, visible: true },
+          { code: 'JPY', name: 'Japanese Yen', rate: 0.00619959, change: -0.06, visible: true },
+          { code: 'AUD', name: 'Australian Dollar', rate: 0.701083, change: -0.08, visible: true },
+          { code: 'CAD', name: 'Canadian Dollar', rate: 0.70608, change: 0.05, visible: true },
+          { code: 'CHF', name: 'Swiss Franc', rate: 1.23903, change: 0.07, visible: true },
           { code: 'NZD', name: 'New Zealand Dollar', rate: 0.6308, change: -0.04, visible: true },
           { code: 'SGD', name: 'Singapore Dollar', rate: 0.7395, change: 0.03, visible: true },
           { code: 'HKD', name: 'Hong Kong Dollar', rate: 0.1278, change: 0.01, visible: true },
-          { code: 'CNY', name: 'Chinese Yuan', rate: 0.1382, change: -0.03, visible: true },
+          { code: 'CNY', name: 'Chinese Yuan Renminbi', rate: 0.1382, change: -0.03, visible: true },
           { code: 'PHP', name: 'Philippine Peso', rate: 0.0171, change: 0.06, visible: true }
         ];
       }
@@ -325,7 +328,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
 
 <script>
 (function () {
-  var targetLanguage = "zh-CN";
+  var targetLanguage = "en";
   var sourceLanguage = "en";
 
   function setTranslateCookie() {
@@ -378,7 +381,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
 </script>
 
 <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-  <script src="admin-ui.js?v=mysql-20260618"></script>
+  <script src="admin-ui.js?v=forex-admin-clean-20260621"></script>
 </body>
 </html>
 

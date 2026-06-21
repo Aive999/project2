@@ -1,5 +1,5 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
+﻿<!DOCTYPE html>
+<html lang="en">
 <head>
 <title>Admin Login</title>
 <link rel="stylesheet" href="admin.css">
@@ -14,95 +14,52 @@
     <span></span>
 </div>
 
-
 <div class="login-box">
+    <div class="login-brand">
+        <div class="login-logo">G</div>
+        <div>
+            <h2>Admin Portal</h2>
+            <p>Gemini Currency Backstage Management System</p>
+        </div>
+    </div>
 
-<h2>Admin Login</h2>
+    <div class="login-meta">
+        <span>Secure admin access</span>
+        <span>Operations console</span>
+    </div>
 
-<form id="loginForm">
+    <form id="loginForm">
+        <label>
+            <span>Username</span>
+            <input type="text" id="username" placeholder="admin" autocomplete="username" required>
+        </label>
 
-<input type="text" id="username" placeholder="Username" required>
+        <label>
+            <span>Password</span>
+            <div class="password-field">
+                <input type="password" id="password" placeholder="admin@12345" autocomplete="current-password" required>
+                <button type="button" id="togglePassword" class="password-toggle" aria-label="Show password">
+                    &#128065;
+                </button>
+            </div>
+        </label>
 
-<div class="password-field">
-    <input type="password" id="password" placeholder="Password" required>
-    <button type="button" id="togglePassword" class="password-toggle" aria-label="Show password">
-        &#128065;
-    </button>
+        <button type="submit">Sign in</button>
+        <p id="error"></p>
+    </form>
+
+    <div class="login-support">
+        <div>
+            <strong>Demo credentials</strong>
+            <span>admin / admin@12345</span>
+        </div>
+        <div>
+            <strong>Session</strong>
+            <span>Local browser access</span>
+        </div>
+    </div>
 </div>
 
-<button type="submit">Login</button>
-
-<p id="error"></p>
-
-</form>
-
-</div>
-
-
-<script src="admin.js?v=mysql-20260618"></script>
-<div id="google_translate_element" style="display:none;"></div>
-
-<script>
-(function () {
-  var targetLanguage = "zh-CN";
-  var sourceLanguage = "en";
-
-  function setTranslateCookie() {
-    var value = "/" + sourceLanguage + "/" + targetLanguage;
-    document.cookie = "googtrans=" + value + "; path=/";
-    document.cookie = "googtrans=" + value + "; path=/; domain=" + location.hostname;
-  }
-
-  function selectLanguage(attempt) {
-    var select = document.querySelector(".goog-te-combo");
-
-    if (select) {
-      select.value = targetLanguage;
-      select.dispatchEvent(new Event("change"));
-      return;
-    }
-
-    if (attempt < 20) {
-      setTimeout(function () {
-        selectLanguage(attempt + 1);
-      }, 300);
-    }
-  }
-
-  setTranslateCookie();
-
-  window.googleTranslateElementInit = function () {
-    new google.translate.TranslateElement(
-      {
-        pageLanguage: sourceLanguage,
-        includedLanguages: targetLanguage + ",en",
-        autoDisplay: false
-      },
-      "google_translate_element"
-    );
-
-    selectLanguage(0);
-  };
-
-  window.changeLanguage = function () {
-    setTranslateCookie();
-    selectLanguage(0);
-  };
-
-  window.logout = function () {
-    localStorage.removeItem("adminLogin");
-    window.location.href = "login.html";
-  };
-})();
-</script>
-
-<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+<script src="admin.js?v=login-fix-20260620"></script>
 </body>
 </html>
-
-
-
-
-
-
-

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gemini Currency Trading</title>
+  <link rel="stylesheet" href="styles.css?v=chart-refresh-20260621" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero-header">
+      <div class="header-top">
+        <div class="avatar"></div>
+        <div class="search-box">
+          <span class="search-icon" aria-hidden="true">&#128269;</span>
+          <input type="text" placeholder="Search currency pair" aria-label="Search currency pair" />
+        </div>
+        <div class="header-actions">
+          <button class="icon-button" aria-label="Language" title="Language">&#127760;</button>
+          <button class="icon-button account-button" aria-label="Login or register" title="Login or register">&#128100;</button>
+        </div>
+      </div>
+      <section class="hero-banner trade-hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Currency trading</p>
+          <h1>Foreign exchange order desk</h1>
+          <p class="hero-description">Place market buy and sell orders for supported currency pairs using your account balances.</p>
+        </div>
+      </section>
+    </header>
+
+    <main>
+      <section class="trade-layout">
+        <div class="trade-market-panel">
+          <div class="trade-panel-top">
+            <div>
+              <span>Selected pair</span>
+              <strong id="selectedPair">EUR/USD</strong>
+            </div>
+            <div>
+              <span>Last price</span>
+              <strong id="selectedPrice">1.14760</strong>
+            </div>
+            <div>
+              <span>Bid / Ask</span>
+              <strong id="selectedSpread">1.1469 / 1.1483</strong>
+            </div>
+          </div>
+          <div class="trade-chart" aria-label="Simulated market chart">
+            <div class="chart-grid"></div>
+            <svg viewBox="0 0 900 300" preserveAspectRatio="none">
+              <path class="chart-area" d="M0 240 L80 205 L160 218 L240 170 L320 185 L400 128 L480 152 L560 104 L640 122 L720 82 L800 96 L900 54 L900 300 L0 300 Z"></path>
+              <path class="chart-line" d="M0 240 L80 205 L160 218 L240 170 L320 185 L400 128 L480 152 L560 104 L640 122 L720 82 L800 96 L900 54"></path>
+            </svg>
+          </div>
+        </div>
+
+        <aside class="trade-ticket">
+          <div class="ticket-title">
+            <strong>Order ticket</strong>
+            <span id="selectedBalance">Login required</span>
+          </div>
+          <label>
+            <span>Pair</span>
+            <select id="tradePair"></select>
+          </label>
+          <div class="trade-side-grid">
+            <button type="button" class="trade-side active" data-side="Buy">Buy</button>
+            <button type="button" class="trade-side" data-side="Sell">Sell</button>
+          </div>
+          <label>
+            <span>Amount</span>
+            <input id="tradeAmount" type="number" min="0" step="0.01" placeholder="100.00" inputmode="decimal" />
+          </label>
+          <div class="trade-quote" id="tradeQuote">Price 1 EUR = 1.14760 USD</div>
+          <button id="tradeSubmit" type="button" class="trade-submit">Place market order</button>
+        </aside>
+      </section>
+
+      <section class="trade-positions">
+        <div class="ledger-header">
+          <strong>Trade records</strong>
+          <span>Filled market orders</span>
+        </div>
+        <div id="tradePositions"></div>
+      </section>
+
+      <nav class="main-nav">
+        <a href="index.html" class="nav-item"><span aria-hidden="true">&#127968;</span><span>Home</span></a>
+        <a href="market.html" class="nav-item"><span aria-hidden="true">&#128200;</span><span>Market</span></a>
+        <a href="trade.html" class="nav-item active"><span aria-hidden="true">&#128202;</span><span>Trade</span></a>
+        <a href="account.html" class="nav-item"><span aria-hidden="true">&#128188;</span><span>Account</span></a>
+      </nav>
+    </main>
+  </div>
+  <script src="user-app.js?v=chart-refresh-20260621"></script>
+</body>
+</html>

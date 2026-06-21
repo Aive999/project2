@@ -193,6 +193,182 @@
     showToast.timer = setTimeout(() => toast.classList.remove("show"), 2600);
   }
 
+  const ADMIN_LANGUAGE_KEY = "adminLanguage";
+  const zhText = {
+    "System Management": "\u7cfb\u7edf\u7ba1\u7406",
+    "Menu Management": "\u83dc\u5355\u7ba1\u7406",
+    "Role Management": "\u89d2\u8272\u7ba1\u7406",
+    "Organization Maintenance": "\u7ec4\u7ec7\u7ef4\u62a4",
+    "Post Maintenance": "\u5c97\u4f4d\u7ef4\u62a4",
+    "User Configuration": "\u7528\u6237\u914d\u7f6e",
+    "Data Dictionary": "\u6570\u636e\u5b57\u5178",
+    "Online Users": "\u5728\u7ebf\u7528\u6237",
+    "Login Log": "\u767b\u5f55\u65e5\u5fd7",
+    "Operation Log": "\u64cd\u4f5c\u65e5\u5fd7",
+    "Currency Rate Management": "\u6c47\u7387\u7ba1\u7406",
+    "System Monitoring": "\u7cfb\u7edf\u76d1\u63a7",
+    "Server Monitor": "\u670d\u52a1\u5668\u76d1\u63a7",
+    "Cache Monitor": "\u7f13\u5b58\u76d1\u63a7",
+    "Job Manager": "\u4efb\u52a1\u7ba1\u7406",
+    "Job Config": "\u4efb\u52a1\u914d\u7f6e",
+    "Job Log": "\u4efb\u52a1\u65e5\u5fd7",
+    "Send Email": "\u53d1\u9001\u90ae\u4ef6",
+    "Generator Code": "\u4ee3\u7801\u751f\u6210",
+    "Erupt Code": "Erupt \u4ee3\u7801",
+    "Exchange": "\u5151\u6362\u7ba1\u7406",
+    "Account Management": "\u8d26\u6237\u7ba1\u7406",
+    "User Level": "\u7528\u6237\u7b49\u7ea7",
+    "Withdrawal Records": "\u63d0\u73b0\u8bb0\u5f55",
+    "Recharge Review": "\u5145\u503c\u5ba1\u6838",
+    "Top-up Records": "\u5145\u503c\u8bb0\u5f55",
+    "Feedback": "\u53cd\u9988",
+    "User Invitation Records": "\u7528\u6237\u9080\u8bf7\u8bb0\u5f55",
+    "New Withdrawal Records": "\u65b0\u63d0\u73b0\u8bb0\u5f55",
+    "Product Management": "\u4ea7\u54c1\u7ba1\u7406",
+    "Account Services": "\u8d26\u6237\u670d\u52a1",
+    "Service Setup": "\u670d\u52a1\u8bbe\u7f6e",
+    "Service Review": "\u670d\u52a1\u5ba1\u6838",
+    "Asset Management": "\u8d44\u4ea7\u7ba1\u7406",
+    "Timed Exchange": "\u5b9a\u65f6\u5151\u6362",
+    "New Currency Points": "\u65b0\u589e\u8d27\u5e01\u79ef\u5206",
+    "Currency Asset List": "\u8d27\u5e01\u8d44\u4ea7\u5217\u8868",
+    "Order Asset List": "\u8ba2\u5355\u8d44\u4ea7\u5217\u8868",
+    "Reserved Currency Assets": "\u9884\u7559\u8d27\u5e01\u8d44\u4ea7",
+    "Order Management": "\u8ba2\u5355\u7ba1\u7406",
+    "Currency Flow Records": "\u8d27\u5e01\u6d41\u6c34\u8bb0\u5f55",
+    "Currency Exchange Records": "\u5151\u6362\u8bb0\u5f55",
+    "Currency Order Records": "\u8d27\u5e01\u8ba2\u5355\u8bb0\u5f55",
+    "Content Management": "\u5185\u5bb9\u7ba1\u7406",
+    "Reserved Currency": "\u9884\u7559\u8d27\u5e01",
+    "Copywriting Management": "\u6587\u6848\u7ba1\u7406",
+    "Certification Management": "\u8ba4\u8bc1\u7ba1\u7406",
+    "Primary Real Name": "\u521d\u7ea7\u5b9e\u540d\u8ba4\u8bc1",
+    "Advanced Real Name": "\u9ad8\u7ea7\u5b9e\u540d\u8ba4\u8bc1",
+    "Search Menu": "\u641c\u7d22\u83dc\u5355",
+    "Start voice broadcast": "\u5f00\u542f\u8bed\u97f3\u64ad\u62a5",
+    "Primary certification audit (0)": "\u521d\u7ea7\u8ba4\u8bc1\u5ba1\u6838 (0)",
+    "Advanced Certification Audit (0)": "\u9ad8\u7ea7\u8ba4\u8bc1\u5ba1\u6838 (0)",
+    "Withdrawal Review (0)": "\u63d0\u73b0\u5ba1\u6838 (0)",
+    "Currency orders (0)": "\u8d27\u5e01\u8ba2\u5355 (0)",
+    "Recharge Review (0)": "\u5145\u503c\u5ba1\u6838 (0)",
+    "Logout": "\u9000\u51fa\u767b\u5f55",
+    "Settings": "\u8bbe\u7f6e",
+    "Home": "\u9996\u9875",
+    "Customer Balance Operations": "\u5ba2\u6237\u4f59\u989d\u64cd\u4f5c",
+    "Customer account": "\u5ba2\u6237\u8d26\u6237",
+    "Amount (USD)": "\u91d1\u989d (USD)",
+    "Recharge": "\u5145\u503c",
+    "Balance status": "\u4f59\u989d\u72b6\u6001",
+    "Reduce": "\u6263\u51cf",
+    "Freeze Balance": "\u51bb\u7ed3\u4f59\u989d",
+    "Unfreeze Balance": "\u89e3\u51bb\u4f59\u989d",
+    "Customer Currency Balances": "\u5ba2\u6237\u8d27\u5e01\u4f59\u989d",
+    "Refresh Users": "\u5237\u65b0\u7528\u6237",
+    "Account ID": "\u8d26\u6237 ID",
+    "Customer": "\u5ba2\u6237",
+    "Phone": "\u624b\u673a",
+    "Total Assets (USD)": "\u603b\u8d44\u4ea7 (USD)",
+    "USD Balance": "USD \u4f59\u989d",
+    "Other Currency Balances": "\u5176\u4ed6\u8d27\u5e01\u4f59\u989d",
+    "Balance Status": "\u4f59\u989d\u72b6\u6001",
+    "Registration Time": "\u6ce8\u518c\u65f6\u95f4",
+    "Operation": "\u64cd\u4f5c",
+    "Freeze": "\u51bb\u7ed3",
+    "Unfreeze": "\u89e3\u51bb",
+    "Active": "\u6b63\u5e38",
+    "Frozen": "\u5df2\u51bb\u7ed3",
+    "Currency code": "\u8d27\u5e01\u4ee3\u7801",
+    "Name": "\u540d\u79f0",
+    "USD rate": "USD \u6c47\u7387",
+    "USD Rate": "USD \u6c47\u7387",
+    "Change %": "\u6da8\u8dcc\u5e45 %",
+    "Display": "\u663e\u793a\u72b6\u6001",
+    "Visible": "\u663e\u793a",
+    "Hidden": "\u9690\u85cf",
+    "Add Currency": "\u6dfb\u52a0\u8d27\u5e01",
+    "Code": "\u4ee3\u7801",
+    "Save": "\u4fdd\u5b58",
+    "Delete": "\u5220\u9664",
+    "View": "\u67e5\u770b",
+    "Edit": "\u7f16\u8f91",
+    "Reset": "\u91cd\u7f6e",
+    "Query": "\u67e5\u8be2",
+    "Table Control": "\u8868\u683c\u63a7\u5236",
+    "No Data": "\u6682\u65e0\u6570\u636e",
+    "No records": "\u6682\u65e0\u8bb0\u5f55",
+    "Cumulative number of users": "\u7d2f\u8ba1\u7528\u6237\u6570",
+    "Number of new users today": "\u4eca\u65e5\u65b0\u589e\u7528\u6237\u6570",
+    "Accumulated top-up (USD)": "\u7d2f\u8ba1\u5145\u503c (USD)",
+    "Top-up Today (USD)": "\u4eca\u65e5\u5145\u503c (USD)",
+    "Redis Information": "Redis \u4fe1\u606f",
+    "Version number:": "\u7248\u672c\u53f7\uff1a",
+    "Port number:": "\u7aef\u53e3\u53f7\uff1a",
+    "Number of running days:": "\u8fd0\u884c\u5929\u6570\uff1a",
+    "Clusters or not:": "\u662f\u5426\u96c6\u7fa4\uff1a",
+    "Persistence method:": "\u6301\u4e45\u5316\u65b9\u5f0f\uff1a",
+    "Connected clients:": "\u5df2\u8fde\u63a5\u5ba2\u6237\u7aef\uff1a",
+    "Total memory:": "\u603b\u5185\u5b58\uff1a",
+    "Used memory:": "\u5df2\u7528\u5185\u5b58\uff1a",
+    "Command Statistics": "\u547d\u4ee4\u7edf\u8ba1",
+    "Number of Redis Keys": "Redis \u952e\u6570\u91cf",
+    "No": "\u5426",
+    "Placeholder content for the Asset Management admin page.": "\u8d44\u4ea7\u7ba1\u7406\u9875\u9762\u5185\u5bb9\u5360\u4f4d\u3002"
+  };
+
+  function translateText(value) {
+    const text = String(value || "").replace(/\s+/g, " ").trim();
+    if (!text) return value;
+    if (zhText[text]) return zhText[text];
+    if (text.startsWith("Home / ")) {
+      return text.split(" / ").map((part) => zhText[part] || part).join(" / ");
+    }
+    return value;
+  }
+
+  function applyAdminLanguage() {
+    const language = localStorage.getItem(ADMIN_LANGUAGE_KEY) || "zh-CN";
+    document.documentElement.lang = language === "zh-CN" ? "zh-CN" : "en";
+    const languageButton = $$(".admin-profile .icon-button").find((button) => button.getAttribute("onclick")?.includes("changeLanguage"));
+    if (languageButton) {
+      languageButton.textContent = language === "zh-CN" ? "English" : "\u4e2d\u6587";
+      languageButton.setAttribute("title", language === "zh-CN" ? "Switch to English" : "\u5207\u6362\u4e3a\u4e2d\u6587");
+      languageButton.setAttribute("aria-label", languageButton.getAttribute("title"));
+    }
+    if (language !== "zh-CN") return;
+
+    $$("input[placeholder], textarea[placeholder]").forEach((control) => {
+      const translated = translateText(control.getAttribute("placeholder"));
+      if (translated !== control.getAttribute("placeholder")) control.setAttribute("placeholder", translated);
+    });
+
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const parent = node.parentElement;
+        if (!parent || parent.closest("script, style, textarea, input, [contenteditable='true']")) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        if (!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach((node) => {
+      const translated = translateText(node.nodeValue);
+      if (translated !== node.nodeValue) node.nodeValue = node.nodeValue.replace(node.nodeValue.trim(), translated);
+    });
+  }
+
+  function bindAdminLanguage() {
+    window.changeLanguage = function () {
+      const current = localStorage.getItem(ADMIN_LANGUAGE_KEY) || "zh-CN";
+      localStorage.setItem(ADMIN_LANGUAGE_KEY, current === "zh-CN" ? "en" : "zh-CN");
+      location.reload();
+    };
+    clearTimeout(bindAdminLanguage.timer);
+    bindAdminLanguage.timer = setTimeout(applyAdminLanguage, 0);
+  }
+
   function getUserTransactions(type) {
     return Object.values(readUsers()).flatMap((user) => (user.transactions || [])
       .filter((tx) => tx.type === type)
@@ -216,15 +392,19 @@
 
     $$(".admin-profile .icon-button").forEach((button) => {
       const text = button.textContent.trim();
-      if (!text || /[Ãðâä]/.test(text)) {
-        button.textContent = button.getAttribute("onclick") ? "CN" : "Settings";
+      if (!text || /[ÃƒÃ°Ã¢Ã¤]/.test(text)) {
+        button.textContent = button.getAttribute("onclick") ? "\u4e2d\u6587" : "Settings";
+      }
+      if (button.getAttribute("onclick")?.includes("changeLanguage")) {
+        button.setAttribute("title", "Switch to Chinese");
+        button.setAttribute("aria-label", "Switch to Chinese");
       }
     });
 
     $$(".table-btn").forEach((button) => {
       const text = button.textContent.toLowerCase();
-      if (text.includes("query") || /[Ãð]/.test(text)) button.textContent = "Query";
-      if (text.includes("table") || text.includes("control") || text.includes("¦")) button.textContent = "Table Control";
+      if (text.includes("query") || /[ÃƒÃ°]/.test(text)) button.textContent = "Query";
+      if (text.includes("table") || text.includes("control") || text.includes("Â¦")) button.textContent = "Table Control";
     });
 
     $$(".empty-box").forEach((box) => {
@@ -234,7 +414,7 @@
 
     $$("td").forEach((cell) => {
       if (cell.closest("#ll-body") || cell.querySelector("[data-action='delete']")) return;
-      if (/[Ãðâ]/.test(cell.textContent)) {
+      if (/[ÃƒÃ°Ã¢]/.test(cell.textContent)) {
         cell.innerHTML = '<button class="row-action" data-action="view">View</button><button class="row-action" data-action="edit">Edit</button>';
       }
     });
@@ -268,6 +448,66 @@
           actionCell.insertAdjacentHTML("beforeend", ' <button class="row-action" data-action="delete">Delete</button>');
         }
       });
+    });
+  }
+
+  const forexAdminRoutes = new Set([
+    "admin.html",
+    "account-management.html",
+    "user-configuration.html",
+    "currency-rate-management.html",
+    "currency-asset-list.html",
+    "currency-exchange-records.html",
+    "currency-flow-records.html",
+    "currency-order-records.html",
+    "withdrawal-records.html",
+    "new-withdrawal-records.html",
+    "recharge-review.html",
+    "top-up-records.html",
+    "operation-log.html",
+    "login-log.html",
+    "online-users.html",
+    "primary-real-name.html",
+    "advanced-real-name.html"
+  ]);
+
+  const forexHeaderRoutes = new Map([
+    ["Primary certification", "primary-real-name.html"],
+    ["Advanced Certification", "advanced-real-name.html"],
+    ["Withdrawal Review", "withdrawal-records.html"],
+    ["Currency orders", "currency-order-records.html"],
+    ["Recharge Review", "recharge-review.html"]
+  ]);
+
+  function pruneForexAdminNavigation() {
+    $$(".admin-menu a").forEach((link) => {
+      const href = link.getAttribute("href") || "";
+      if (!forexAdminRoutes.has(href)) {
+        const submenuItem = link.closest(".admin-submenu-item");
+        const summary = link.closest("summary");
+        if (submenuItem) submenuItem.remove();
+        if (summary) summary.closest("details")?.remove();
+      }
+    });
+
+    $$(".admin-menu-group").forEach((group) => {
+      if (!group.querySelector(".admin-submenu-item") && !forexAdminRoutes.has(group.querySelector("summary a")?.getAttribute("href") || "")) {
+        group.remove();
+      }
+    });
+
+    $$(".admin-menu-group").forEach((group) => {
+      const firstLink = group.querySelector(".admin-submenu-item") || group.querySelector("summary a");
+      const summaryLink = group.querySelector("summary a");
+      if (summaryLink && firstLink) {
+        summaryLink.setAttribute("href", firstLink.getAttribute("href") || summaryLink.getAttribute("href"));
+      }
+    });
+
+    $$(".admin-header-actions .admin-pill").forEach((button) => {
+      const text = button.textContent.trim();
+      const useful = Array.from(forexHeaderRoutes.keys()).some((label) => text.includes(label));
+      if (!useful) button.remove();
     });
   }
 
@@ -481,23 +721,12 @@
   }
 
   function bindHeaderActions() {
-    const routes = [
-      ["Primary certification", "primary-real-name.html"],
-      ["Advanced Certification", "advanced-real-name.html"],
-      ["Withdrawal Review", "withdrawal-records.html"],
-      ["Currency orders", "currency-order-records.html"],
-      ["Recharge Review", "recharge-review.html"]
-    ];
     $$(".admin-pill").forEach((button) => {
+      const text = button.textContent;
+      const route = Array.from(forexHeaderRoutes.entries()).find(([label]) => text.includes(label));
+      if (route) button.dataset.adminRoute = route[1];
       button.addEventListener("click", () => {
-        const text = button.textContent;
-        if (text.includes("voice")) {
-          button.classList.toggle("active");
-          showToast(button.classList.contains("active") ? "Voice broadcast started." : "Voice broadcast stopped.");
-          return;
-        }
-        const route = routes.find(([label]) => text.includes(label));
-        if (route) window.location.href = route[1];
+        if (button.dataset.adminRoute) window.location.href = button.dataset.adminRoute;
       });
     });
   }
@@ -635,6 +864,7 @@
     hydratePageData();
     normalizeIcons();
     normalizeActionButtons();
+    pruneForexAdminNavigation();
     setActiveNavigation();
     bindMenuSearch();
     updateDashboardCards();
@@ -642,6 +872,12 @@
     bindTables();
     bindGenericForms();
     updateDashboardCardsFromServer();
+    bindAdminLanguage();
+    const observer = new MutationObserver(() => {
+      clearTimeout(bindAdminLanguage.timer);
+      bindAdminLanguage.timer = setTimeout(applyAdminLanguage, 60);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 
   if (document.readyState === "loading") {

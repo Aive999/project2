@@ -563,7 +563,7 @@ body {
 
 .main-nav {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   margin-top: 24px;
   padding: 10px;
@@ -668,7 +668,7 @@ body {
         width: min(750px, calc(100vw - 32px));
         transform: translateX(-50%);
         z-index: 9999;
-        grid-template-columns: repeat(3, 1fr) !important;
+        grid-template-columns: repeat(4, 1fr) !important;
         gap: 5px;
         margin-top: 0;
         padding: 8px;
@@ -750,7 +750,7 @@ body {
   }
 
   .main-nav {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
 
 .hero-copy h1 {
@@ -2722,7 +2722,7 @@ body.demo-modal-open .main-nav {
 
 .account-actions {
     display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 12px !important;
 }
 
@@ -3410,10 +3410,10 @@ body:not(.admin-body) .main-nav {
     left: 50% !important;
     right: auto !important;
     bottom: 24px !important;
-    width: min(620px, calc(100vw - 40px)) !important;
+    width: min(720px, calc(100vw - 40px)) !important;
     max-width: calc(100vw - 40px) !important;
     display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 8px !important;
     margin: 0 !important;
     padding: 10px !important;
@@ -3437,6 +3437,625 @@ body:not(.admin-body) {
         max-width: calc(100vw - 24px) !important;
         gap: 6px !important;
         padding: 8px !important;
+    }
+}
+
+/* Currency trading page */
+.trade-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.55fr);
+    gap: 18px;
+    margin-top: 24px;
+}
+
+.trade-market-panel,
+.trade-ticket,
+.trade-positions {
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-radius: 24px;
+    background: rgba(15, 23, 42, 0.72);
+    box-shadow: 0 20px 60px rgba(2, 6, 23, 0.26);
+}
+
+.trade-market-panel {
+    overflow: hidden;
+}
+
+.trade-panel-top {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    padding: 18px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.trade-panel-top div,
+.ticket-title {
+    display: grid;
+    gap: 6px;
+}
+
+.trade-panel-top span,
+.ticket-title span,
+.trade-ticket label span,
+.trade-position-row span {
+    color: #94a3b8;
+    font-size: 0.86rem;
+}
+
+.trade-panel-top strong,
+.ticket-title strong {
+    color: #f8fafc;
+    font-size: 1.25rem;
+}
+
+.trade-chart {
+    position: relative;
+    min-height: 340px;
+    background: linear-gradient(180deg, rgba(8, 14, 31, 0.9), rgba(15, 23, 42, 0.62));
+}
+
+.trade-chart svg,
+.chart-grid {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.chart-grid {
+    background-image: linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+    background-size: 100% 25%, 12.5% 100%;
+}
+
+.chart-line {
+    fill: none;
+    stroke: #22c55e;
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: d 0.45s ease, stroke 0.25s ease;
+}
+
+.chart-area {
+    fill: rgba(34, 197, 94, 0.16);
+    transition: d 0.45s ease, fill 0.25s ease;
+}
+
+.trade-chart.chart-negative .chart-line {
+    stroke: #fb7185;
+}
+
+.trade-chart.chart-negative .chart-area {
+    fill: rgba(251, 113, 133, 0.14);
+}
+
+.trade-ticket {
+    display: grid;
+    gap: 14px;
+    padding: 18px;
+    align-self: start;
+}
+
+.trade-ticket label {
+    display: grid;
+    gap: 7px;
+}
+
+.trade-ticket select,
+.trade-ticket input {
+    width: 100%;
+    height: 46px;
+    padding: 0 14px;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 14px;
+    background: #111827;
+    color: #f8fafc;
+    outline: none;
+}
+
+.trade-side-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.trade-side,
+.trade-submit {
+    min-height: 46px;
+    border: 0;
+    border-radius: 14px;
+    color: #ffffff;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.trade-side {
+    background: rgba(148, 163, 184, 0.12);
+}
+
+.trade-side.active[data-side="Buy"] {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+}
+
+.trade-side.active[data-side="Sell"] {
+    background: linear-gradient(135deg, #dc2626, #f97316);
+}
+
+.trade-submit {
+    background: linear-gradient(135deg, #14b8a6, #2563eb);
+}
+
+.trade-quote {
+    min-height: 42px;
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(56, 189, 248, 0.1);
+    color: #bae6fd;
+}
+
+.trade-positions {
+    display: grid;
+    gap: 12px;
+    margin-top: 18px;
+    padding: 18px;
+}
+
+#tradePositions {
+    display: grid;
+    gap: 10px;
+}
+
+.trade-position-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(160px, 0.8fr);
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-radius: 16px;
+    background: rgba(8, 14, 31, 0.72);
+}
+
+.trade-position-row div {
+    display: grid;
+    gap: 4px;
+}
+
+.trade-position-row div:last-child {
+    text-align: right;
+}
+
+@media (max-width: 860px) {
+    .trade-layout,
+    .trade-panel-top,
+    .trade-position-row {
+        grid-template-columns: 1fr;
+    }
+
+    .trade-position-row div:last-child {
+        text-align: left;
+    }
+}
+
+.currency-rates-tab {
+    padding: 28px 32px 110px !important;
+    border: 1px solid rgba(148, 163, 184, 0.16) !important;
+    border-radius: 24px !important;
+    background: rgba(15, 23, 42, 0.78) !important;
+    color: #e5edf8 !important;
+    box-shadow: 0 22px 70px rgba(2, 6, 23, 0.32);
+}
+
+.currency-rate-title {
+    margin: 0 0 28px;
+    color: #f8fafc;
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.15;
+    text-align: center;
+}
+
+.currency-rate-list {
+    display: grid;
+    gap: 14px;
+    padding: 18px !important;
+    border: 1px solid rgba(148, 163, 184, 0.14) !important;
+    border-radius: 22px !important;
+    background: rgba(8, 14, 31, 0.62) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+.currency-rate-header,
+.currency-rate-row {
+    display: grid !important;
+    grid-template-columns: minmax(250px, 1.45fr) minmax(120px, 0.7fr) minmax(150px, 0.75fr) minmax(170px, 0.85fr) minmax(120px, 0.55fr);
+    align-items: center;
+    gap: 18px;
+}
+
+.currency-rate-header {
+    padding: 0 20px 14px !important;
+    border: 0 !important;
+    color: #c7d2e3 !important;
+    font-size: 1rem !important;
+    font-weight: 800;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+}
+
+.currency-rate-header button {
+    justify-self: end;
+    min-height: 58px;
+    padding: 0 30px;
+    border: 0;
+    border-radius: 10px;
+    background: rgba(56, 189, 248, 0.1);
+    color: #7dd3fc;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.inverse-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.inverse-control input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.inverse-control i {
+    position: relative;
+    display: inline-block;
+    width: 62px;
+    height: 32px;
+    border-radius: 999px;
+    background: #334155;
+    cursor: pointer;
+}
+
+.inverse-control i::before {
+    content: "";
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ffffff;
+    transition: transform 0.2s ease;
+}
+
+.inverse-control input:checked + i::before {
+    transform: translateX(30px);
+}
+
+.inverse-control input:checked + i {
+    background: linear-gradient(135deg, #14b8a6, #2563eb);
+}
+
+.currency-rate-row {
+    min-height: 80px;
+    padding: 18px 20px !important;
+    border: 0 !important;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.92) !important;
+    color: #e5edf8 !important;
+}
+
+.currency-rate-row:nth-child(even):not(.base-rate-row) {
+    background: rgba(30, 41, 59, 0.72) !important;
+}
+
+.currency-rate-row.base-rate-row {
+    background: linear-gradient(135deg, rgba(20, 83, 145, 0.98), rgba(8, 24, 67, 0.98)) !important;
+    color: #ffffff !important;
+    box-shadow: 0 18px 34px rgba(6, 24, 67, 0.14);
+}
+
+.currency-rate-row .market-pair {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    min-width: 0;
+}
+
+.currency-rate-row .pair-icon.flag-icon {
+    display: inline-grid;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(56, 189, 248, 0.12);
+    color: #7dd3fc;
+    font-size: 0.66rem;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+}
+
+.currency-rate-row.base-rate-row .pair-icon.flag-icon {
+    background: #ffffff;
+}
+
+.currency-rate-row .pair-name {
+    color: #f8fafc;
+    font-size: 1.04rem;
+    font-weight: 800;
+}
+
+.currency-rate-row.base-rate-row .pair-name,
+.currency-rate-row.base-rate-row .market-price {
+    color: #ffffff;
+}
+
+.currency-rate-row .pair-sub {
+    display: block;
+    margin-top: 4px;
+    color: #94a3b8;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.currency-rate-row.base-rate-row .pair-sub {
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.currency-rate-row .market-price {
+    color: #e0f2fe;
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+.currency-rate-row .market-change {
+    justify-self: start;
+    min-width: 102px;
+    padding: 12px 11px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 800;
+    text-align: center;
+}
+
+.currency-rate-row.base-rate-row .market-change {
+    min-width: 0;
+    padding: 0;
+    background: transparent;
+}
+
+.currency-rate-row .market-change.positive {
+    background: rgba(34, 197, 94, 0.16);
+    color: #4ade80;
+}
+
+.currency-rate-row .market-change.negative {
+    background: rgba(248, 113, 113, 0.16);
+    color: #fb7185;
+}
+
+.market-chart svg {
+    display: block;
+    width: 150px;
+    height: 56px;
+}
+
+.market-chart path {
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.5;
+    transition: d 0.45s ease, stroke 0.25s ease;
+}
+
+.currency-rate-row .market-chart {
+    color: #13933a;
+}
+
+.currency-rate-row .market-change.negative ~ .market-chart {
+    color: #d31336;
+}
+
+.send-rate-button {
+    justify-self: end;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 50px;
+    min-width: 150px;
+    padding: 0 22px;
+    border: 0;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #14b8a6, #2563eb);
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+@media (max-width: 900px) {
+    .currency-rates-tab {
+        padding: 18px 14px 112px !important;
+        border-radius: 20px !important;
+    }
+
+    .currency-rate-title {
+        margin-bottom: 18px;
+        font-size: 1.55rem;
+        text-align: left;
+    }
+
+    .currency-rate-list {
+        gap: 12px;
+        padding: 12px !important;
+        border-radius: 18px !important;
+        overflow: hidden;
+    }
+
+    .currency-rate-header {
+        display: grid !important;
+        grid-template-columns: 1fr auto;
+        gap: 10px 12px;
+        padding: 4px 4px 8px !important;
+    }
+
+    .currency-rate-header .inverse-control {
+        grid-column: 1 / -1;
+        justify-content: space-between;
+        min-height: 44px;
+        padding: 0 6px;
+        border-radius: 14px;
+        background: rgba(15, 23, 42, 0.72);
+    }
+
+    .currency-rate-header span:nth-child(2),
+    .currency-rate-header span:nth-child(3),
+    .currency-rate-header span:nth-child(4) {
+        display: none;
+    }
+
+    .currency-rate-header button {
+        display: none;
+    }
+
+    .currency-rate-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        min-height: 0;
+        padding: 14px !important;
+        border-radius: 16px;
+    }
+
+    .currency-rate-row .market-pair {
+        gap: 12px;
+        min-width: 0;
+    }
+
+    .currency-rate-row .pair-name,
+    .currency-rate-row .pair-sub {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .currency-rate-row .market-price {
+        justify-self: end;
+        text-align: right;
+        font-size: 1rem;
+    }
+
+    .currency-rate-row .market-change {
+        justify-self: start;
+        min-width: 92px;
+        padding: 9px 10px;
+        font-size: 0.92rem;
+    }
+
+    .currency-rate-row .market-chart {
+        grid-column: 2;
+        grid-row: 2;
+        justify-self: end;
+        max-width: 38vw;
+        overflow: hidden;
+    }
+
+    .market-chart svg {
+        width: min(140px, 38vw);
+        height: 44px;
+    }
+
+    .send-rate-button {
+        grid-column: 1 / -1;
+        justify-self: stretch;
+        min-width: 0;
+        min-height: 44px;
+    }
+
+    .currency-rate-row.base-rate-row .market-change,
+    .currency-rate-row.base-rate-row .market-chart,
+    .currency-rate-row.base-rate-row > div:last-child {
+        display: none;
+    }
+}
+
+@media (max-width: 520px) {
+    body:not(.admin-body) {
+        padding-bottom: 118px !important;
+    }
+
+    .page-shell {
+        width: 100%;
+        padding-inline: 10px !important;
+    }
+
+    .hero-header {
+        padding: 12px !important;
+        border-radius: 20px;
+    }
+
+    .hero-banner {
+        padding: 18px !important;
+        border-radius: 18px;
+    }
+
+    .hero-copy h1 {
+        font-size: 2rem;
+        line-height: 1.1;
+    }
+
+    .currency-rates-tab {
+        margin-top: 18px;
+        padding-inline: 10px !important;
+    }
+
+    .currency-rate-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .currency-rate-row .market-price,
+    .currency-rate-row .market-chart {
+        grid-column: 1;
+        justify-self: start;
+        text-align: left;
+    }
+
+    .currency-rate-row .market-chart {
+        grid-row: auto;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .market-chart svg {
+        width: 100%;
+        max-width: 260px;
+    }
+
+    .currency-rate-row .market-change {
+        grid-column: 1;
+    }
+
+    body:not(.admin-body) .main-nav {
+        width: calc(100vw - 16px) !important;
+        bottom: 8px !important;
+        padding: 8px !important;
+        border-radius: 18px !important;
+    }
+
+    body:not(.admin-body) .main-nav .nav-item {
+        min-width: 0;
+        padding: 8px 2px !important;
+    }
+
+    body:not(.admin-body) .main-nav .nav-item span:last-child {
+        font-size: 11px;
     }
 }
 

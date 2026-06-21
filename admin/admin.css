@@ -104,28 +104,75 @@ body{
 /* login */
 
 .login-box{
-
 position:relative;
 z-index:2;
-
-width:350px;
-padding:35px;
-
-background:rgba(15,23,42,.85);
-
+width:min(430px, calc(100vw - 32px));
+padding:30px;
+background:rgba(15,23,42,.9);
+border:1px solid rgba(148,163,184,.18);
 border-radius:25px;
-
 backdrop-filter:blur(15px);
-
 box-shadow:0 20px 50px rgba(0,0,0,.5);
-
 color:white;
-
 }
 
+.login-brand{
+display:flex;
+align-items:center;
+gap:14px;
+margin-bottom:18px;
+}
+
+.login-logo{
+width:46px;
+height:46px;
+display:grid;
+place-items:center;
+border-radius:16px;
+background:linear-gradient(135deg,#14b8a6,#2563eb);
+font-weight:800;
+box-shadow:0 12px 30px rgba(37,99,235,.28);
+}
 
 .login-box h2{
+margin:0;
+font-size:26px;
+line-height:1.1;
+}
+
+.login-brand p{
+margin:5px 0 0;
+color:#94a3b8;
+font-size:13px;
+line-height:1.4;
+}
+
+.login-meta{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:8px;
+margin-bottom:18px;
+}
+
+.login-meta span{
+padding:9px 10px;
+border-radius:12px;
+background:rgba(30,41,59,.68);
+color:#cbd5e1;
+font-size:12px;
 text-align:center;
+}
+
+.login-box form{
+display:grid;
+gap:12px;
+}
+
+.login-box label{
+display:grid;
+gap:7px;
+color:#cbd5e1;
+font-size:13px;
 }
 
 
@@ -133,7 +180,7 @@ text-align:center;
 
 width:100%;
 padding:13px;
-margin:10px 0;
+margin:0;
 
 border:none;
 outline:none;
@@ -181,6 +228,7 @@ transform:translateY(-50%);
 
 width:100%;
 padding:13px;
+margin-top:4px;
 
 border:none;
 border-radius:10px;
@@ -197,6 +245,48 @@ transition:.3s;
 
 .login-box button[type="submit"]:hover{
 
-transform:scale(1.05);
+transform:translateY(-1px);
 
+}
+
+#error{
+min-height:20px;
+margin:0;
+color:#fca5a5;
+font-size:13px;
+line-height:1.4;
+}
+
+.login-support{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+margin-top:18px;
+padding-top:16px;
+border-top:1px solid rgba(148,163,184,.16);
+}
+
+.login-support div{
+display:grid;
+gap:4px;
+padding:10px;
+border-radius:14px;
+background:rgba(15,23,42,.66);
+}
+
+.login-support strong{
+font-size:12px;
+color:#e2e8f0;
+}
+
+.login-support span{
+font-size:12px;
+color:#94a3b8;
+}
+
+@media(max-width:520px){
+    .login-meta,
+    .login-support{
+        grid-template-columns:1fr;
+    }
 }

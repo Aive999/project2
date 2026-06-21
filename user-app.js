@@ -8,27 +8,59 @@ const DemoExchange = (() => {
   let accountMode = "Balances";
   const CURRENCY_KEY = "demoCurrencySettings";
   const FLUCTUATION_INTERVAL_MS = 12000;
+  const currentRateMap = {
+    USD: 1.0000,
+    EUR: 1.14760,
+    GBP: 1.32321,
+    JPY: 0.00619959,
+    AUD: 0.701083,
+    CAD: 0.70608,
+    CHF: 1.23903
+  };
   const defaultCurrencies = [
-    { code: "USD", name: "US Dollar", rate: 1.0000, change: 0.04, visible: true },
-    { code: "EUR", name: "Euro", rate: 1.0845, change: 0.12, visible: true },
-    { code: "GBP", name: "British Pound", rate: 1.2783, change: 0.09, visible: true },
-    { code: "JPY", name: "Japanese Yen", rate: 0.00676, change: -0.06, visible: true },
-    { code: "AUD", name: "Australian Dollar", rate: 0.7082, change: -0.08, visible: true },
-    { code: "CAD", name: "Canadian Dollar", rate: 0.7424, change: 0.05, visible: true },
-    { code: "CHF", name: "Swiss Franc", rate: 1.0940, change: 0.07, visible: true },
+    { code: "USD", name: "US Dollar", rate: currentRateMap.USD, change: 0.04, visible: true },
+    { code: "EUR", name: "Euro", rate: currentRateMap.EUR, change: 0.12, visible: true },
+    { code: "GBP", name: "British Pound", rate: currentRateMap.GBP, change: 0.09, visible: true },
+    { code: "JPY", name: "Japanese Yen", rate: currentRateMap.JPY, change: -0.06, visible: true },
+    { code: "AUD", name: "Australian Dollar", rate: currentRateMap.AUD, change: -0.08, visible: true },
+    { code: "CAD", name: "Canadian Dollar", rate: currentRateMap.CAD, change: 0.05, visible: true },
+    { code: "CHF", name: "Swiss Franc", rate: currentRateMap.CHF, change: 0.07, visible: true },
     { code: "NZD", name: "New Zealand Dollar", rate: 0.6308, change: -0.04, visible: true },
     { code: "SGD", name: "Singapore Dollar", rate: 0.7395, change: 0.03, visible: true },
     { code: "HKD", name: "Hong Kong Dollar", rate: 0.1278, change: 0.01, visible: true },
-    { code: "CNY", name: "Chinese Yuan", rate: 0.1382, change: -0.03, visible: true },
+    { code: "CNY", name: "Chinese Yuan Renminbi", rate: 0.1382, change: -0.03, visible: true },
     { code: "PHP", name: "Philippine Peso", rate: 0.0171, change: 0.06, visible: true }
+  ];
+  const marketCurrencyRows = [
+    { code: "USD", label: "US Dollar", flag: "US" },
+    { code: "EUR", label: "Euro", flag: "EU" },
+    { code: "GBP", label: "British Pound", flag: "GB" },
+    { code: "JPY", label: "Japanese Yen", flag: "JP" },
+    { code: "CAD", label: "Canadian Dollar", flag: "CA" },
+    { code: "AUD", label: "Australian Dollar", flag: "AU" },
+    { code: "CHF", label: "Swiss Franc", flag: "CH" },
+    { code: "CNY", label: "Chinese Yuan Renminbi", flag: "CN" },
+    { code: "PHP", label: "Philippine Peso", flag: "PH" }
   ];
 
   function currencySettings() {
     try {
       const stored = JSON.parse(localStorage.getItem(CURRENCY_KEY) || "[]");
-      if (Array.isArray(stored) && stored.length) return stored;
+      if (Array.isArray(stored) && stored.length) {
+        return stored.map((currency) => ({
+          ...currency,
+          rate: currentRateMap[currency.code] ?? currency.rate,
+          name: currency.code === "CNY" ? "Chinese Yuan Renminbi" : currency.name
+        }));
+      }
     } catch {}
     return defaultCurrencies;
+  }
+
+  function currencyByCode(code) {
+    return currencySettings().find((currency) => currency.code === code)
+      || defaultCurrencies.find((currency) => currency.code === code)
+      || { code, rate: 1, change: 0, visible: true };
   }
 
   function priceMap() {
@@ -45,21 +77,23 @@ const DemoExchange = (() => {
       .join("");
   }
 
-  function fluctuationSeed(code, offset = 0) {
-    const now = Math.floor(Date.now() / FLUCTUATION_INTERVAL_MS) + offset;
+  function fluctuationSeed(code, offset = 0, tickShift = 0) {
+    const now = Math.floor(Date.now() / FLUCTUATION_INTERVAL_MS) + offset + tickShift;
     const codeValue = code.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
     return Math.sin(now * 0.83 + codeValue * 1.37);
   }
 
-  function floatingRate(currency, offset = 0) {
+  function floatingRate(currency, offset = 0, tickShift = 0) {
     const base = Number(currency.rate) || 1;
-    const move = fluctuationSeed(currency.code, offset) * 0.0018;
+    const move = fluctuationSeed(currency.code, offset, tickShift) * 0.0018;
     return base * (1 + move);
   }
 
-  function floatingChange(currency, offset = 0) {
-    const base = Number(currency.change) || 0;
-    return base + fluctuationSeed(currency.code, offset + 7) * 0.18;
+  function tickMovement(currency, offset = 0) {
+    const current = floatingRate(currency, offset);
+    const previous = floatingRate(currency, offset, -1);
+    const percent = previous ? ((current - previous) / previous) * 100 : 0;
+    return { current, percent };
   }
 
 
@@ -311,6 +345,95 @@ const DemoExchange = (() => {
     const value = Number(amount || 0);
     if (!fromAsset || !toAsset || fromAsset === toAsset || !value || value <= 0) return 0;
     return (value * (rates[fromAsset] || 1)) / (rates[toAsset] || 1);
+  }
+
+  function tradingPairs() {
+    const preferred = [
+      ["EUR", "USD"],
+      ["GBP", "EUR"],
+      ["USD", "JPY"],
+      ["GBP", "USD"],
+      ["USD", "CHF"],
+      ["USD", "CAD"],
+      ["EUR", "JPY"],
+      ["AUD", "USD"],
+      ["NZD", "USD"],
+      ["CAD", "JPY"],
+      ["USD", "PHP"],
+      ["CNY", "USD"]
+    ];
+    const visible = new Set(visibleCurrencies().map((currency) => currency.code));
+    return preferred.filter(([base, quote]) => visible.has(base) && visible.has(quote));
+  }
+
+  function pairPrice(base, quote) {
+    const rates = priceMap();
+    return (rates[base] || 1) / (rates[quote] || 1);
+  }
+
+  function pairMovement(base, quote, offset = 0) {
+    const baseCurrency = currencyByCode(base);
+    const quoteCurrency = currencyByCode(quote);
+    const current = floatingRate(baseCurrency, offset) / floatingRate(quoteCurrency, offset + 3);
+    const previous = floatingRate(baseCurrency, offset, -1) / floatingRate(quoteCurrency, offset + 3, -1);
+    const percent = previous ? ((current - previous) / previous) * 100 : 0;
+    return { current, percent };
+  }
+
+  function tradeChartPaths(base, quote) {
+    const basePrice = pairPrice(base, quote);
+    const values = Array.from({ length: 34 }, (_, index) => {
+      const wave = fluctuationSeed(base + quote, index / 4);
+      const pulse = Math.sin((Date.now() / FLUCTUATION_INTERVAL_MS + index) * 0.62) * 0.0035;
+      const drift = (index - 16) * 0.00008;
+      return basePrice * (1 + wave * 0.006 + pulse + drift);
+    });
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const span = max - min || 1;
+    const points = values.map((value, index) => {
+      const x = index * (900 / (values.length - 1));
+      const y = 250 - ((value - min) / span) * 190;
+      return `${index === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`;
+    }).join(" ");
+    return {
+      line: points,
+      area: `${points} L900 300 L0 300 Z`,
+      positive: values[values.length - 1] >= values[0]
+    };
+  }
+
+  function tradeEstimate(base, quote, amount) {
+    const value = Number(amount || 0);
+    if (!base || !quote || base === quote || !value || value <= 0) return 0;
+    return value * pairPrice(base, quote);
+  }
+
+  async function tradeOrder(baseAsset, quoteAsset, side, amount) {
+    const user = getUser();
+    if (!user) throw new Error("Please register or log in first.");
+    ensureActiveAccount(user);
+    const value = Number(amount);
+    if (!value || value <= 0) throw new Error("Enter a valid order amount.");
+    const quoteAmount = tradeEstimate(baseAsset, quoteAsset, value);
+
+    try {
+      const data = await apiRequest("trade_order", { baseAsset, quoteAsset, side, amount: value });
+      cacheServerUser(data.user);
+      return;
+    } catch (error) {
+      if (!backendUnavailable(error)) throw error;
+      if (side === "Buy") {
+        if ((user.balances[quoteAsset] || 0) < quoteAmount) throw new Error(`Insufficient ${quoteAsset} balance.`);
+        user.balances[quoteAsset] -= quoteAmount;
+        user.balances[baseAsset] = (user.balances[baseAsset] || 0) + value;
+      } else {
+        if ((user.balances[baseAsset] || 0) < value) throw new Error(`Insufficient ${baseAsset} balance.`);
+        user.balances[baseAsset] -= value;
+        user.balances[quoteAsset] = (user.balances[quoteAsset] || 0) + quoteAmount;
+      }
+      addTransaction(user, `Trade ${side}`, `${baseAsset}/${quoteAsset}`, value, "Filled", `${side === "Buy" ? "Bought" : "Sold"} ${coin(value)} ${baseAsset} at ${formatRate(pairPrice(baseAsset, quoteAsset))} ${quoteAsset}`);
+    }
   }
 
   function transactionRows(user, mode = "all") {
@@ -687,12 +810,16 @@ const DemoExchange = (() => {
 
   function filterMarketRows() {
     const query = document.querySelector(".search-box input")?.value.trim().toLowerCase() || "";
-    const showAll = document.querySelector(".market-filter-item.active")?.textContent.trim() === "All";
-    document.querySelectorAll(".market-list-card .market-row").forEach((row, index) => {
-      const pair = row.querySelector(".pair-name")?.textContent.toLowerCase() || "";
-      const matchesSearch = !query || pair.includes(query);
-      const matchesFilter = showAll || index < 3;
-      row.hidden = !(matchesSearch && matchesFilter);
+    document.querySelectorAll(".market-list-card").forEach((card) => {
+      const activeFilter = document.querySelector(".market-filter-item.active");
+      const showAll = card.classList.contains("currency-rate-list") || !activeFilter || activeFilter.textContent.trim() === "All";
+      card.querySelectorAll(".market-row").forEach((row, index) => {
+        const pair = row.querySelector(".pair-name")?.textContent.toLowerCase() || "";
+        const pairSub = row.querySelector(".pair-sub")?.textContent.toLowerCase() || "";
+        const matchesSearch = !query || pair.includes(query) || pairSub.includes(query);
+        const matchesFilter = showAll || index < 3;
+        row.hidden = !(matchesSearch && matchesFilter);
+      });
     });
   }
 
@@ -804,6 +931,86 @@ const DemoExchange = (() => {
     } catch (error) {
       refresh(error.message);
     }
+  }
+
+  function renderTradePage(message = "") {
+    const ticket = document.querySelector(".trade-ticket");
+    if (!ticket) return;
+    const pairSelect = document.getElementById("tradePair");
+    const amountInput = document.getElementById("tradeAmount");
+    const side = document.querySelector(".trade-side.active")?.dataset.side || "Buy";
+    const pairs = tradingPairs();
+    if (pairSelect && !pairSelect.options.length) {
+      pairSelect.innerHTML = pairs.map(([base, quote]) => `<option value="${base}/${quote}">${base}/${quote}</option>`).join("");
+    }
+    const [base, quote] = (pairSelect?.value || pairs[0]?.join("/") || "EUR/USD").split("/");
+    const amount = Number(amountInput?.value || 0);
+    const movement = pairMovement(base, quote);
+    const price = movement.current;
+    const quoteAmount = tradeEstimate(base, quote, amount);
+    const user = getUser();
+
+    const selectedPair = document.getElementById("selectedPair");
+    const selectedPrice = document.getElementById("selectedPrice");
+    const selectedSpread = document.getElementById("selectedSpread");
+    const selectedBalance = document.getElementById("selectedBalance");
+    const tradeQuote = document.getElementById("tradeQuote");
+    const positions = document.getElementById("tradePositions");
+    const chartLine = document.querySelector(".trade-chart .chart-line");
+    const chartArea = document.querySelector(".trade-chart .chart-area");
+    const chart = document.querySelector(".trade-chart");
+    const chartPaths = tradeChartPaths(base, quote);
+
+    if (selectedPair) selectedPair.textContent = `${base}/${quote}`;
+    if (selectedPrice) selectedPrice.textContent = formatRate(price);
+    if (selectedSpread) selectedSpread.textContent = `${formatRate(price * 0.9994)} / ${formatRate(price * 1.0006)}`;
+    if (chartLine) chartLine.setAttribute("d", chartPaths.line);
+    if (chartArea) chartArea.setAttribute("d", chartPaths.area);
+    if (chart) chart.classList.toggle("chart-negative", !chartPaths.positive);
+    if (selectedBalance) selectedBalance.textContent = user
+      ? `${quote} ${coin(user.balances?.[quote] || 0)} available`
+      : "Login required";
+    if (tradeQuote) {
+      tradeQuote.textContent = message || (amount > 0
+        ? `${side} ${coin(amount)} ${base} - ${side === "Buy" ? "Cost" : "Receive"} ${coin(quoteAmount)} ${quote}`
+        : `Price 1 ${base} = ${formatRate(price)} ${quote}`);
+    }
+    if (positions) {
+      const trades = (user?.transactions || []).filter((tx) => tx.type.startsWith("Trade"));
+      positions.innerHTML = trades.length ? trades.slice(0, 8).map((tx) => `
+        <div class="trade-position-row">
+          <div><strong>${tx.type}</strong><span>${tx.asset}</span></div>
+          <div><strong>${coin(tx.amount)}</strong><span>${tx.status} - ${tx.time}</span></div>
+        </div>
+      `).join("") : '<div class="empty-state">No trade orders yet</div>';
+    }
+  }
+
+  function bindTradingPage() {
+    if (!document.querySelector(".trade-ticket")) return;
+    renderTradePage();
+    document.getElementById("tradePair")?.addEventListener("change", () => renderTradePage());
+    document.getElementById("tradeAmount")?.addEventListener("input", () => renderTradePage());
+    document.querySelectorAll(".trade-side").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".trade-side").forEach((item) => item.classList.toggle("active", item === button));
+        renderTradePage();
+      });
+    });
+    document.getElementById("tradeSubmit")?.addEventListener("click", async () => {
+      const [base, quote] = document.getElementById("tradePair").value.split("/");
+      const side = document.querySelector(".trade-side.active")?.dataset.side || "Buy";
+      const amount = document.getElementById("tradeAmount").value;
+      try {
+        await tradeOrder(base, quote, side, amount);
+        document.getElementById("tradeAmount").value = "";
+        await syncCurrentUser();
+        renderTradePage(`${side} order filled.`);
+        renderAccount();
+      } catch (error) {
+        renderTradePage(error.message);
+      }
+    });
   }
 
   function applyAccountStyles() {
@@ -970,17 +1177,38 @@ const DemoExchange = (() => {
     return numeric.toFixed(5);
   }
 
+  function formatMarketAmount(value) {
+    const numeric = Number(value) || 0;
+    if (numeric === 1) return "1";
+    if (numeric >= 100) return numeric.toFixed(1);
+    if (numeric >= 10) return numeric.toFixed(3);
+    if (numeric >= 1) return numeric.toFixed(4);
+    return numeric.toFixed(5);
+  }
+
+  function sparklinePath(code, index, positive) {
+    const points = Array.from({ length: 32 }, (_, pointIndex) => {
+      const seed = fluctuationSeed(code, index + pointIndex / 5);
+      const pulse = pointIndex > 14 && pointIndex < 24 ? Math.sin(pointIndex * 2.4 + index) * 18 : 0;
+      const trend = positive ? -pointIndex * 0.55 : pointIndex * 0.45;
+      const y = Math.max(8, Math.min(54, 32 + seed * 4 + pulse + trend));
+      const x = pointIndex * (140 / 31);
+      return `${pointIndex === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`;
+    });
+    return points.join(" ");
+  }
+
   function renderRateCards() {
     const grid = document.querySelector(".rates-grid");
     if (!grid) return;
     grid.innerHTML = visibleCurrencies().slice(0, 6).map((currency, index) => {
-      const change = floatingChange(currency, index);
+      const movement = tickMovement(currency, index);
       return `
         <article class="rate-card">
           <div class="rate-label">${currency.code}</div>
-          <div class="rate-value">${formatRate(floatingRate(currency, index))}</div>
+          <div class="rate-value">${formatRate(movement.current)}</div>
           <div class="rate-sub">${currency.name}</div>
-          <div class="rate-change ${change >= 0 ? "positive" : "negative"}">${change >= 0 ? "+" : ""}${change.toFixed(2)}%</div>
+          <div class="rate-change ${movement.percent >= 0 ? "positive" : "negative"}">${movement.percent >= 0 ? "+" : ""}${movement.percent.toFixed(2)}%</div>
         </article>
       `;
     }).join("");
@@ -988,17 +1216,64 @@ const DemoExchange = (() => {
 
   function renderMarketRows() {
     document.querySelectorAll(".market-list-card").forEach((card) => {
+      const isCurrencyRateList = card.classList.contains("currency-rate-list");
+      if (isCurrencyRateList) {
+        const inverse = document.getElementById("marketInverse")?.checked === true;
+        const header = `
+          <div class="market-list-header currency-rate-header">
+            <label class="inverse-control">Inverse USD <input id="marketInverse" type="checkbox" ${inverse ? "checked" : ""}><i></i></label>
+            <span>Rate</span>
+            <span>Change (24h)</span>
+            <span>Chart (24h)</span>
+            <button type="button">Edit</button>
+          </div>
+        `;
+        const rows = marketCurrencyRows
+          .filter((row) => currencyByCode(row.code))
+          .map((row, index) => {
+            const currency = currencyByCode(row.code);
+            const movement = tickMovement(currency, index);
+            const previous = floatingRate(currency, index, -1);
+            const amount = row.code === "USD" ? 1 : (inverse ? 1 / movement.current : movement.current);
+            const previousAmount = row.code === "USD" ? 1 : (inverse ? 1 / previous : previous);
+            const displayPercent = previousAmount ? ((amount - previousAmount) / previousAmount) * 100 : 0;
+            const positive = displayPercent >= 0;
+            const chartPath = sparklinePath(row.code, index, positive);
+            if (row.code === "USD") {
+              return `
+                <div class="market-row currency-rate-row base-rate-row">
+                  <div class="market-pair"><span class="pair-icon flag-icon">${row.flag}</span><div><div class="pair-name">${row.label}</div><div class="pair-sub">Base currency</div></div></div>
+                  <div class="market-price">1</div>
+                  <div class="market-change"></div>
+                  <div class="market-chart"></div>
+                  <div></div>
+                </div>
+              `;
+            }
+            return `
+              <div class="market-row currency-rate-row">
+                <div class="market-pair"><span class="pair-icon flag-icon">${row.flag}</span><div><div class="pair-name">${row.label}</div><div class="pair-sub">${inverse ? `1 USD = ${formatMarketAmount(amount)} ${row.code}` : `1 ${row.code} = ${formatMarketAmount(amount)} USD`}</div></div></div>
+                <div class="market-price">${formatMarketAmount(amount)}</div>
+                <div class="market-change ${positive ? "positive" : "negative"}">${positive ? "+" : ""}${displayPercent.toFixed(4)}%</div>
+                <div class="market-chart"><svg viewBox="0 0 140 64" preserveAspectRatio="none"><path d="${chartPath}"></path></svg></div>
+                <button type="button" class="send-rate-button"><span aria-hidden="true">&#9993;</span> Send</button>
+              </div>
+            `;
+          }).join("");
+        card.innerHTML = header + rows;
+        document.getElementById("marketInverse")?.addEventListener("change", renderMarketRows);
+        return;
+      }
       const header = card.querySelector(".market-list-header")?.outerHTML || '<div class="market-list-header"><span>Pair</span><span>Last Price</span><span>Change</span></div>';
-      const rows = visibleCurrencies()
-        .filter((currency) => currency.code !== "USD")
-        .map((currency, index) => {
-          const change = floatingChange(currency, index);
-          const volume = (Math.abs(fluctuationSeed(currency.code, index)) * 900000 + 12000).toLocaleString(undefined, { maximumFractionDigits: 3 });
+      const rows = tradingPairs()
+        .map(([base, quote], index) => {
+          const movement = pairMovement(base, quote, index);
+          const volume = (Math.abs(fluctuationSeed(base + quote, index)) * 900000 + 12000).toLocaleString(undefined, { maximumFractionDigits: 3 });
           return `
             <div class="market-row">
-              <div class="market-pair"><span class="pair-icon" aria-hidden="true">&#128181;</span><div><div class="pair-name">${currency.code}/USD</div><div class="pair-sub">VOL ${volume}</div></div></div>
-              <div class="market-price">${formatRate(floatingRate(currency, index))}</div>
-              <div class="market-change ${change >= 0 ? "positive" : "negative"}">${change >= 0 ? "+" : ""}${change.toFixed(2)}%</div>
+              <div class="market-pair"><span class="pair-icon" aria-hidden="true">&#128181;</span><div><div class="pair-name">${base}/${quote}</div><div class="pair-sub">VOL ${volume}</div></div></div>
+              <div class="market-price">${formatRate(movement.current)}</div>
+              <div class="market-change ${movement.percent >= 0 ? "positive" : "negative"}">${movement.percent >= 0 ? "+" : ""}${movement.percent.toFixed(2)}%</div>
             </div>
           `;
         }).join("");
@@ -1010,6 +1285,7 @@ const DemoExchange = (() => {
   function renderDynamicMarkets() {
     renderRateCards();
     renderMarketRows();
+    renderTradePage();
   }
 
   function refresh(message = "") {
@@ -1026,6 +1302,7 @@ const DemoExchange = (() => {
     bindAccountButtons();
     bindUserTabs();
     bindMarketSearch();
+    bindTradingPage();
     enhanceAccountPage();
     renderDynamicMarkets();
     setInterval(renderDynamicMarkets, FLUCTUATION_INTERVAL_MS);

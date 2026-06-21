@@ -1,4 +1,4 @@
-<script>
+﻿<script>
 
 if(localStorage.getItem("adminLogin") !== "true"){
     window.location.href="login.html";
@@ -146,7 +146,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
     <div class="admin-main">
       <header class="admin-header">
         <div class="admin-search">
-          <span class="search-icon">🔎</span>
+          <span class="search-icon">ðŸ”Ž</span>
           <input type="text" placeholder="Search Menu" aria-label="Search Menu" />
         </div>
         <div class="admin-header-actions">
@@ -159,9 +159,9 @@ if(localStorage.getItem("adminLogin") !== "true"){
         </div>
         <div class="admin-profile">
           <button class="icon-button" onclick="changeLanguage()">
-          中文
+          ä¸­æ–‡
           </button>
-          <button class="icon-button">⚙️</button>
+          <button class="icon-button">âš™ï¸</button>
           <div class="profile-badge">a</div>
           <span>admin</span>
           <button onclick="logout()">Logout</button>
@@ -245,7 +245,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
       tbody.innerHTML = rows.map(r=>`<tr data-id="${r.id}">`+
         `<td><input class="ou-check" type="checkbox" data-id="${r.id}" /></td>`+
         `<td>${r.user}</td><td>${r.login}</td><td>${r.ip}</td><td>${r.source}</td><td>${r.os}</td><td>${r.browser}</td><td>${r.type}</td>`+
-        `<td style="white-space:nowrap"><button class="icon-button" data-action="kick" data-id="${r.id}" title="Force logout">🚫</button></td>`+
+        `<td style="white-space:nowrap"><button class="icon-button" data-action="kick" data-id="${r.id}" title="Force logout">ðŸš«</button></td>`+
         `</tr>`).join('') || '<tr><td colspan="9" style="color:#9ca3af">(no data)</td></tr>';
       attachOUEvents();
     }
@@ -277,7 +277,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
 
 <script>
 (function () {
-  var targetLanguage = "zh-CN";
+  var targetLanguage = "en";
   var sourceLanguage = "en";
 
   function setTranslateCookie() {
@@ -330,7 +330,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
 </script>
 
 <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-  <script src="admin-ui.js?v=mysql-20260618"></script>
+  <script src="admin-ui.js?v=forex-admin-clean-20260621"></script>
 </body>
 </html>
 

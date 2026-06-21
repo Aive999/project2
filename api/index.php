@@ -9,12 +9,12 @@ require __DIR__ . '/db.php';
 const ASSETS = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'NZD', 'SGD', 'HKD', 'CNY', 'PHP'];
 const PRICES = [
     'USD' => 1.0000,
-    'EUR' => 1.0845,
-    'GBP' => 1.2783,
-    'JPY' => 0.00676,
-    'AUD' => 0.7082,
-    'CAD' => 0.7424,
-    'CHF' => 1.0940,
+    'EUR' => 1.14760,
+    'GBP' => 1.32321,
+    'JPY' => 0.00619959,
+    'AUD' => 0.701083,
+    'CAD' => 0.70608,
+    'CHF' => 1.23903,
     'NZD' => 0.6308,
     'SGD' => 0.7395,
     'HKD' => 0.1278,
@@ -32,7 +32,7 @@ const CURRENCY_NAMES = [
     'NZD' => 'New Zealand Dollar',
     'SGD' => 'Singapore Dollar',
     'HKD' => 'Hong Kong Dollar',
-    'CNY' => 'Chinese Yuan',
+    'CNY' => 'Chinese Yuan Renminbi',
     'PHP' => 'Philippine Peso',
 ];
 
@@ -90,7 +90,16 @@ function currency_rows(): array
     $stmt->execute(['adminCurrencySettings']);
     $stored = json_decode((string)$stmt->fetchColumn(), true);
     if (is_array($stored) && $stored) {
-        return array_values(array_filter($stored, fn($row) => is_array($row) && !empty($row['code'])));
+        return array_values(array_filter(array_map(function ($row) {
+            if (!is_array($row) || empty($row['code'])) return null;
+            $code = strtoupper((string)$row['code']);
+            if (array_key_exists($code, PRICES)) {
+                $row['code'] = $code;
+                $row['rate'] = PRICES[$code];
+                $row['name'] = CURRENCY_NAMES[$code] ?? ($row['name'] ?? $code);
+            }
+            return $row;
+        }, $stored)));
     }
 
     $rows = [];
@@ -399,6 +408,36 @@ try {
         add_transaction((int)$user['id'], 'Exchange', $from . '/' . $to, $received, 'Completed', $amount . ' ' . $from . ' converted');
         db()->commit();
         respond(['ok' => true, 'user' => public_user(user_by_username($user['username']))]);
+    }
+
+    if ($action === 'trade_order') {
+        $user = require_user();
+        $base = strtoupper((string)($data['baseAsset'] ?? 'EUR'));
+        $quote = strtoupper((string)($data['quoteAsset'] ?? 'USD'));
+        $side = (string)($data['side'] ?? 'Buy');
+        $amount = (float)($data['amount'] ?? 0);
+        if (!in_array($base, ASSETS, true) || !in_array($quote, ASSETS, true) || $base === $quote) fail('Unsupported trading pair.');
+        if (!in_array($side, ['Buy', 'Sell'], true)) fail('Invalid order side.');
+        if ($amount <= 0) fail('Enter a valid order amount.');
+
+        $rates = rates_map();
+        $price = ($rates[$base] ?? 1) / ($rates[$quote] ?? 1);
+        $quoteAmount = $amount * $price;
+
+        db()->beginTransaction();
+        if ($side === 'Buy') {
+            if (balance_amount((int)$user['id'], $quote) < $quoteAmount) fail('Insufficient ' . $quote . ' balance.');
+            change_balance((int)$user['id'], $quote, -$quoteAmount);
+            change_balance((int)$user['id'], $base, $amount);
+            add_transaction((int)$user['id'], 'Trade Buy', $base . '/' . $quote, $amount, 'Filled', 'Bought ' . $amount . ' ' . $base . ' at ' . round($price, 6) . ' ' . $quote);
+        } else {
+            if (balance_amount((int)$user['id'], $base) < $amount) fail('Insufficient ' . $base . ' balance.');
+            change_balance((int)$user['id'], $base, -$amount);
+            change_balance((int)$user['id'], $quote, $quoteAmount);
+            add_transaction((int)$user['id'], 'Trade Sell', $base . '/' . $quote, $amount, 'Filled', 'Sold ' . $amount . ' ' . $base . ' at ' . round($price, 6) . ' ' . $quote);
+        }
+        db()->commit();
+        respond(['ok' => true, 'price' => $price, 'quoteAmount' => $quoteAmount, 'user' => public_user(user_by_username($user['username']))]);
     }
 
     if ($action === 'admin_login') {
