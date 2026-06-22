@@ -127,6 +127,29 @@ function rates_map(): array
     return $rates + PRICES;
 }
 
+function fluctuation_seed(string $code, float $offset = 0.0, int $tickShift = 0): float
+{
+    $tick = floor((microtime(true) * 1000) / 12000) + $offset + $tickShift;
+    $codeValue = 0;
+    foreach (str_split($code) as $char) {
+        $codeValue += ord($char);
+    }
+    return sin($tick * 0.83 + $codeValue * 1.37);
+}
+
+function floating_currency_rate(string $asset, float $offset = 0.0, int $tickShift = 0): float
+{
+    $rates = rates_map();
+    $base = (float)($rates[$asset] ?? 1);
+    $move = fluctuation_seed($asset, $offset, $tickShift) * 0.0018;
+    return $base * (1 + $move);
+}
+
+function pair_market_price(string $base, string $quote): float
+{
+    return floating_currency_rate($base) / floating_currency_rate($quote, 3);
+}
+
 function user_by_username(string $username): ?array
 {
     $stmt = db()->prepare('SELECT * FROM users WHERE username = ? LIMIT 1');
@@ -373,15 +396,17 @@ try {
         $amount = (float)($data['amount'] ?? 0);
         if ($amount <= 0) fail('Enter a valid amount.');
 
-        db()->beginTransaction();
         if ($type === 'Deposit') {
+            db()->beginTransaction();
             change_balance((int)$user['id'], $asset, $amount);
             add_transaction((int)$user['id'], 'Deposit', $asset, $amount, 'Completed', 'Funds added');
         } elseif ($type === 'Withdraw') {
             if (balance_amount((int)$user['id'], $asset) < $amount) fail('Insufficient balance.');
+            db()->beginTransaction();
             change_balance((int)$user['id'], $asset, -$amount);
             add_transaction((int)$user['id'], 'Withdraw', $asset, $amount, 'Pending', 'Withdrawal request');
         } elseif ($type === 'Transfer') {
+            db()->beginTransaction();
             add_transaction((int)$user['id'], 'Transfer', $asset, $amount, 'Completed', 'Internal account movement');
         } else {
             fail('Unknown account action.');
@@ -420,18 +445,18 @@ try {
         if (!in_array($side, ['Buy', 'Sell'], true)) fail('Invalid order side.');
         if ($amount <= 0) fail('Enter a valid order amount.');
 
-        $rates = rates_map();
-        $price = ($rates[$base] ?? 1) / ($rates[$quote] ?? 1);
+        $price = pair_market_price($base, $quote);
         $quoteAmount = $amount * $price;
 
-        db()->beginTransaction();
         if ($side === 'Buy') {
             if (balance_amount((int)$user['id'], $quote) < $quoteAmount) fail('Insufficient ' . $quote . ' balance.');
+            db()->beginTransaction();
             change_balance((int)$user['id'], $quote, -$quoteAmount);
             change_balance((int)$user['id'], $base, $amount);
             add_transaction((int)$user['id'], 'Trade Buy', $base . '/' . $quote, $amount, 'Filled', 'Bought ' . $amount . ' ' . $base . ' at ' . round($price, 6) . ' ' . $quote);
         } else {
             if (balance_amount((int)$user['id'], $base) < $amount) fail('Insufficient ' . $base . ' balance.');
+            db()->beginTransaction();
             change_balance((int)$user['id'], $base, -$amount);
             change_balance((int)$user['id'], $quote, $quoteAmount);
             add_transaction((int)$user['id'], 'Trade Sell', $base . '/' . $quote, $amount, 'Filled', 'Sold ' . $amount . ' ' . $base . ' at ' . round($price, 6) . ' ' . $quote);

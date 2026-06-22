@@ -213,6 +213,7 @@ const DemoExchange = (() => {
     if (!user) return null;
 
     user.balances = { ...Object.fromEntries(defaultCurrencies.map((currency) => [currency.code, 0])), ...(user.balances || {}) };
+    user.transactions = Array.isArray(user.transactions) ? user.transactions : [];
     const oldCreditIndex = user.transactions?.findIndex((tx) => tx.type === "Demo Credit" && tx.detail === "Starting demo balance") ?? -1;
     if (oldCreditIndex >= 0) {
       user.transactions.splice(oldCreditIndex, 1);
@@ -406,7 +407,7 @@ const DemoExchange = (() => {
   function tradeEstimate(base, quote, amount) {
     const value = Number(amount || 0);
     if (!base || !quote || base === quote || !value || value <= 0) return 0;
-    return value * pairPrice(base, quote);
+    return value * pairMovement(base, quote).current;
   }
 
   async function tradeOrder(baseAsset, quoteAsset, side, amount) {
@@ -415,24 +416,31 @@ const DemoExchange = (() => {
     ensureActiveAccount(user);
     const value = Number(amount);
     if (!value || value <= 0) throw new Error("Enter a valid order amount.");
-    const quoteAmount = tradeEstimate(baseAsset, quoteAsset, value);
+    const price = pairMovement(baseAsset, quoteAsset).current;
+    const quoteAmount = value * price;
+
+    if (side === "Buy" && (user.balances[quoteAsset] || 0) < quoteAmount) {
+      throw new Error(`Insufficient ${quoteAsset} balance. Need ${coin(quoteAmount)} ${quoteAsset}.`);
+    }
+    if (side === "Sell" && (user.balances[baseAsset] || 0) < value) {
+      throw new Error(`Insufficient ${baseAsset} balance. Need ${coin(value)} ${baseAsset}.`);
+    }
 
     try {
       const data = await apiRequest("trade_order", { baseAsset, quoteAsset, side, amount: value });
       cacheServerUser(data.user);
-      return;
+      return data;
     } catch (error) {
       if (!backendUnavailable(error)) throw error;
       if (side === "Buy") {
-        if ((user.balances[quoteAsset] || 0) < quoteAmount) throw new Error(`Insufficient ${quoteAsset} balance.`);
         user.balances[quoteAsset] -= quoteAmount;
         user.balances[baseAsset] = (user.balances[baseAsset] || 0) + value;
       } else {
-        if ((user.balances[baseAsset] || 0) < value) throw new Error(`Insufficient ${baseAsset} balance.`);
         user.balances[baseAsset] -= value;
         user.balances[quoteAsset] = (user.balances[quoteAsset] || 0) + quoteAmount;
       }
-      addTransaction(user, `Trade ${side}`, `${baseAsset}/${quoteAsset}`, value, "Filled", `${side === "Buy" ? "Bought" : "Sold"} ${coin(value)} ${baseAsset} at ${formatRate(pairPrice(baseAsset, quoteAsset))} ${quoteAsset}`);
+      addTransaction(user, `Trade ${side}`, `${baseAsset}/${quoteAsset}`, value, "Filled", `${side === "Buy" ? "Bought" : "Sold"} ${coin(value)} ${baseAsset} at ${formatRate(price)} ${quoteAsset}`);
+      return { ok: true, price, quoteAmount, offline: true };
     }
   }
 
@@ -968,7 +976,7 @@ const DemoExchange = (() => {
     if (chartArea) chartArea.setAttribute("d", chartPaths.area);
     if (chart) chart.classList.toggle("chart-negative", !chartPaths.positive);
     if (selectedBalance) selectedBalance.textContent = user
-      ? `${quote} ${coin(user.balances?.[quote] || 0)} available`
+      ? `${side === "Buy" ? quote : base} ${coin(user.balances?.[side === "Buy" ? quote : base] || 0)} available`
       : "Login required";
     if (tradeQuote) {
       tradeQuote.textContent = message || (amount > 0
@@ -1002,10 +1010,10 @@ const DemoExchange = (() => {
       const side = document.querySelector(".trade-side.active")?.dataset.side || "Buy";
       const amount = document.getElementById("tradeAmount").value;
       try {
-        await tradeOrder(base, quote, side, amount);
+        const result = await tradeOrder(base, quote, side, amount);
         document.getElementById("tradeAmount").value = "";
         await syncCurrentUser();
-        renderTradePage(`${side} order filled.`);
+        renderTradePage(`${side} order filled at ${formatRate(result?.price || pairMovement(base, quote).current)} ${quote}.`);
         renderAccount();
       } catch (error) {
         renderTradePage(error.message);
