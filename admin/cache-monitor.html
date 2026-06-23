@@ -1,4 +1,4 @@
-﻿<script>
+<script>
 
 if(localStorage.getItem("adminLogin") !== "true"){
     window.location.href="login.html";
@@ -12,7 +12,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cache Monitor</title>
-  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="../styles.css?v=admin-input-radius-20260623" />
 </head>
 <body>
   <div class="admin-shell">
@@ -146,7 +146,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
     <div class="admin-main">
       <header class="admin-header">
         <div class="admin-search">
-          <span class="search-icon">ðŸ”Ž</span>
+          <span class="search-icon">🔎</span>
           <input type="text" placeholder="Search Menu" aria-label="Search Menu" />
         </div>
         <div class="admin-header-actions">
@@ -159,9 +159,9 @@ if(localStorage.getItem("adminLogin") !== "true"){
         </div>
         <div class="admin-profile">
           <button class="icon-button" onclick="changeLanguage()">
-          ä¸­æ–‡
+          中文
           </button>
-          <button class="icon-button">âš™ï¸</button>
+          <button class="icon-button">⚙️</button>
           <div class="profile-badge">a</div>
           <span>admin</span>
           <button onclick="logout()">Logout</button>
@@ -284,7 +284,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
 </script>
 
 <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-  <script src="admin-ui.js?v=forex-admin-clean-20260621"></script>
+  <script src="admin-ui.js?v=admin-full-tabs-20260623"></script>
 </body>
 </html>
 

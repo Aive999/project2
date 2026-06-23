@@ -1032,32 +1032,6 @@ const DemoExchange = (() => {
       borderRadius: "24px"
     });
 
-    document.querySelectorAll(".account-tabs").forEach((tabs) => {
-      Object.assign(tabs.style, {
-        display: "inline-grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: "8px",
-        width: "min(280px, 100%)",
-        margin: "0",
-        padding: "6px",
-        borderRadius: "18px",
-        background: "rgba(148, 163, 184, 0.07)"
-      });
-    });
-
-    document.querySelectorAll(".account-tab").forEach((tab) => {
-      const active = tab.classList.contains("active");
-      Object.assign(tab.style, {
-        minHeight: "42px",
-        border: "0",
-        borderRadius: "14px",
-        background: active ? "linear-gradient(135deg, rgba(248, 179, 28, 0.34), rgba(56, 189, 248, 0.18))" : "transparent",
-        color: active ? "#ffffff" : "#94a3b8",
-        fontWeight: "800",
-        cursor: "pointer"
-      });
-    });
-
     document.querySelectorAll(".account-status").forEach((status) => {
       Object.assign(status.style, {
         display: "flex",

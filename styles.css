@@ -1157,6 +1157,126 @@ textarea {
   color: #b91c1c;
 }
 
+.user-config-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.user-config-panel,
+.user-detail-panel {
+  width: 100%;
+  max-width: none;
+}
+
+.user-config-tools {
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.user-config-tools .primary-button,
+.user-config-tools .secondary-button,
+.user-detail-actions .primary-button,
+.user-detail-actions .secondary-button {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-weight: 800;
+}
+
+.user-config-search {
+  margin-bottom: 12px;
+}
+
+.user-config-search input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #111827;
+  outline: none;
+}
+
+.user-config-card {
+  display: grid;
+  gap: 14px;
+  min-height: 500px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.user-filter-grid,
+.user-detail-grid {
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+.user-detail-grid {
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+}
+
+.user-filter-grid label,
+.user-detail-grid label {
+  gap: 6px;
+  font-size: 0.88rem;
+}
+
+.user-filter-grid input,
+.user-filter-grid select,
+.user-detail-grid input,
+.user-detail-grid select {
+  min-height: 42px;
+  padding: 8px 12px;
+  border-radius: 12px;
+}
+
+.user-config-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.user-config-table .user-actions {
+  white-space: nowrap;
+}
+
+.user-detail-panel {
+  min-height: 360px;
+}
+
+.user-detail-body {
+  padding: 4px 0 0;
+}
+
+.user-detail-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.empty-table-cell {
+  padding: 18px;
+  color: #64748b;
+  text-align: center;
+}
+
+@media (max-width: 1100px) {
+  .user-filter-grid {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .user-filter-grid,
+  .user-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 980px) {
   .admin-layout-grid {
     grid-template-columns: 1fr;
@@ -2763,33 +2883,6 @@ body.demo-modal-open .main-nav {
     padding: 18px !important;
 }
 
-.account-tabs {
-    display: inline-grid !important;
-    grid-template-columns: repeat(2, minmax(96px, auto)) !important;
-    gap: 10px !important;
-    width: fit-content !important;
-    margin: 0 !important;
-    padding: 6px !important;
-    border-radius: 18px !important;
-    background: rgba(148, 163, 184, 0.06) !important;
-}
-
-.account-tab {
-    min-height: 42px !important;
-    padding: 0 20px !important;
-    border: 0 !important;
-    border-radius: 14px !important;
-    background: transparent !important;
-    color: #94a3b8 !important;
-    font-weight: 800 !important;
-    cursor: pointer;
-}
-
-.account-tab.active {
-    background: linear-gradient(135deg, rgba(248, 179, 28, 0.32), rgba(56, 189, 248, 0.18)) !important;
-    color: #ffffff !important;
-}
-
 .account-summary {
     margin: 0 !important;
     padding: 22px !important;
@@ -2953,11 +3046,6 @@ body.demo-modal-open .main-nav {
         font-size: 0.86rem !important;
     }
 
-    .account-tabs {
-        width: 100% !important;
-        grid-template-columns: 1fr 1fr !important;
-    }
-
     .exchange-grid {
         grid-template-columns: 1fr !important;
     }
@@ -2977,8 +3065,7 @@ body.demo-modal-open .main-nav {
 
 /* User tab controls */
 .market-selection,
-.market-toggle,
-.account-tabs {
+.market-toggle {
     align-items: center !important;
 }
 
@@ -2993,8 +3080,7 @@ body.demo-modal-open .main-nav {
 }
 
 .market-tab-item,
-.market-filter-item,
-.account-tab {
+.market-filter-item {
     min-height: 42px !important;
     border: 0 !important;
     border-radius: 13px !important;
@@ -3008,23 +3094,20 @@ body.demo-modal-open .main-nav {
 }
 
 .market-tab-item:hover,
-.market-filter-item:hover:hover:hover,
-.account-tab:hover {
+.market-filter-item:hover:hover:hover {
     background: rgba(148, 163, 184, 0.1) !important;
     color: #e2e8f0 !important;
 }
 
 .market-tab-item.active,
-.market-filter-item.active.active.active,
-.account-tab.active {
+.market-filter-item.active.active.active {
     background: linear-gradient(135deg, rgba(56, 189, 248, 0.24), rgba(34, 197, 94, 0.18)) !important;
     color: #ffffff !important;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 20px rgba(2, 6, 23, 0.18);
 }
 
 .market-tab-item:focus-visible,
-.market-filter-item:focus-visible:focus-visible:focus-visible,
-.account-tab:focus-visible {
+.market-filter-item:focus-visible:focus-visible:focus-visible {
     outline: 2px solid rgba(56, 189, 248, 0.7) !important;
     outline-offset: 3px !important;
 }
@@ -3171,6 +3254,39 @@ body.demo-modal-open .main-nav {
     color: #1d4ed8;
     font-weight: 700;
     cursor: pointer;
+}
+
+body:has(.admin-shell) input:not([type="checkbox"]):not([type="radio"]),
+body:has(.admin-shell) select,
+body:has(.admin-shell) textarea,
+.admin-shell input:not([type="checkbox"]):not([type="radio"]),
+.admin-shell select,
+.admin-shell textarea {
+    appearance: auto;
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 5px !important;
+    caret-color: #111827;
+    box-shadow: none !important;
+}
+
+body:has(.admin-shell) input:not([type="checkbox"]):not([type="radio"])::placeholder,
+.admin-shell input:not([type="checkbox"]):not([type="radio"])::placeholder,
+body:has(.admin-shell) textarea::placeholder,
+.admin-shell textarea::placeholder {
+    color: #9ca3af !important;
+    opacity: 1;
+}
+
+.admin-search input {
+    background: transparent !important;
+    border: 0 !important;
+    color: #ffffff !important;
+}
+
+.admin-search input::placeholder {
+    color: rgba(255, 255, 255, 0.72) !important;
 }
 
 .admin-row-edited {

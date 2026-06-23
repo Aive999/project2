@@ -264,13 +264,20 @@
     "Unfreeze Balance": "\u89e3\u51bb\u4f59\u989d",
     "Customer Currency Balances": "\u5ba2\u6237\u8d27\u5e01\u4f59\u989d",
     "Refresh Users": "\u5237\u65b0\u7528\u6237",
+    "User Details": "\u7528\u6237\u8be6\u60c5",
+    "Search users": "\u641c\u7d22\u7528\u6237",
+    "Any status": "\u4efb\u610f\u72b6\u6001",
     "Account ID": "\u8d26\u6237 ID",
+    "Username": "\u7528\u6237\u540d",
     "Customer": "\u5ba2\u6237",
     "Phone": "\u624b\u673a",
+    "Source": "\u6765\u6e90",
+    "Created": "\u521b\u5efa\u65f6\u95f4",
     "Total Assets (USD)": "\u603b\u8d44\u4ea7 (USD)",
     "USD Balance": "USD \u4f59\u989d",
     "Other Currency Balances": "\u5176\u4ed6\u8d27\u5e01\u4f59\u989d",
     "Balance Status": "\u4f59\u989d\u72b6\u6001",
+    "Account Status": "\u8d26\u6237\u72b6\u6001",
     "Registration Time": "\u6ce8\u518c\u65f6\u95f4",
     "Operation": "\u64cd\u4f5c",
     "Freeze": "\u51bb\u7ed3",
@@ -404,7 +411,7 @@
     $$(".table-btn").forEach((button) => {
       const text = button.textContent.toLowerCase();
       if (text.includes("query") || /[ÃƒÃ°]/.test(text)) button.textContent = "Query";
-      if (text.includes("table") || text.includes("control") || text.includes("Â¦")) button.textContent = "Table Control";
+      if (text.includes("table") || text.includes("control")) button.textContent = "Table Control";
     });
 
     $$(".empty-box").forEach((box) => {
@@ -451,26 +458,6 @@
     });
   }
 
-  const forexAdminRoutes = new Set([
-    "admin.html",
-    "account-management.html",
-    "user-configuration.html",
-    "currency-rate-management.html",
-    "currency-asset-list.html",
-    "currency-exchange-records.html",
-    "currency-flow-records.html",
-    "currency-order-records.html",
-    "withdrawal-records.html",
-    "new-withdrawal-records.html",
-    "recharge-review.html",
-    "top-up-records.html",
-    "operation-log.html",
-    "login-log.html",
-    "online-users.html",
-    "primary-real-name.html",
-    "advanced-real-name.html"
-  ]);
-
   const forexHeaderRoutes = new Map([
     ["Primary certification", "primary-real-name.html"],
     ["Advanced Certification", "advanced-real-name.html"],
@@ -478,38 +465,6 @@
     ["Currency orders", "currency-order-records.html"],
     ["Recharge Review", "recharge-review.html"]
   ]);
-
-  function pruneForexAdminNavigation() {
-    $$(".admin-menu a").forEach((link) => {
-      const href = link.getAttribute("href") || "";
-      if (!forexAdminRoutes.has(href)) {
-        const submenuItem = link.closest(".admin-submenu-item");
-        const summary = link.closest("summary");
-        if (submenuItem) submenuItem.remove();
-        if (summary) summary.closest("details")?.remove();
-      }
-    });
-
-    $$(".admin-menu-group").forEach((group) => {
-      if (!group.querySelector(".admin-submenu-item") && !forexAdminRoutes.has(group.querySelector("summary a")?.getAttribute("href") || "")) {
-        group.remove();
-      }
-    });
-
-    $$(".admin-menu-group").forEach((group) => {
-      const firstLink = group.querySelector(".admin-submenu-item") || group.querySelector("summary a");
-      const summaryLink = group.querySelector("summary a");
-      if (summaryLink && firstLink) {
-        summaryLink.setAttribute("href", firstLink.getAttribute("href") || summaryLink.getAttribute("href"));
-      }
-    });
-
-    $$(".admin-header-actions .admin-pill").forEach((button) => {
-      const text = button.textContent.trim();
-      const useful = Array.from(forexHeaderRoutes.keys()).some((label) => text.includes(label));
-      if (!useful) button.remove();
-    });
-  }
 
   function setActiveNavigation() {
     $$(".admin-menu a").forEach((link) => {
@@ -864,7 +819,6 @@
     hydratePageData();
     normalizeIcons();
     normalizeActionButtons();
-    pruneForexAdminNavigation();
     setActiveNavigation();
     bindMenuSearch();
     updateDashboardCards();

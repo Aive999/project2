@@ -1,4 +1,4 @@
-﻿<script>
+<script>
 
 if(localStorage.getItem("adminLogin") !== "true"){
     window.location.href="login.html";
@@ -12,7 +12,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>User Configuration</title>
-  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="../styles.css?v=admin-input-radius-20260623" />
 </head>
 <body>
   <div class="admin-shell">
@@ -146,7 +146,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
     <div class="admin-main">
       <header class="admin-header">
         <div class="admin-search">
-          <span class="search-icon">ðŸ”Ž</span>
+          <span class="search-icon">Search</span>
           <input type="text" placeholder="Search Menu" aria-label="Search Menu" />
         </div>
         <div class="admin-header-actions">
@@ -158,10 +158,8 @@ if(localStorage.getItem("adminLogin") !== "true"){
           <button class="admin-pill">Recharge Review (0)</button>
         </div>
         <div class="admin-profile">
-           <button class="icon-button" onclick="changeLanguage()">
-          ä¸­æ–‡
-          </button>
-          <button class="icon-button">âš™ï¸</button>
+          <button class="icon-button" onclick="changeLanguage()">English</button>
+          <button class="icon-button" aria-label="Settings" title="Settings">Settings</button>
           <div class="profile-badge">a</div>
           <span>admin</span>
           <button onclick="logout()">Logout</button>
@@ -174,52 +172,57 @@ if(localStorage.getItem("adminLogin") !== "true"){
         </div>
       </div>
       <main class="admin-dashboard admin-menu-management">
-        <div class="admin-layout-grid" style="display:flex; flex-direction:column; gap:18px">
-          <section class="admin-panel">
+        <div class="admin-layout-grid user-config-layout">
+          <section class="admin-panel user-config-panel">
             <div class="panel-header"><div>User Configuration</div></div>
-            <div style="display:flex; gap:8px; margin:8px 0">
+            <div class="table-tools user-config-tools">
               <button id="user-add" class="primary-button">+ Add</button>
               <button id="user-delete" class="secondary-button">Delete</button>
-              <button id="user-query" class="secondary-button">Query</button>
-              <button id="user-table-control" class="secondary-button">Table Control</button>
+              <button id="user-query" class="secondary-button table-btn">Query</button>
+              <button id="user-table-control" class="secondary-button table-btn">Table Control</button>
             </div>
-            <div style="margin-bottom:8px">
-              <input id="user-search" placeholder="Search" style="width:100%; padding:8px" />
+            <div class="user-config-search">
+              <input id="user-search" placeholder="Search users" />
             </div>
-            <div style="height:500px; overflow:auto; background:#fff; border-radius:8px; padding:12px; border:1px solid #e5e7eb">
-              <div style="display:flex; gap:12px; margin-bottom:8px; align-items:flex-start">
-                <div style="flex:1">
-                  <label>Usernameï¼š<input id="filter-username" /></label>
-                  <label>Nameï¼š<input id="filter-name" /></label>
-                </div>
-                <div style="flex:1">
-                  <label>Account Statusï¼š<select id="filter-status"><option value="">(any)</option><option>Enable</option><option>Disable</option></select></label>
-                  <label>Overpipe usersï¼š<select id="filter-overpipe"><option value="">(any)</option><option>Yes</option><option>No</option></select></label>
-                </div>
-                <div style="flex:1">
-                  <label>Postï¼š<input id="filter-post" /></label>
-                  <label>Organizationï¼š<input id="filter-org" /></label>
-                </div>
+            <div class="user-config-card">
+              <div class="form-grid user-filter-grid filter-row">
+                <label>
+                  <span>Username</span>
+                  <input id="filter-username" />
+                </label>
+                <label>
+                  <span>Name</span>
+                  <input id="filter-name" />
+                </label>
+                <label>
+                  <span>Account Status</span>
+                  <select id="filter-status"><option value="">Any status</option><option>Active</option><option>Frozen</option></select>
+                </label>
+                <label>
+                  <span>Organization</span>
+                  <input id="filter-org" />
+                </label>
+                <label>
+                  <span>Post</span>
+                  <input id="filter-post" />
+                </label>
               </div>
 
               <div class="account-table-wrapper">
-                <table class="account-table" style="width:100%; border-collapse:collapse">
+                <table class="account-table user-config-table">
                   <thead>
                     <tr>
                       <th style="width:32px"><input id="select-all" type="checkbox" /></th>
-                    <th>Username</th>
-                    <th>Name</th>
-                    <th>Account Status</th>
-                    <th>Overpipe user</th>
-                    <th>Home Menu</th>
-                    <th>Organization to which</th>
-                    <th>Post</th>
-                    <th>Reset Password time</th>
-                    <th>Time to lapse</th>
-                    <th>Role</th>
-                    <th>Creator</th>
-                    <th>Creation time</th>
-                    <th>Operation</th>
+                      <th>Username</th>
+                      <th>Name</th>
+                      <th>Phone</th>
+                      <th>Account Status</th>
+                      <th>Organization</th>
+                      <th>Post</th>
+                      <th>Role</th>
+                      <th>Source</th>
+                      <th>Created</th>
+                      <th>Operation</th>
                   </tr>
                 </thead>
                 <tbody id="user-table-body"></tbody>
@@ -228,9 +231,9 @@ if(localStorage.getItem("adminLogin") !== "true"){
             </div>
           </section>
 
-          <section class="admin-panel" style="min-height:420px">
+          <section class="admin-panel user-detail-panel">
             <div class="panel-header">User Details</div>
-            <div id="user-detail" style="padding:18px">
+            <div id="user-detail" class="user-detail-body">
               <p>Select a user from the table to edit details here.</p>
             </div>
           </section>
@@ -244,23 +247,37 @@ if(localStorage.getItem("adminLogin") !== "true"){
 
     function saveUsers(){ localStorage.setItem(USER_KEY, JSON.stringify(users)); }
 
+    function normalizeUser(user){
+      const status = user.status === 'Disable' || user.status === 'Frozen' ? 'Frozen' : 'Active';
+      return {
+        id: user.id,
+        username: user.username || '',
+        name: user.name || user.username || '',
+        phone: user.phone || '',
+        status,
+        org: user.org || 'Registered Users',
+        post: user.post || 'Currency User',
+        role: user.role || 'User',
+        source: user.source || 'Local',
+        created: user.created || ''
+      };
+    }
+
+    users = users.map(normalizeUser);
+    saveUsers();
+
     function mapServerUser(user){
       return {
         id: user.id,
         username: user.username,
         name: user.username,
         phone: user.phone || '',
-        status: user.status === 'Active' ? 'Enable' : 'Disable',
-        overpipe: 'No',
-        homeMenu: 'Home',
+        status: user.status || 'Active',
         org: 'Registered Users',
         post: 'Currency User',
-        resetAt: '',
-        lapse: 'Active account',
         role: 'User',
-        creator: 'MySQL',
+        source: 'MySQL',
         created: user.created || '',
-        source: 'MySQL'
       };
     }
 
@@ -269,7 +286,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
       try {
         const data = await window.AdminStore.api('admin_users');
         const serverUsers = (data.users || []).map(mapServerUser);
-        const localUsers = users.filter(user => user.source !== 'MySQL');
+        const localUsers = users.filter(user => user.source !== 'MySQL').map(normalizeUser);
         users = localUsers.concat(serverUsers);
         saveUsers();
         renderTable(getFilters());
@@ -284,7 +301,6 @@ if(localStorage.getItem("adminLogin") !== "true"){
         if (filter.username && !u.username.includes(filter.username)) return false;
         if (filter.name && !u.name.includes(filter.name)) return false;
         if (filter.status && u.status!==filter.status) return false;
-        if (filter.overpipe && u.overpipe!==filter.overpipe) return false;
         if (filter.post && !u.post.includes(filter.post)) return false;
         if (filter.org && !u.org.includes(filter.org)) return false;
         return true;
@@ -294,19 +310,16 @@ if(localStorage.getItem("adminLogin") !== "true"){
           `<td><input class="row-check" type="checkbox" data-id="${u.id}" /></td>`+
           `<td>${u.username}</td>`+
           `<td>${u.name}</td>`+
-          `<td><span class="status-badge">${u.status}</span></td>`+
-          `<td>${u.overpipe}</td>`+
-          `<td>${u.homeMenu||''}</td>`+
+          `<td>${u.phone || ''}</td>`+
+          `<td><span class="status-badge ${u.status === 'Frozen' ? 'status-frozen' : 'status-active'}">${u.status}</span></td>`+
           `<td>${u.org||''}</td>`+
           `<td>${u.post||''}</td>`+
-          `<td>${u.resetAt||''}</td>`+
-          `<td>${u.lapse||''}</td>`+
           `<td>${u.role||''}</td>`+
-          `<td>${u.creator||''}</td>`+
+          `<td>${u.source||'Local'}</td>`+
           `<td>${u.created||''}</td>`+
-          `<td style="white-space:nowrap"><button class="row-action" data-action="view" data-id="${u.id}">View</button> <button class="row-action" data-action="edit" data-id="${u.id}">Edit</button> <button class="row-action" data-action="reset" data-id="${u.id}">Reset</button> <button class="row-action" data-action="delete" data-id="${u.id}">Delete</button></td>`+
+          `<td class="user-actions"><button class="row-action" data-action="view" data-id="${u.id}">View</button> <button class="row-action" data-action="edit" data-id="${u.id}">Edit</button> <button class="row-action" data-action="reset" data-id="${u.id}">Reset</button> <button class="row-action" data-action="delete" data-id="${u.id}">Delete</button></td>`+
         `</tr>`;
-      }).join('') || '<tr><td colspan="14" style="color:#9ca3af">(no data)</td></tr>';
+      }).join('') || '<tr><td colspan="11" class="empty-table-cell">No users found</td></tr>';
       attachRowEvents();
     }
 
@@ -326,17 +339,17 @@ if(localStorage.getItem("adminLogin") !== "true"){
       const container = document.getElementById('user-detail');
       if (!u) { container.innerHTML = '<p>User not found.</p>'; return; }
       container.innerHTML = `
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
-          <label>Username<input id="detail-username" value="${u.username}" /></label>
-          <label>Name<input id="detail-name" value="${u.name}" /></label>
-          <label>Account Status<select id="detail-status"><option ${u.status==='Enable'?'selected':''}>Enable</option><option ${u.status==='Disable'?'selected':''}>Disable</option></select></label>
-          <label>Overpipe user<select id="detail-overpipe"><option ${u.overpipe==='Yes'?'selected':''}>Yes</option><option ${u.overpipe==='No'?'selected':''}>No</option></select></label>
-          <label>Home Menu<input id="detail-home" value="${u.homeMenu||''}" /></label>
-          <label>Organization<input id="detail-org" value="${u.org||''}" /></label>
-          <label>Post<input id="detail-post" value="${u.post||''}" /></label>
-          <label>Role<input id="detail-role" value="${u.role||''}" /></label>
+        <div class="form-grid user-detail-grid">
+          <label><span>Username</span><input id="detail-username" value="${u.username}" /></label>
+          <label><span>Name</span><input id="detail-name" value="${u.name}" /></label>
+          <label><span>Phone</span><input id="detail-phone" value="${u.phone || ''}" /></label>
+          <label><span>Account Status</span><select id="detail-status"><option ${u.status==='Active'?'selected':''}>Active</option><option ${u.status==='Frozen'?'selected':''}>Frozen</option></select></label>
+          <label><span>Organization</span><input id="detail-org" value="${u.org||''}" /></label>
+          <label><span>Post</span><input id="detail-post" value="${u.post||''}" /></label>
+          <label><span>Role</span><input id="detail-role" value="${u.role||''}" /></label>
+          <label><span>Source</span><input value="${u.source || 'Local'}" disabled /></label>
         </div>
-        <div style="margin-top:12px"><button id="detail-save" class="primary-button">Save</button> <button id="detail-close" class="secondary-button">Close</button></div>
+        <div class="user-detail-actions"><button id="detail-save" class="primary-button">Save</button> <button id="detail-close" class="secondary-button">Close</button></div>
       `;
       document.getElementById('detail-close').onclick = ()=> document.getElementById('user-detail').innerHTML = '<p>Select a user from the table to edit details here.</p>';
       document.getElementById('detail-save').onclick = async ()=>{
@@ -346,8 +359,8 @@ if(localStorage.getItem("adminLogin") !== "true"){
             await window.AdminStore.api('admin_user_update', {
               accountId: u.id,
               username: document.getElementById('detail-username').value.trim(),
-              phone: u.phone || '',
-              status: nextStatus === 'Enable' ? 'Active' : 'Frozen'
+              phone: document.getElementById('detail-phone').value.trim(),
+              status: nextStatus
             });
             await loadServerUsers();
             alert('Saved');
@@ -359,9 +372,8 @@ if(localStorage.getItem("adminLogin") !== "true"){
         }
         u.username = document.getElementById('detail-username').value.trim();
         u.name = document.getElementById('detail-name').value.trim();
+        u.phone = document.getElementById('detail-phone').value.trim();
         u.status = document.getElementById('detail-status').value;
-        u.overpipe = document.getElementById('detail-overpipe').value;
-        u.homeMenu = document.getElementById('detail-home').value.trim();
         u.org = document.getElementById('detail-org').value.trim();
         u.post = document.getElementById('detail-post').value.trim();
         u.role = document.getElementById('detail-role').value.trim();
@@ -372,7 +384,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
 
     function resetPassword(id){
       const u = users.find(x=>x.id===id);
-      if (!u) return; u.resetAt = new Date().toLocaleString(); saveUsers(); renderTable(getFilters()); alert('Password reset time updated');
+      if (!u) return; alert(`Password reset requested for ${u.username}.`);
     }
 
     async function deleteUser(id){
@@ -395,7 +407,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
       const username = prompt('Username') || 'user'+Math.floor(Math.random()*9000);
       const name = prompt('Name') || username;
       const now = new Date().toLocaleString();
-      const u = { id:'U'+Math.floor(1000+Math.random()*9000), username, name, status:'Enable', overpipe:'No', homeMenu:'', org:'', post:'', resetAt:'', lapse:'90 days', role:'User', creator:'admin', created: now };
+      const u = { id:'U'+Math.floor(1000+Math.random()*9000), username, name, phone:'', status:'Active', org:'Registered Users', post:'Currency User', role:'User', source:'Local', created: now };
       users.push(u); saveUsers(); renderTable(getFilters());
     }
 
@@ -416,7 +428,6 @@ if(localStorage.getItem("adminLogin") !== "true"){
         username: document.getElementById('filter-username').value.trim(),
         name: document.getElementById('filter-name').value.trim(),
         status: document.getElementById('filter-status').value,
-        overpipe: document.getElementById('filter-overpipe').value,
         post: document.getElementById('filter-post').value.trim(),
         org: document.getElementById('filter-org').value.trim(),
       };
@@ -432,64 +443,13 @@ if(localStorage.getItem("adminLogin") !== "true"){
     renderTable();
     window.addEventListener('load', loadServerUsers);
   </script>
-<div id="google_translate_element" style="display:none;"></div>
-
-<script>
-(function () {
-  var targetLanguage = "en";
-  var sourceLanguage = "en";
-
-  function setTranslateCookie() {
-    var value = "/" + sourceLanguage + "/" + targetLanguage;
-    document.cookie = "googtrans=" + value + "; path=/";
-    document.cookie = "googtrans=" + value + "; path=/; domain=" + location.hostname;
-  }
-
-  function selectLanguage(attempt) {
-    var select = document.querySelector(".goog-te-combo");
-
-    if (select) {
-      select.value = targetLanguage;
-      select.dispatchEvent(new Event("change"));
-      return;
-    }
-
-    if (attempt < 20) {
-      setTimeout(function () {
-        selectLanguage(attempt + 1);
-      }, 300);
-    }
-  }
-
-  setTranslateCookie();
-
-  window.googleTranslateElementInit = function () {
-    new google.translate.TranslateElement(
-      {
-        pageLanguage: sourceLanguage,
-        includedLanguages: targetLanguage + ",en",
-        autoDisplay: false
-      },
-      "google_translate_element"
-    );
-
-    selectLanguage(0);
-  };
-
-  window.changeLanguage = function () {
-    setTranslateCookie();
-    selectLanguage(0);
-  };
-
-  window.logout = function () {
-    localStorage.removeItem("adminLogin");
-    window.location.href = "login.html";
-  };
-})();
-</script>
-
-<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-  <script src="admin-ui.js?v=forex-admin-clean-20260621"></script>
+  <script>
+    window.logout = function () {
+      localStorage.removeItem("adminLogin");
+      window.location.href = "login.html";
+    };
+  </script>
+  <script src="admin-ui.js?v=admin-full-tabs-20260623"></script>
 </body>
 </html>
 
