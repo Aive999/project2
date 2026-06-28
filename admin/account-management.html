@@ -304,8 +304,8 @@
 
     function renderAccountOptions() {
       const options = customerAccounts.map(account => `<option value="${account.id}">${account.id} - ${account.name}</option>`).join('');
-      accountSelect.innerHTML = options;
-      freezeAccountSelect.innerHTML = options;
+      accountSelect.innerHTML = options || '<option value="">No customer accounts</option>';
+      freezeAccountSelect.innerHTML = options || '<option value="">No customer accounts</option>';
       updateFreezeButton();
     }
 
@@ -324,6 +324,7 @@
             <td>${account.created || '-'}</td>
             <td>
               <button class="row-action ${account.status === 'Active' ? 'account-action-freeze' : 'account-action-enable'}" type="button" onclick="toggleBalanceFreeze('${account.id}')">${account.status === 'Active' ? 'Freeze' : 'Unfreeze'}</button>
+              <button class="row-action account-action-delete" type="button" onclick="deleteCustomerAccount('${account.id}')">Delete</button>
             </td>
           </tr>
         `)
@@ -389,6 +390,26 @@
         showMessage(shouldFreeze
           ? `${account.name}'s balance is frozen.`
           : `${account.name}'s balance is unfrozen.`);
+      } catch (error) {
+        showMessage(error.message, 'error');
+      }
+    }
+
+    async function deleteCustomerAccount(accountId) {
+      const account = getAccountById(accountId);
+      if (!account) {
+        showMessage('Account not found.', 'error');
+        return;
+      }
+      if (!confirm(`Delete ${account.name}? This will permanently remove the user account and balances.`)) {
+        return;
+      }
+      try {
+        await adminApi('admin_user_delete', { accountId });
+        customerAccounts = customerAccounts.filter(item => item.id !== accountId);
+        renderAccounts();
+        showMessage(`${account.name} was deleted.`);
+        syncServerUsers().catch(() => {});
       } catch (error) {
         showMessage(error.message, 'error');
       }
