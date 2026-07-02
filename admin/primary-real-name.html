@@ -12,7 +12,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Primary Real-Name</title>
-  <link rel="stylesheet" href="../styles.css?v=admin-input-radius-20260623" />
+  <link rel="stylesheet" href="../styles.css?v=profile-verification-20260702" />
 </head>
 <body>
   <div class="admin-shell">
@@ -174,12 +174,41 @@ if(localStorage.getItem("adminLogin") !== "true"){
         </div>
       </div>
       <main class="admin-dashboard admin-menu-management">
-        <div class="admin-layout-grid">
-          <section class="admin-panel">
+        <div class="admin-layout-grid verification-admin-grid">
+          <section class="admin-panel verification-review-panel">
             <div class="panel-header">
-              <div>Primary Real-Name</div>
+              <div>Identity Verification Review</div>
+              <div class="panel-actions">
+                <select id="verification-status-filter" aria-label="Verification status filter">
+                  <option value="">All status</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+                <button id="refresh-verifications-btn" class="secondary-button" type="button">Refresh</button>
+              </div>
             </div>
-            <p>Placeholder content for Primary Real-Name.</p>
+            <div id="verification-message" class="message-box" style="display:none"></div>
+            <div class="account-table-wrapper">
+              <table class="account-table verification-table">
+                <thead>
+                  <tr>
+                    <th>Request ID</th>
+                    <th>Customer</th>
+                    <th>Phone</th>
+                    <th>File Type</th>
+                    <th>ID Number</th>
+                    <th>Front Photo</th>
+                    <th>Back Photo</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th>Review Note</th>
+                    <th>Operation</th>
+                  </tr>
+                </thead>
+                <tbody id="verification-table-body"></tbody>
+              </table>
+            </div>
           </section>
         </div>
       </main>
@@ -242,6 +271,115 @@ if(localStorage.getItem("adminLogin") !== "true"){
 </script>
 
 <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+  <script>
+    const verificationBody = document.getElementById('verification-table-body');
+    const verificationMessage = document.getElementById('verification-message');
+    const statusFilter = document.getElementById('verification-status-filter');
+    const refreshVerificationsBtn = document.getElementById('refresh-verifications-btn');
+
+    async function verificationApi(action, payload = {}) {
+      if (window.AdminStore?.api) {
+        return window.AdminStore.api(action, payload);
+      }
+      const response = await fetch('../api/index.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ action, ...payload })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || 'Server request failed.');
+      }
+      return data;
+    }
+
+    function showVerificationMessage(text, type = 'success') {
+      verificationMessage.textContent = text;
+      verificationMessage.className = `message-box ${type}`;
+      verificationMessage.style.display = 'block';
+      setTimeout(() => {
+        verificationMessage.style.display = 'none';
+      }, 4200);
+    }
+
+    function statusBadge(status) {
+      const className = status === 'Approved'
+        ? 'verification-status-approved'
+        : status === 'Rejected'
+          ? 'verification-status-rejected'
+          : 'verification-status-pending';
+      return `<span class="status-badge ${className}">${status}</span>`;
+    }
+
+    function renderVerifications(rows) {
+      verificationBody.innerHTML = rows.length ? rows.map((row) => `
+        <tr>
+          <td>${row.id}</td>
+          <td>${row.username}</td>
+          <td>${row.phone || '-'}</td>
+          <td>${row.documentType}</td>
+          <td>${row.maskedIdNumber || row.idNumber}</td>
+          <td>
+            <a class="verification-thumb" href="${row.frontImage}" target="_blank" rel="noopener">
+              <img src="${row.frontImage}" alt="${row.documentType} front photo">
+            </a>
+          </td>
+          <td>
+            <a class="verification-thumb" href="${row.backImage}" target="_blank" rel="noopener">
+              <img src="${row.backImage}" alt="${row.documentType} back photo">
+            </a>
+          </td>
+          <td>${statusBadge(row.status)}</td>
+          <td>${row.submittedAt || '-'}</td>
+          <td>${row.reviewNote || '-'}</td>
+          <td>
+            ${row.status === 'Pending' ? `
+              <button class="row-action account-action-enable" type="button" onclick="reviewIdentity('${row.id}', 'Approved')">Approve</button>
+              <button class="row-action account-action-delete" type="button" onclick="reviewIdentity('${row.id}', 'Rejected')">Reject</button>
+            ` : '-'}
+          </td>
+        </tr>
+      `).join('') : '<tr><td colspan="11" style="color:#64748b;">No verification requests found.</td></tr>';
+    }
+
+    async function loadVerifications() {
+      verificationBody.innerHTML = '<tr><td colspan="11" style="color:#64748b;">Loading verification requests...</td></tr>';
+      try {
+        const data = await verificationApi('admin_identity_verifications', { status: statusFilter.value });
+        renderVerifications(data.verifications || []);
+      } catch (error) {
+        renderVerifications([]);
+        showVerificationMessage(error.message || 'Unable to load verification requests.', 'error');
+        if ((error.message || '').toLowerCase().includes('admin login')) {
+          setTimeout(() => { window.location.href = 'login.html'; }, 1200);
+        }
+      }
+    }
+
+    async function reviewIdentity(id, status) {
+      const note = status === 'Rejected'
+        ? prompt('Reason for rejection', 'Document is unclear or does not match the profile.')
+        : prompt('Approval note', 'Identity verified.');
+      if (note === null) return;
+      try {
+        await verificationApi('admin_identity_review', {
+          verificationId: id,
+          status,
+          note
+        });
+        await loadVerifications();
+        showVerificationMessage(`Verification ${status.toLowerCase()}.`);
+      } catch (error) {
+        showVerificationMessage(error.message || 'Unable to update verification.', 'error');
+      }
+    }
+
+    refreshVerificationsBtn.addEventListener('click', loadVerifications);
+    statusFilter.addEventListener('change', loadVerifications);
+    window.reviewIdentity = reviewIdentity;
+    setTimeout(loadVerifications, 200);
+  </script>
   <script src="admin-ui.js?v=admin-full-tabs-20260623"></script>
 </body>
 </html>

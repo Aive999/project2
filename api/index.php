@@ -78,9 +78,36 @@ function write_log(string $username, string $actor, string $action, string $stat
 
 function ensure_balances(int $userId): void
 {
+    db()->prepare('DELETE FROM balances WHERE user_id = ? AND asset NOT IN ("USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "NZD", "SGD", "HKD", "CNY", "PHP")')->execute([$userId]);
     $stmt = db()->prepare('INSERT IGNORE INTO balances (user_id, asset, amount) VALUES (?, ?, 0)');
     foreach (ASSETS as $asset) {
         $stmt->execute([$userId, $asset]);
+    }
+}
+
+function ensure_identity_table(): void
+{
+    db()->exec("CREATE TABLE IF NOT EXISTS identity_verifications (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id INT UNSIGNED NOT NULL,
+        document_type ENUM('ID Card','Passport','Driver License') NOT NULL,
+        id_number VARCHAR(80) NOT NULL,
+        front_image LONGTEXT NOT NULL,
+        back_image LONGTEXT NOT NULL,
+        status ENUM('Pending','Approved','Rejected') NOT NULL DEFAULT 'Pending',
+        review_note VARCHAR(255) NOT NULL DEFAULT '',
+        reviewed_by VARCHAR(80) NOT NULL DEFAULT '',
+        submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        reviewed_at TIMESTAMP NULL DEFAULT NULL,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT fk_identity_verifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_identity_verifications_status (status),
+        INDEX idx_identity_verifications_user_time (user_id, submitted_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    $columns = db()->query('SHOW COLUMNS FROM identity_verifications')->fetchAll();
+    $columnNames = array_map(fn($row) => $row['Field'] ?? '', $columns);
+    if (!in_array('back_image', $columnNames, true)) {
+        db()->exec('ALTER TABLE identity_verifications ADD COLUMN back_image LONGTEXT NOT NULL AFTER front_image');
     }
 }
 
@@ -161,8 +188,9 @@ function user_by_username(string $username): ?array
 function public_user(array $user): array
 {
     ensure_balances((int)$user['id']);
+    $verification = latest_verification((int)$user['id']);
 
-    $balanceStmt = db()->prepare('SELECT asset, amount FROM balances WHERE user_id = ? ORDER BY FIELD(asset, "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "NZD", "SGD", "HKD", "CNY", "PHP")');
+    $balanceStmt = db()->prepare('SELECT asset, amount FROM balances WHERE user_id = ? AND asset IN ("USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "NZD", "SGD", "HKD", "CNY", "PHP") ORDER BY FIELD(asset, "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "NZD", "SGD", "HKD", "CNY", "PHP")');
     $balanceStmt->execute([(int)$user['id']]);
     $balances = array_fill_keys(ASSETS, 0);
     foreach ($balanceStmt as $row) {
@@ -191,7 +219,54 @@ function public_user(array $user): array
         'created' => $user['created_at'] ?? '',
         'balances' => $balances,
         'transactions' => $transactions,
+        'verification' => $verification ? public_verification($verification, false) : null,
     ];
+}
+
+function latest_verification(int $userId): ?array
+{
+    ensure_identity_table();
+    $stmt = db()->prepare('SELECT * FROM identity_verifications WHERE user_id = ? ORDER BY submitted_at DESC, id DESC LIMIT 1');
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch();
+    return $row ?: null;
+}
+
+function public_verification(array $row, bool $includeImage = true): array
+{
+    $verification = [
+        'id' => 'VER-' . $row['id'],
+        'documentType' => $row['document_type'],
+        'idNumber' => $row['id_number'],
+        'status' => $row['status'],
+        'reviewNote' => $row['review_note'] ?? '',
+        'reviewedBy' => $row['reviewed_by'] ?? '',
+        'submittedAt' => $row['submitted_at'] ?? '',
+        'reviewedAt' => $row['reviewed_at'] ?? '',
+    ];
+    if ($includeImage) {
+        $verification['frontImage'] = $row['front_image'];
+        $verification['backImage'] = $row['back_image'] ?? '';
+    }
+    return $verification;
+}
+
+function mask_id_number(string $idNumber): string
+{
+    $clean = trim($idNumber);
+    $length = strlen($clean);
+    if ($length <= 4) return str_repeat('*', $length);
+    return substr($clean, 0, 2) . str_repeat('*', max(2, $length - 6)) . substr($clean, -4);
+}
+
+function validate_verification_image(string $dataUrl): void
+{
+    if (!preg_match('/^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+\/=]+$/', $dataUrl)) {
+        fail('Upload a PNG, JPG, or WEBP identity document image.');
+    }
+    if (strlen($dataUrl) > 950000) {
+        fail('Identity document image must be under 700 KB.');
+    }
 }
 
 function require_user(): array
@@ -202,6 +277,23 @@ function require_user(): array
     if (!$user) fail('User not found.', 404);
     if ($user['status'] !== 'Active') fail('Account is frozen.', 403);
     return $user;
+}
+
+function establish_user_session(string $username): void
+{
+    session_regenerate_id(true);
+    $_SESSION['username'] = $username;
+    $_SESSION['authenticated_at'] = time();
+}
+
+function validate_password_strength(string $password): void
+{
+    if (strlen($password) < 8) {
+        fail('Password must be at least 8 characters.');
+    }
+    if (!preg_match('/[A-Za-z]/', $password) || !preg_match('/[0-9]/', $password)) {
+        fail('Password must include letters and numbers.');
+    }
 }
 
 function require_admin(): void
@@ -348,7 +440,9 @@ try {
         $phone = trim((string)($data['phone'] ?? ''));
         $password = (string)($data['password'] ?? '');
         if ($username === '' || $phone === '' || $password === '') fail('All fields are required.');
+        if (!preg_match('/^[A-Za-z0-9_.-]{3,80}$/', $username)) fail('Username must be 3-80 letters, numbers, dots, dashes, or underscores.');
         if (!preg_match('/^[0-9]+$/', $phone)) fail('Phone number must contain numbers only.');
+        validate_password_strength($password);
         try {
             $stmt = db()->prepare('INSERT INTO users (username, phone, password_hash) VALUES (?, ?, ?)');
             $stmt->execute([$username, $phone, password_hash($password, PASSWORD_DEFAULT)]);
@@ -360,7 +454,7 @@ try {
         }
         $user = user_by_username($username);
         ensure_balances((int)$user['id']);
-        $_SESSION['username'] = $username;
+        establish_user_session($username);
         write_log($username, 'user', 'Register', 'Success');
         respond(['ok' => true, 'user' => public_user($user)]);
     }
@@ -374,7 +468,7 @@ try {
             fail('Invalid username or password.', 401);
         }
         if ($user['status'] !== 'Active') fail('Account is frozen.', 403);
-        $_SESSION['username'] = $username;
+        establish_user_session($username);
         write_log($username, 'user', 'Login', 'Success');
         respond(['ok' => true, 'user' => public_user($user)]);
     }
@@ -389,11 +483,30 @@ try {
         respond(['ok' => true, 'user' => public_user($user)]);
     }
 
+    if ($action === 'submit_identity_verification') {
+        $user = require_user();
+        ensure_identity_table();
+        $documentType = trim((string)($data['documentType'] ?? ''));
+        $idNumber = trim((string)($data['idNumber'] ?? ''));
+        $frontImage = (string)($data['frontImage'] ?? '');
+        $backImage = (string)($data['backImage'] ?? '');
+        if (!in_array($documentType, ['ID Card', 'Passport', 'Driver License'], true)) fail('Choose a valid document type.');
+        if (!preg_match('/^[A-Za-z0-9 -]{4,80}$/', $idNumber)) fail('Enter a valid ID number.');
+        validate_verification_image($frontImage);
+        validate_verification_image($backImage);
+
+        $stmt = db()->prepare('INSERT INTO identity_verifications (user_id, document_type, id_number, front_image, back_image, status) VALUES (?, ?, ?, ?, ?, ?)');
+        $stmt->execute([(int)$user['id'], $documentType, $idNumber, $frontImage, $backImage, 'Pending']);
+        write_log($user['username'], 'user', 'Identity Verification', 'Pending');
+        respond(['ok' => true, 'user' => public_user(user_by_username($user['username']))]);
+    }
+
     if ($action === 'account_action') {
         $user = require_user();
         $type = (string)($data['type'] ?? '');
-        $asset = (string)($data['asset'] ?? 'USD');
+        $asset = strtoupper((string)($data['asset'] ?? 'USD'));
         $amount = (float)($data['amount'] ?? 0);
+        if (!in_array($asset, ASSETS, true)) fail('Unsupported asset.');
         if ($amount <= 0) fail('Enter a valid amount.');
 
         if ($type === 'Deposit') {
@@ -406,7 +519,9 @@ try {
             change_balance((int)$user['id'], $asset, -$amount);
             add_transaction((int)$user['id'], 'Withdraw', $asset, $amount, 'Pending', 'Withdrawal request');
         } elseif ($type === 'Transfer') {
+            if (balance_amount((int)$user['id'], $asset) < $amount) fail('Insufficient balance.');
             db()->beginTransaction();
+            change_balance((int)$user['id'], $asset, -$amount);
             add_transaction((int)$user['id'], 'Transfer', $asset, $amount, 'Completed', 'Internal account movement');
         } else {
             fail('Unknown account action.');
@@ -477,7 +592,9 @@ try {
         }
         write_log($username, 'admin', 'Login', $valid ? 'Success' : 'Failed');
         if (!$valid) fail('Invalid login.', 401);
+        session_regenerate_id(true);
         $_SESSION['admin'] = true;
+        $_SESSION['admin_authenticated_at'] = time();
         respond(['ok' => true]);
     }
 
@@ -503,6 +620,51 @@ try {
             ];
         }
         respond(['ok' => true, 'users' => $users]);
+    }
+
+    if ($action === 'admin_identity_verifications') {
+        require_admin();
+        ensure_identity_table();
+        $status = trim((string)($data['status'] ?? ''));
+        $sql = 'SELECT v.*, u.username, u.phone
+                FROM identity_verifications v
+                JOIN users u ON u.id = v.user_id';
+        $params = [];
+        if (in_array($status, ['Pending', 'Approved', 'Rejected'], true)) {
+            $sql .= ' WHERE v.status = ?';
+            $params[] = $status;
+        }
+        $sql .= ' ORDER BY FIELD(v.status, "Pending", "Rejected", "Approved"), v.submitted_at DESC, v.id DESC LIMIT 300';
+        $stmt = db()->prepare($sql);
+        $stmt->execute($params);
+        $verifications = [];
+        foreach ($stmt as $row) {
+            $verification = public_verification($row, true);
+            $verification['username'] = $row['username'];
+            $verification['phone'] = $row['phone'];
+            $verification['maskedIdNumber'] = mask_id_number($row['id_number']);
+            $verifications[] = $verification;
+        }
+        respond(['ok' => true, 'verifications' => $verifications]);
+    }
+
+    if ($action === 'admin_identity_review') {
+        require_admin();
+        ensure_identity_table();
+        $id = (int)preg_replace('/^VER-/', '', (string)($data['verificationId'] ?? ''));
+        $status = (string)($data['status'] ?? '');
+        $note = trim((string)($data['note'] ?? ''));
+        if ($id <= 0) fail('Verification request is required.');
+        if (!in_array($status, ['Approved', 'Rejected'], true)) fail('Choose Approved or Rejected.');
+        $stmt = db()->prepare('SELECT v.*, u.username FROM identity_verifications v JOIN users u ON u.id = v.user_id WHERE v.id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        $verification = $stmt->fetch();
+        if (!$verification) fail('Verification request not found.', 404);
+        $adminName = 'admin';
+        $update = db()->prepare('UPDATE identity_verifications SET status = ?, review_note = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?');
+        $update->execute([$status, substr($note, 0, 255), $adminName, $id]);
+        write_log((string)$verification['username'], 'admin', 'Identity Verification', $status);
+        respond(['ok' => true]);
     }
 
     if ($action === 'currencies') {

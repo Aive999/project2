@@ -843,6 +843,113 @@ body {
   background: rgba(148, 163, 184, 0.08);
 }
 
+.identity-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(8, 14, 31, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.identity-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.identity-card-top div {
+  display: grid;
+  gap: 4px;
+}
+
+.identity-card-top strong,
+.identity-approved {
+  color: #f8fafc;
+}
+
+.identity-card-top span,
+.identity-review-note {
+  color: #94a3b8;
+  font-size: 0.86rem;
+}
+
+.identity-status {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.identity-approved {
+  color: #86efac;
+}
+
+.identity-status.identity-approved {
+  background: rgba(34, 197, 94, 0.14);
+  color: #86efac;
+}
+
+.identity-pending {
+  background: rgba(250, 204, 21, 0.14);
+  color: #fde68a;
+}
+
+.identity-rejected {
+  background: rgba(248, 113, 113, 0.14);
+  color: #fca5a5;
+}
+
+.identity-form {
+  display: grid;
+  gap: 10px;
+}
+
+.identity-form label {
+  display: grid;
+  gap: 7px;
+  color: #94a3b8;
+  font-size: 0.88rem;
+}
+
+.identity-form input,
+.identity-form select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 14px;
+  background: #111827;
+  color: #f8fafc;
+  outline: none;
+}
+
+.identity-form input[type="file"] {
+  padding: 10px 12px;
+}
+
+.identity-form button {
+  min-height: 46px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #14b8a6, #2563eb);
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.identity-form button:disabled {
+  cursor: progress;
+  opacity: 0.72;
+}
+
 
 
 
@@ -1155,6 +1262,56 @@ textarea {
   border-color: #fecaca;
   background: #fef2f2;
   color: #b91c1c;
+}
+
+.verification-admin-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.verification-review-panel .panel-actions {
+  align-items: center;
+}
+
+.verification-review-panel .panel-actions select {
+  min-width: 150px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+
+.verification-table {
+  min-width: 1220px;
+}
+
+.verification-thumb {
+  display: inline-flex;
+  width: 86px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+}
+
+.verification-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.verification-status-approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.verification-status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.verification-status-rejected {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .user-config-layout {

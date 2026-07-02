@@ -42,6 +42,31 @@ const DemoExchange = (() => {
     { code: "CNY", label: "Chinese Yuan Renminbi", flag: "CN" },
     { code: "PHP", label: "Philippine Peso", flag: "PH" }
   ];
+  const supportedAssets = new Set(defaultCurrencies.map((currency) => currency.code));
+
+  function emptyBalances() {
+    return Object.fromEntries(defaultCurrencies.map((currency) => [currency.code, 0]));
+  }
+
+  function normalizeBalances(balances = {}) {
+    const normalized = emptyBalances();
+    Object.entries(balances || {}).forEach(([asset, amount]) => {
+      const code = String(asset || "").toUpperCase();
+      if (supportedAssets.has(code)) {
+        normalized[code] = Number(amount) || 0;
+      }
+    });
+    return normalized;
+  }
+
+  function normalizeUser(user) {
+    if (!user) return user;
+    return {
+      ...user,
+      balances: normalizeBalances(user.balances),
+      transactions: Array.isArray(user.transactions) ? user.transactions : []
+    };
+  }
 
   function currencySettings() {
     try {
@@ -132,7 +157,7 @@ const DemoExchange = (() => {
   function cacheServerUser(user) {
     if (!user?.username) return;
     const users = readUsers();
-    users[user.username] = user;
+    users[user.username] = normalizeUser(user);
     writeUsers(users);
     localStorage.setItem(SESSION_KEY, user.username);
   }
@@ -148,7 +173,7 @@ const DemoExchange = (() => {
         const username = currentUsername();
         const users = readUsers();
         if (users[username]) {
-          users[username].status = "Frozen";
+          users[username] = normalizeUser({ ...users[username], status: "Frozen" });
           writeUsers(users);
         }
         accountNotice = "Your account is frozen. Please contact support.";
@@ -212,22 +237,22 @@ const DemoExchange = (() => {
     const user = users[username] || null;
     if (!user) return null;
 
-    user.balances = { ...Object.fromEntries(defaultCurrencies.map((currency) => [currency.code, 0])), ...(user.balances || {}) };
+    user.balances = normalizeBalances(user.balances);
     user.transactions = Array.isArray(user.transactions) ? user.transactions : [];
     const oldCreditIndex = user.transactions?.findIndex((tx) => tx.type === "Demo Credit" && tx.detail === "Starting demo balance") ?? -1;
     if (oldCreditIndex >= 0) {
       user.transactions.splice(oldCreditIndex, 1);
       user.balances.USD = Math.max(0, Number(user.balances.USD || 0) - 10000);
-      users[username] = user;
-      writeUsers(users);
     }
+    users[username] = normalizeUser(user);
+    writeUsers(users);
 
     return user;
   }
 
   function saveUser(user) {
     const users = readUsers();
-    users[user.username] = user;
+    users[user.username] = normalizeUser(user);
     writeUsers(users);
   }
 
@@ -262,13 +287,16 @@ const DemoExchange = (() => {
   function portfolioValue(user) {
     if (!user) return 0;
     const prices = priceMap();
-    return Object.entries(user.balances).reduce((total, [asset, amount]) => {
+    return Object.entries(normalizeBalances(user.balances)).reduce((total, [asset, amount]) => {
       return total + amount * (prices[asset] || 1);
     }, 0);
   }
 
   async function createUser(username, phone, password) {
     if (!/^\d+$/.test(phone)) throw new Error("Phone number must contain numbers only.");
+    if (password.length < 8 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+      throw new Error("Password must be at least 8 characters and include letters and numbers.");
+    }
 
     try {
       const data = await apiRequest("register", { username, phone, password });
@@ -293,6 +321,51 @@ const DemoExchange = (() => {
     }
   }
 
+  function readVerificationImage(file) {
+    return new Promise((resolve, reject) => {
+      if (!file) {
+        reject(new Error("Select an identity document image."));
+        return;
+      }
+      if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+        reject(new Error("Upload a PNG, JPG, or WEBP image."));
+        return;
+      }
+      if (file.size > 700 * 1024) {
+        reject(new Error("Image must be under 700 KB."));
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("Unable to read selected image."));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function submitIdentityVerification(documentType, idNumber, frontFile, backFile) {
+    const user = getUser();
+    if (!user) throw new Error("Please register or log in first.");
+    ensureActiveAccount(user);
+    const cleanId = String(idNumber || "").trim();
+    if (!cleanId) throw new Error("Enter your ID number.");
+    const frontImage = await readVerificationImage(frontFile);
+    const backImage = await readVerificationImage(backFile);
+    const data = await apiRequest("submit_identity_verification", {
+      documentType,
+      idNumber: cleanId,
+      frontImage,
+      backImage
+    });
+    cacheServerUser(data.user);
+  }
+
+  function verificationStatusText(verification) {
+    if (!verification) return "Not submitted";
+    if (verification.status === "Approved") return "Verified";
+    if (verification.status === "Rejected") return "Rejected";
+    return "Pending review";
+  }
+
   function logout() {
     apiRequest("logout").catch(() => {});
     localStorage.removeItem(SESSION_KEY);
@@ -301,12 +374,13 @@ const DemoExchange = (() => {
   function resetDemo() {
     const user = getUser();
     if (!user) return;
-    user.balances = Object.fromEntries(defaultCurrencies.map((currency) => [currency.code, 0]));
+    user.balances = emptyBalances();
     user.transactions = [];
     saveUser(user);
   }
 
   async function accountAction(type, amount, asset = "USD") {
+    await syncCurrentUser();
     const user = getUser();
     if (!user) throw new Error("Please register or log in first.");
     ensureActiveAccount(user);
@@ -324,12 +398,12 @@ const DemoExchange = (() => {
   }
 
   async function exchange(fromAsset, toAsset, amount) {
+    await syncCurrentUser();
     const user = getUser();
     if (!user) throw new Error("Please register or log in first.");
     ensureActiveAccount(user);
     const value = Number(amount);
     if (!value || value <= 0) throw new Error("Enter a valid amount.");
-    if ((user.balances[fromAsset] || 0) < value) throw new Error("Insufficient balance.");
 
     try {
       const data = await apiRequest("exchange", { fromAsset, toAsset, amount: value });
@@ -411,6 +485,7 @@ const DemoExchange = (() => {
   }
 
   async function tradeOrder(baseAsset, quoteAsset, side, amount) {
+    await syncCurrentUser();
     const user = getUser();
     if (!user) throw new Error("Please register or log in first.");
     ensureActiveAccount(user);
@@ -419,19 +494,18 @@ const DemoExchange = (() => {
     const price = pairMovement(baseAsset, quoteAsset).current;
     const quoteAmount = value * price;
 
-    if (side === "Buy" && (user.balances[quoteAsset] || 0) < quoteAmount) {
-      throw new Error(`Insufficient ${quoteAsset} balance. Need ${coin(quoteAmount)} ${quoteAsset}.`);
-    }
-    if (side === "Sell" && (user.balances[baseAsset] || 0) < value) {
-      throw new Error(`Insufficient ${baseAsset} balance. Need ${coin(value)} ${baseAsset}.`);
-    }
-
     try {
       const data = await apiRequest("trade_order", { baseAsset, quoteAsset, side, amount: value });
       cacheServerUser(data.user);
       return data;
     } catch (error) {
       if (!backendUnavailable(error)) throw error;
+      if (side === "Buy" && (user.balances[quoteAsset] || 0) < quoteAmount) {
+        throw new Error(`Insufficient ${quoteAsset} balance. Need ${coin(quoteAmount)} ${quoteAsset}.`);
+      }
+      if (side === "Sell" && (user.balances[baseAsset] || 0) < value) {
+        throw new Error(`Insufficient ${baseAsset} balance. Need ${coin(value)} ${baseAsset}.`);
+      }
       if (side === "Buy") {
         user.balances[quoteAsset] -= quoteAmount;
         user.balances[baseAsset] = (user.balances[baseAsset] || 0) + value;
@@ -692,6 +766,45 @@ const DemoExchange = (() => {
         <span>EUR ${coin(user.balances.EUR)}</span>
         <span>JPY ${coin(user.balances.JPY)}</span>
       </div>
+      <section class="identity-card">
+        <div class="identity-card-top">
+          <div>
+            <strong>Profile verification</strong>
+            <span>${verificationStatusText(user.verification)}</span>
+          </div>
+          <span class="identity-status identity-${(user.verification?.status || "none").toLowerCase()}">${verificationStatusText(user.verification)}</span>
+        </div>
+        ${user.verification?.status === "Approved" ? `
+          <div class="identity-approved">
+            ${user.verification.documentType} verified on ${user.verification.reviewedAt || user.verification.submittedAt || "record"}.
+          </div>
+        ` : `
+          <form class="identity-form" id="identityForm">
+            <label>
+              <span>File type</span>
+              <select id="identityDocumentType" required>
+                <option value="ID Card">ID Card</option>
+                <option value="Passport">Passport</option>
+                <option value="Driver License">Driver License</option>
+              </select>
+            </label>
+            <label>
+              <span>ID number</span>
+              <input id="identityNumber" type="text" autocomplete="off" placeholder="Enter document number" required>
+            </label>
+            <label class="identity-upload">
+              <span>ID front photo</span>
+              <input id="identityFrontImage" type="file" accept="image/png,image/jpeg,image/webp" required>
+            </label>
+            <label class="identity-upload">
+              <span>ID back photo</span>
+              <input id="identityBackImage" type="file" accept="image/png,image/jpeg,image/webp" required>
+            </label>
+            <button type="submit">Submit verification</button>
+          </form>
+          ${user.verification?.status === "Rejected" ? `<div class="identity-review-note">${user.verification.reviewNote || "Please check your document and submit again."}</div>` : ""}
+        `}
+      </section>
       <div class="demo-actions">
         <button type="button" id="logoutDemo">Logout</button>
       </div>
@@ -703,6 +816,7 @@ const DemoExchange = (() => {
       logout();
       refresh("Logged out.");
     });
+    bindIdentityForm();
   }
 
   function bindPanelClose() {
@@ -828,6 +942,28 @@ const DemoExchange = (() => {
         const matchesFilter = showAll || index < 3;
         row.hidden = !(matchesSearch && matchesFilter);
       });
+    });
+  }
+
+  function bindIdentityForm() {
+    document.getElementById("identityForm")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = event.currentTarget.querySelector("button[type='submit']");
+      try {
+        if (button) {
+          button.disabled = true;
+          button.textContent = "Submitting...";
+        }
+        await submitIdentityVerification(
+          document.getElementById("identityDocumentType").value,
+          document.getElementById("identityNumber").value,
+          document.getElementById("identityFrontImage").files[0],
+          document.getElementById("identityBackImage").files[0]
+        );
+        refresh("Verification submitted for admin review.");
+      } catch (error) {
+        drawAccountPanel(error.message);
+      }
     });
   }
 
