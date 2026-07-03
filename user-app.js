@@ -518,32 +518,6 @@ const DemoExchange = (() => {
     }
   }
 
-  function transactionRows(user, mode = "all") {
-    let transactions = user?.transactions || [];
-    if (mode === "Position order") {
-      transactions = transactions.filter((tx) => tx.status === "Open" || tx.status === "Filled");
-    } else if (mode === "Profit order") {
-      transactions = transactions.filter((tx) => tx.type.toLowerCase().includes("profit") || tx.detail.toLowerCase().includes("profit"));
-    }
-
-    if (!transactions.length) {
-      return '<div class="empty-state">No transactions yet</div>';
-    }
-
-    return transactions.map((tx) => `
-      <div class="transaction-row">
-        <div>
-          <strong>${tx.type}</strong>
-          <span>${tx.detail}</span>
-        </div>
-        <div>
-          <strong>${coin(tx.amount)} ${tx.asset}</strong>
-          <span>${tx.status} - ${tx.time}</span>
-        </div>
-      </div>
-    `).join("");
-  }
-
   function applyAccountModalStyles() {
     const modal = document.querySelector(".demo-account-modal");
     const panel = document.querySelector(".demo-account-panel");
@@ -991,15 +965,6 @@ const DemoExchange = (() => {
     const panel = document.querySelector(".account-panel");
     const controls = document.querySelector(".account-controls");
     controls?.insertAdjacentHTML("afterend", '<section class="account-assets" id="accountAssets"></section>');
-    panel?.insertAdjacentHTML("beforeend", `
-      <section class="account-ledger">
-        <div class="ledger-header">
-          <strong>Transaction History</strong>
-          <span>Currency records</span>
-        </div>
-        <div id="accountTransactions"></div>
-      </section>
-    `);
 
     document.querySelectorAll(".account-action").forEach((button) => {
       button.addEventListener("click", async () => {
@@ -1215,14 +1180,14 @@ const DemoExchange = (() => {
       });
     });
 
-    document.querySelectorAll(".account-assets, #accountTransactions").forEach((list) => {
+    document.querySelectorAll(".account-assets").forEach((list) => {
       Object.assign(list.style, {
         display: "grid",
         gap: "10px"
       });
     });
 
-    document.querySelectorAll(".asset-row, #accountTransactions .transaction-row").forEach((row) => {
+    document.querySelectorAll(".asset-row").forEach((row) => {
       Object.assign(row.style, {
         display: "grid",
         gridTemplateColumns: "minmax(0, 1.25fr) minmax(150px, 0.75fr)",
@@ -1236,7 +1201,7 @@ const DemoExchange = (() => {
     });
 
     if (window.matchMedia("(max-width: 700px)").matches) {
-      document.querySelectorAll(".account-controls, .exchange-grid, .asset-row, #accountTransactions .transaction-row").forEach((node) => {
+      document.querySelectorAll(".account-controls, .exchange-grid, .asset-row").forEach((node) => {
         node.style.gridTemplateColumns = "1fr";
       });
     }
@@ -1255,10 +1220,6 @@ const DemoExchange = (() => {
     if (status) status.textContent = user
       ? (user.status === "Frozen" ? "Your account is frozen. Please contact support." : `${accountMode} view active.`)
       : "Please register or log in to use the currency account.";
-    const ledgerLabel = document.querySelector(".ledger-header span");
-    if (ledgerLabel) ledgerLabel.textContent = `${accountMode} records`;
-    const ledger = document.getElementById("accountTransactions");
-    if (ledger) ledger.innerHTML = transactionRows(user);
     const assets = document.getElementById("accountAssets");
     if (assets) {
       const query = document.querySelector(".search-row input")?.value.trim().toLowerCase() || "";
