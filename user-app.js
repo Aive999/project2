@@ -1166,6 +1166,16 @@ const DemoExchange = (() => {
       button.addEventListener("click", openAccountPanel);
     });
 
+    document.querySelectorAll(".main-nav a[href$='account.html'], .main-nav a[href*='account.html']").forEach((link) => {
+      link.addEventListener("click", (event) => {
+        if (getUser()) return;
+        event.preventDefault();
+        authMode = "login";
+        openAccountPanel();
+        drawAccountPanel("Please log in or register to view your account.");
+      });
+    });
+
     document.addEventListener("click", (event) => {
       const button = event.target.closest(".account-button");
       if (!button) return;
@@ -1307,6 +1317,32 @@ const DemoExchange = (() => {
   function enhanceAccountPage() {
     const header = document.querySelector(".account-header");
     if (!header) return;
+
+    const main = document.querySelector("body.account-page main");
+    if (main && !document.querySelector(".account-auth-gate")) {
+      const gate = document.createElement("section");
+      gate.className = "account-auth-gate";
+      gate.innerHTML = `
+        <div>
+          <strong>Account access</strong>
+          <span>Log in or create an account to view balances, deposits, withdrawals, and exchange tools.</span>
+        </div>
+        <div class="account-auth-actions">
+          <button type="button" data-auth-entry="login">Login</button>
+          <button type="button" data-auth-entry="register">Sign up</button>
+        </div>
+      `;
+      main.insertBefore(gate, document.querySelector(".account-panel"));
+      gate.querySelectorAll("[data-auth-entry]").forEach((button) => {
+        button.addEventListener("click", () => {
+          authMode = button.dataset.authEntry || "login";
+          openAccountPanel();
+          drawAccountPanel(authMode === "register"
+            ? "Create an account to view the account tab."
+            : "Please log in to view the account tab.");
+        });
+      });
+    }
 
     document.querySelectorAll(".account-tab").forEach((tab) => {
       tab.addEventListener("click", () => {
@@ -1567,6 +1603,8 @@ const DemoExchange = (() => {
 
   function renderAccount() {
     const user = getUser();
+    const isAccountPage = document.body.classList.contains("account-page");
+    document.body.classList.toggle("account-auth-required", Boolean(isAccountPage && !user));
     const value = portfolioValue(user);
     document.querySelectorAll(".account-amount, .account-summary-value").forEach((node) => {
       node.textContent = money(value);
@@ -1578,6 +1616,12 @@ const DemoExchange = (() => {
     if (status) status.textContent = user
       ? (user.status === "Frozen" ? "Your account is frozen. Please contact support." : `${accountMode} view active.`)
       : "Please register or log in to use the currency account.";
+    if (isAccountPage && !user) {
+      const assets = document.getElementById("accountAssets");
+      if (assets) assets.innerHTML = "";
+      applyAccountStyles();
+      return;
+    }
     const assets = document.getElementById("accountAssets");
     if (assets) {
       const query = document.querySelector(".search-row input")?.value.trim().toLowerCase() || "";

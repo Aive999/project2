@@ -836,7 +836,7 @@ try {
         require_admin();
         $type = trim((string)($data['type'] ?? ''));
         $status = trim((string)($data['status'] ?? ''));
-        $sql = 'SELECT u.username, t.type, t.asset, t.amount, t.status, t.detail, t.created_at
+        $sql = 'SELECT t.id, u.username, t.type, t.asset, t.amount, t.status, t.detail, t.created_at
                 FROM transactions t
                 JOIN users u ON u.id = t.user_id';
         $params = [];
@@ -866,6 +866,7 @@ try {
                 $address = transaction_detail_field($detail, 'Reference') ?: 'deposit-reference';
             }
             $records[] = [
+                'id' => (int)$row['id'],
                 'account' => $row['username'],
                 'name' => $row['username'],
                 'network' => transaction_network_label($rowType, $detail),
@@ -879,6 +880,43 @@ try {
             ];
         }
         respond(['ok' => true, 'transactions' => $records]);
+    }
+
+    if ($action === 'admin_review_withdrawal') {
+        require_admin();
+        $id = (int)($data['id'] ?? 0);
+        $status = (string)($data['status'] ?? '');
+        if ($id <= 0) fail('Invalid withdrawal.');
+        if (!in_array($status, ['Completed', 'Failed'], true)) fail('Choose Completed or Failed.');
+
+        $pdo = db();
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare('SELECT t.id, t.user_id, u.username, t.type, t.asset, t.amount, t.status, t.detail
+                FROM transactions t
+                JOIN users u ON u.id = t.user_id
+                WHERE t.id = ?
+                FOR UPDATE');
+            $stmt->execute([$id]);
+            $tx = $stmt->fetch();
+            if (!$tx) fail('Withdrawal not found.', 404);
+            if ($tx['type'] !== 'Withdraw') fail('Only withdrawals can be reviewed.');
+            if ($tx['status'] !== 'Pending') fail('This withdrawal has already been reviewed.');
+
+            if ($status === 'Failed') {
+                change_balance((int)$tx['user_id'], (string)$tx['asset'], (float)$tx['amount']);
+            }
+
+            $detail = substr((string)$tx['detail'] . '; Admin review: ' . $status, 0, 255);
+            $update = $pdo->prepare('UPDATE transactions SET status = ?, detail = ? WHERE id = ?');
+            $update->execute([$status, $detail, $id]);
+            write_log((string)$tx['username'], 'admin', 'Withdrawal Review', $status);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
+        respond(['ok' => true]);
     }
 
     if ($action === 'admin_storage_all') {

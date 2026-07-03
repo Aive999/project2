@@ -461,7 +461,7 @@
   const forexHeaderRoutes = new Map([
     ["Primary certification", "primary-real-name.html"],
     ["Advanced Certification", "advanced-real-name.html"],
-    ["Withdrawal Review", "withdrawal-records.html"],
+    ["Withdrawal Review", "new-withdrawal-records.html"],
     ["Currency orders", "currency-order-records.html"],
     ["Recharge Review", "recharge-review.html"]
   ]);
@@ -608,8 +608,12 @@
     const isDeposit = type === "Deposit";
     const isNewWithdrawalPage = pageName === "new-withdrawal-records.html";
     const isWithdrawalPage = type === "Withdraw";
-    return records.map((record) => `
-      <tr>
+    return records.map((record) => {
+      const reviewActions = isWithdrawalPage && record.status === "Pending" && record.id
+        ? `<button class="row-action" data-action="approve-withdrawal" data-id="${record.id}">Approve</button><button class="row-action row-action-danger" data-action="fail-withdrawal" data-id="${record.id}">Fail</button><button class="row-action" data-action="view">View</button>`
+        : `<button class="row-action" data-action="view">View</button><button class="row-action" data-action="edit">Edit</button>`;
+      return `
+        <tr>
         <td><input type="checkbox"></td>
         <td>${record.account}</td>
         <td>${record.name}</td>
@@ -622,9 +626,10 @@
           : isWithdrawalPage
           ? `<td>${record.currency}</td><td>${record.address}</td><td>${money(record.amount)}</td><td>${record.time}</td>`
           : `<td>${record.currency}</td><td>${record.address}</td><td>${money(record.amount)}</td><td>${record.time}</td>`}
-        <td><button class="row-action" data-action="view">View</button><button class="row-action" data-action="edit">Edit</button></td>
+        <td>${reviewActions}</td>
       </tr>
-    `).join("");
+      `;
+    }).join("");
   }
 
   function renderUserTransactionTable(type) {
@@ -781,6 +786,20 @@
       const row = action.closest("tr");
       if (!row) return;
       const table = row.closest("table");
+      if (action.dataset.action === "approve-withdrawal" || action.dataset.action === "fail-withdrawal") {
+        const nextStatus = action.dataset.action === "approve-withdrawal" ? "Completed" : "Failed";
+        if (!confirm(`Mark this withdrawal as ${nextStatus.toLowerCase()}?`)) return;
+        adminApi("admin_review_withdrawal", { id: Number(action.dataset.id), status: nextStatus })
+          .then(() => {
+            showToast(`Withdrawal marked ${nextStatus.toLowerCase()}.`);
+            renderServerTransactionTable("Withdraw");
+            updatePendingReviewCounts();
+          })
+          .catch((error) => {
+            showToast(error.message || "Unable to review withdrawal.", "error");
+          });
+        return;
+      }
       if (action.dataset.action === "delete") {
         if (!confirm("Delete this record?")) return;
         row.remove();
