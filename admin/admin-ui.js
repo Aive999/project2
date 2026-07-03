@@ -606,6 +606,8 @@
 
   function transactionTableRows(type, records) {
     const isDeposit = type === "Deposit";
+    const isNewWithdrawalPage = pageName === "new-withdrawal-records.html";
+    const isWithdrawalPage = type === "Withdraw";
     return records.map((record) => `
       <tr>
         <td><input type="checkbox"></td>
@@ -613,8 +615,12 @@
         <td>${record.name}</td>
         <td>${record.network}</td>
         <td>${record.currency}</td>
-        ${isDeposit
+        ${isNewWithdrawalPage
+          ? `<td>${record.address}</td><td>${record.type || "Withdraw"}</td><td>${money(record.amount)}</td><td>${record.status}</td><td>${record.time}</td><td>${record.detail || "-"}</td>`
+          : isDeposit
           ? `<td>${record.address}</td><td>${money(record.amount)}</td><td>${record.detail || "Server"}</td><td>${record.time}</td><td>${record.status}</td>`
+          : isWithdrawalPage
+          ? `<td>${record.currency}</td><td>${record.address}</td><td>${money(record.amount)}</td><td>${record.time}</td>`
           : `<td>${record.currency}</td><td>${record.address}</td><td>${money(record.amount)}</td><td>${record.time}</td>`}
         <td><button class="row-action" data-action="view">View</button><button class="row-action" data-action="edit">Edit</button></td>
       </tr>
@@ -637,7 +643,11 @@
     const tbody = $(".withdraw-table tbody");
     if (!tbody) return;
     try {
-      const data = await adminApi("admin_transactions", { type });
+      const payload = { type };
+      if (pageName === "new-withdrawal-records.html" && type === "Withdraw") {
+        payload.status = "Pending";
+      }
+      const data = await adminApi("admin_transactions", payload);
       const records = data.transactions || [];
       if (!records.length) {
         showEmptyTable(tbody.closest("table"));
@@ -646,6 +656,20 @@
       tbody.innerHTML = transactionTableRows(type, records);
     } catch {
       renderUserTransactionTable(type);
+    }
+  }
+
+  async function updatePendingReviewCounts() {
+    try {
+      const data = await adminApi("admin_transactions", { type: "Withdraw", status: "Pending" });
+      const count = (data.transactions || []).length;
+      $$(".admin-pill").forEach((button) => {
+        if (/Withdrawal Review/i.test(button.textContent)) {
+          button.textContent = `Withdrawal Review (${count})`;
+        }
+      });
+    } catch {
+      // Keep static header counts when the server is unavailable.
     }
   }
 
@@ -826,6 +850,7 @@
     bindTables();
     bindGenericForms();
     updateDashboardCardsFromServer();
+    updatePendingReviewCounts();
     bindAdminLanguage();
     const observer = new MutationObserver(() => {
       clearTimeout(bindAdminLanguage.timer);

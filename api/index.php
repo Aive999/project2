@@ -368,6 +368,34 @@ function portfolio_value(array $balances): float
     return $total;
 }
 
+function transaction_detail_field(string $detail, string $field): string
+{
+    if (preg_match('/(?:^|; )' . preg_quote($field, '/') . ': ([^;]+)/', $detail, $matches)) {
+        return trim($matches[1]);
+    }
+    return '';
+}
+
+function transaction_network_label(string $type, string $detail): string
+{
+    if ($type === 'Deposit') {
+        return transaction_detail_field($detail, 'Method') ?: 'Deposit';
+    }
+    if ($type === 'Withdraw') {
+        return transaction_detail_field($detail, 'Bank') ?: 'Bank Transfer';
+    }
+    if (strpos($type, 'Trade') === 0) {
+        return 'Market Order';
+    }
+    if ($type === 'Exchange') {
+        return 'Currency Exchange';
+    }
+    if ($type === 'Admin Adjustment') {
+        return 'Admin';
+    }
+    return 'System';
+}
+
 function valid_storage_key(string $key): bool
 {
     return (bool)preg_match('/^(admin[A-Za-z0-9:_-]+|adminTable:[A-Za-z0-9._:-]+)$/', $key);
@@ -807,30 +835,47 @@ try {
     if ($action === 'admin_transactions') {
         require_admin();
         $type = trim((string)($data['type'] ?? ''));
+        $status = trim((string)($data['status'] ?? ''));
         $sql = 'SELECT u.username, t.type, t.asset, t.amount, t.status, t.detail, t.created_at
                 FROM transactions t
                 JOIN users u ON u.id = t.user_id';
         $params = [];
+        $where = [];
         if ($type !== '') {
-            $sql .= ' WHERE t.type = ?';
+            $where[] = 't.type = ?';
             $params[] = $type;
+        }
+        if ($status !== '') {
+            $where[] = 't.status = ?';
+            $params[] = $status;
+        }
+        if ($where) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
         }
         $sql .= ' ORDER BY t.created_at DESC, t.id DESC LIMIT 300';
         $stmt = db()->prepare($sql);
         $stmt->execute($params);
         $records = [];
         foreach ($stmt as $row) {
+            $detail = (string)$row['detail'];
+            $rowType = (string)$row['type'];
+            $address = 'customer-account';
+            if ($rowType === 'Withdraw') {
+                $address = transaction_detail_field($detail, 'Account') ?: 'receiving-account';
+            } elseif ($rowType === 'Deposit') {
+                $address = transaction_detail_field($detail, 'Reference') ?: 'deposit-reference';
+            }
             $records[] = [
                 'account' => $row['username'],
                 'name' => $row['username'],
-                'network' => 'MySQL',
+                'network' => transaction_network_label($rowType, $detail),
                 'currency' => $row['asset'],
-                'address' => 'customer-account',
+                'address' => $address,
                 'amount' => (float)$row['amount'],
                 'time' => $row['created_at'],
                 'status' => $row['status'],
-                'type' => $row['type'],
-                'detail' => $row['detail'],
+                'type' => $rowType,
+                'detail' => $detail,
             ];
         }
         respond(['ok' => true, 'transactions' => $records]);
