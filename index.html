@@ -4,118 +4,141 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gemini Currency</title>
-  <link rel="stylesheet" href="styles.css?v=account-auth-gate-20260703" />
+  <link rel="stylesheet" href="styles.css?v=currency-row-colors-20260703" />
 </head>
 <body>
   <div class="page-shell">
     <header class="hero-header">
       <div class="header-top">
-        <div class="avatar"></div>
+        <button class="avatar account-button" type="button" aria-label="Login or register" title="Login or register"></button>
         <div class="search-box">
           <span class="search-icon" aria-hidden="true">&#128269;</span>
           <input type="text" placeholder="Enter currency to search" aria-label="Search currency" />
         </div>
         <div class="header-actions">
           <button class="icon-button" aria-label="Language" title="Language">&#127760;</button>
-          <button class="icon-button account-button" aria-label="Login or register" title="Login or register">&#128100;</button>
+          <button class="icon-button" aria-label="Help center" title="Help center">&#127911;</button>
         </div>
       </div>
       <section class="hero-banner">
         <div class="hero-copy">
-          <p class="eyebrow">Forex market desk</p>
-          <h1>Currency rates, exchange tools, and trading workflows</h1>
-          <p class="hero-description">Track major FX pairs, review simulated market movement, and manage currency exchange activity from one dashboard.</p>
-          <a href="#market" class="hero-button" style="color: aliceblue; text-decoration: none;">View market rates</a>
+          <p class="eyebrow">Gemini Currency</p>
+          <h1>Open platform for global currency trading</h1>
+          <p class="hero-description">Track live FX movement, bind account details, and move from market review to trading workflows in one mobile-first dashboard.</p>
+          <div class="hero-actions">
+            <a href="#market" class="hero-button">View market rates</a>
+            <a href="trade.html" class="hero-button hero-button-secondary">Open trade desk</a>
+          </div>
+        </div>
+        <div class="hero-market-visual" aria-label="Market overview">
+          <div class="visual-topline">
+            <span>EUR/USD</span>
+            <strong>1.14760</strong>
+            <em>+0.19%</em>
+          </div>
+          <div class="visual-chart" aria-hidden="true">
+            <span style="height: 42%"></span>
+            <span style="height: 58%"></span>
+            <span style="height: 36%"></span>
+            <span style="height: 74%"></span>
+            <span style="height: 62%"></span>
+            <span style="height: 88%"></span>
+            <span style="height: 54%"></span>
+            <span style="height: 70%"></span>
+          </div>
+          <div class="visual-orders">
+            <div><span>Bid</span><strong>1.14742</strong></div>
+            <div><span>Ask</span><strong>1.14778</strong></div>
+          </div>
         </div>
       </section>
     </header>
 
     <main>
-      <section class="feature-card">
-        <div class="feature-copy">
-          <div class="feature-tag">Forex trading workspace</div>
-          <h2>Major pairs and account operations</h2>
-          <p>Monitor USD, EUR, GBP, JPY and regional currency pairs with floating rates, 24h changes, exchange records, and order activity.</p>
-        </div>
-        <div class="feature-icon" aria-hidden="true">&#128185;</div>
+      <section class="home-notice-strip" aria-label="Platform announcement">
+        <span aria-hidden="true">&#128266;</span>
+        <strong>Gemini computing power plan</strong>
+        <a href="market.html" aria-label="Open market details">&#8250;</a>
       </section>
 
-      <section class="rates-grid">
-        <article class="rate-card">
+      <section class="rates-grid home-currency-grid">
+        <article class="rate-card home-currency-card">
+          <div class="currency-icon currency-usd" aria-hidden="true">$</div>
           <div class="rate-label">USD</div>
+          <div class="rate-sub">Base</div>
           <div class="rate-value">1.0000</div>
-          <div class="rate-sub">US Dollar</div>
           <div class="rate-change positive">+0.34%</div>
+          <small>24h vol $380.5034</small>
         </article>
-        <article class="rate-card">
+        <article class="rate-card home-currency-card">
+          <div class="currency-icon currency-eur" aria-hidden="true">E</div>
           <div class="rate-label">EUR</div>
+          <div class="rate-sub">USD</div>
           <div class="rate-value">1.14760</div>
-          <div class="rate-sub">Euro</div>
-          <div class="rate-change negative">-0.12%</div>
+          <div class="rate-change positive">+0.62%</div>
+          <small>24h vol $6321.3572</small>
         </article>
-        <article class="rate-card">
+        <article class="rate-card home-currency-card">
+          <div class="currency-icon currency-jpy" aria-hidden="true">Y</div>
           <div class="rate-label">JPY</div>
+          <div class="rate-sub">USD</div>
           <div class="rate-value">0.00620</div>
-          <div class="rate-sub">Japanese Yen</div>
-          <div class="rate-change positive">+0.08%</div>
+          <div class="rate-change positive">+0.88%</div>
+          <small>24h vol $490211.532</small>
         </article>
+      </section>
+
+      <section class="feature-card home-mining-panel">
+        <div class="feature-copy">
+          <h2>Market every day</h2>
+          <p>The higher the market force, the more trading opportunities you can review.</p>
+        </div>
+        <div class="home-mining-art" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
       </section>
 
       <section class="market-tab" id="market">
         <div class="market-top">
          
           <div class="market-toggle">
-            <button class="market-filter-item active">Favorites</button>
-            <button class="market-filter-item">All</button>
+            <button class="market-filter-item active">Deal</button>
+            <button class="market-filter-item">Rising</button>
+            <button class="market-filter-item">Decline</button>
           </div>
         </div>
 
-        <div class="market-list-card">
+        <div class="market-list-card home-deal-list">
           <div class="market-list-header">
-            <span>Pair</span>
+            <span>Name</span>
             <span>Last Price</span>
-            <span>24H Change</span>
+            <span>Vol</span>
           </div>
 
-          <div class="market-row">
-            <div class="market-pair"><span class="pair-icon" aria-hidden="true">&#128181;</span><div><div class="pair-name">EUR/USD</div><div class="pair-sub">VOL 164.7114</div></div></div>
+          <div class="market-row home-deal-row positive">
+            <div class="market-pair"><span class="pair-icon currency-pair-icon" aria-hidden="true">FX</span><div><div class="pair-name">EUR/USD</div><div class="pair-sub">24H 1.14760</div></div></div>
             <div class="market-price">1.14760</div>
-            <div class="market-change positive">+0.19%</div>
+            <div class="market-volume">11099596.432</div>
           </div>
-          <div class="market-row">
-            <div class="market-pair"><span class="pair-icon" aria-hidden="true">&#128182;</span><div><div class="pair-name">GBP/EUR</div><div class="pair-sub">VOL 2522.9489</div></div></div>
-            <div class="market-price">1.15302</div>
-            <div class="market-change positive">+0.13%</div>
-          </div>
-          <div class="market-row">
-            <div class="market-pair"><span class="pair-icon" aria-hidden="true">&#128180;</span><div><div class="pair-name">USD/JPY</div><div class="pair-sub">VOL 20,291.498</div></div></div>
-            <div class="market-price">161.301</div>
-            <div class="market-change positive">+1.59%</div>
-          </div>
-          <div class="market-row">
-            <div class="market-pair"><span class="pair-icon" aria-hidden="true">&#128182;</span><div><div class="pair-name">GBP/USD</div><div class="pair-sub">VOL 548,563.803</div></div></div>
+          <div class="market-row home-deal-row positive">
+            <div class="market-pair"><span class="pair-icon currency-pair-icon" aria-hidden="true">FX</span><div><div class="pair-name">GBP/USD</div><div class="pair-sub">24H 1.32321</div></div></div>
             <div class="market-price">1.32321</div>
-            <div class="market-change negative">-0.48%</div>
+            <div class="market-volume">548563.803</div>
           </div>
-          <div class="market-row">
-            <div class="market-pair"><span class="pair-icon" aria-hidden="true">&#128181;</span><div><div class="pair-name">USD/CHF</div><div class="pair-sub">VOL 286.467</div></div></div>
-            <div class="market-price">0.807080</div>
-            <div class="market-change negative">-0.27%</div>
+          <div class="market-row home-deal-row positive">
+            <div class="market-pair"><span class="pair-icon currency-pair-icon" aria-hidden="true">FX</span><div><div class="pair-name">USD/JPY</div><div class="pair-sub">24H 161.301</div></div></div>
+            <div class="market-price">161.301</div>
+            <div class="market-volume">20291.498</div>
           </div>
-          <div class="market-row">
-            <div class="market-pair"><span class="pair-icon" aria-hidden="true">&#128180;</span><div><div class="pair-name">USD/CAD</div><div class="pair-sub">VOL 188,486.948</div></div></div>
-            <div class="market-price">1.41627</div>
-            <div class="market-change positive">+0.99%</div>
+          <div class="market-row home-deal-row negative">
+            <div class="market-pair"><span class="pair-icon currency-pair-icon" aria-hidden="true">FX</span><div><div class="pair-name">AUD/USD</div><div class="pair-sub">24H 0.70108</div></div></div>
+            <div class="market-price">0.70108</div>
+            <div class="market-volume">170922.925</div>
           </div>
-          <div class="market-row">
-            <div class="market-pair"><span class="pair-icon" aria-hidden="true">&#128181;</span><div><div class="pair-name">EUR/JPY</div><div class="pair-sub">VOL 17,940.211</div></div></div>
+          <div class="market-row home-deal-row positive">
+            <div class="market-pair"><span class="pair-icon currency-pair-icon" aria-hidden="true">FX</span><div><div class="pair-name">EUR/JPY</div><div class="pair-sub">24H 185.110</div></div></div>
             <div class="market-price">185.110</div>
-            <div class="market-change negative">-0.41%</div>
-          </div>
-          <div class="market-row">
-            <div class="market-pair"><span class="pair-icon" aria-hidden="true">&#128182;</span><div><div class="pair-name">AUD/USD</div><div class="pair-sub">VOL 1,709,229.254</div></div></div>
-            <div class="market-price">0.701083</div>
-            <div class="market-change negative">-0.92%</div>
+            <div class="market-volume">17940.211</div>
           </div>
         </div>
       </section>
@@ -128,6 +151,6 @@
       </nav>
     </main>
   </div>
-  <script src="user-app.js?v=account-auth-gate-20260703"></script>
+  <script src="user-app.js?v=currency-row-colors-20260703"></script>
 </body>
 </html>

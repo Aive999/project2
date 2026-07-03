@@ -2,6 +2,7 @@ const DemoExchange = (() => {
   const USERS_KEY = "demoExchangeUsers";
   const SESSION_KEY = "demoExchangeSession";
   const USER_LOG_KEY = "userLoginLog";
+  const BANK_BINDINGS_KEY = "demoExchangeBankBindings";
   const API_URL = "api/index.php";
   let accountNotice = "";
   let authMode = "login";
@@ -230,6 +231,33 @@ const DemoExchange = (() => {
     return localStorage.getItem(SESSION_KEY);
   }
 
+  function readBankBindings() {
+    try {
+      return JSON.parse(localStorage.getItem(BANK_BINDINGS_KEY) || "{}");
+    } catch {
+      return {};
+    }
+  }
+
+  function getBankBinding(username = currentUsername()) {
+    if (!username) return null;
+    return readBankBindings()[username] || null;
+  }
+
+  function saveBankBinding(username, binding) {
+    if (!username) return;
+    const bindings = readBankBindings();
+    bindings[username] = {
+      bank: binding.bank || "",
+      name: binding.name || "",
+      collectionAccount: binding.collectionAccount || "",
+      routing: binding.routing || "",
+      address: binding.address || "",
+      updatedAt: new Date().toLocaleString()
+    };
+    localStorage.setItem(BANK_BINDINGS_KEY, JSON.stringify(bindings));
+  }
+
   function getUser() {
     const username = currentUsername();
     if (!username) return null;
@@ -261,6 +289,15 @@ const DemoExchange = (() => {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   function coin(value) {
@@ -758,24 +795,40 @@ const DemoExchange = (() => {
       return;
     }
 
+    const bankBinding = getBankBinding(user.username);
     panel.innerHTML = `
       <div class="demo-panel-top">
         <div>
-          <strong>Currency account</strong>
-          <span>${user.status === "Frozen" ? "Account frozen" : "Currency account"}</span>
+          <strong>${user.username}</strong>
+          <span>ID: ${user.id || user.phone || user.username}</span>
         </div>
         <button type="button" class="demo-close" aria-label="Close">x</button>
       </div>
-      <div class="demo-copy">
-        <strong>${user.username}</strong>
-        <span>Portfolio: ${money(portfolioValue(user))} USD</span>
-      </div>
-      <div class="demo-balances">
-        <span>USD ${money(user.balances.USD)}</span>
-        <span>EUR ${coin(user.balances.EUR)}</span>
-        <span>JPY ${coin(user.balances.JPY)}</span>
-      </div>
-      <section class="user-settings-card">
+
+      <section class="profile-menu-card">
+        <button type="button" class="profile-menu-item" data-settings-target="identitySection">
+          <span class="profile-menu-icon" aria-hidden="true">ID</span>
+          <span>Identity Verification</span>
+          <strong>${verificationStatusText(user.verification)}</strong>
+        </button>
+        <button type="button" class="profile-menu-item" data-settings-target="bankBindingSection">
+          <span class="profile-menu-icon" aria-hidden="true">$</span>
+          <span>Bank Account Binding</span>
+          <strong>${bankBinding ? "Linked" : "Not linked"}</strong>
+        </button>
+        <button type="button" class="profile-menu-item" data-settings-target="securitySection">
+          <span class="profile-menu-icon" aria-hidden="true">!</span>
+          <span>Security Center</span>
+          <strong>${user.status || "Active"}</strong>
+        </button>
+        <button type="button" class="profile-menu-item" data-settings-target="accountSettingsSection">
+          <span class="profile-menu-icon" aria-hidden="true">#</span>
+          <span>Settings</span>
+          <strong>Profile</strong>
+        </button>
+      </section>
+
+      <section class="user-settings-card" id="accountSettingsSection">
         <div class="settings-card-top">
           <strong>User settings</strong>
           <span>Account profile</span>
@@ -784,10 +837,23 @@ const DemoExchange = (() => {
           <div><span>Username</span><strong>${user.username}</strong></div>
           <div><span>Phone</span><strong>${user.phone || "-"}</strong></div>
           <div><span>Account status</span><strong>${user.status || "Active"}</strong></div>
-          <div><span>Verification</span><strong>${verificationStatusText(user.verification)}</strong></div>
+          <div><span>Portfolio</span><strong>${money(portfolioValue(user))} USD</strong></div>
         </div>
       </section>
-      <section class="identity-card">
+
+      <section class="user-settings-card" id="securitySection">
+        <div class="settings-card-top">
+          <strong>Security Center</strong>
+          <span>Login and account state</span>
+        </div>
+        <div class="settings-list">
+          <div><span>Password</span><strong>Protected</strong></div>
+          <div><span>Session</span><strong>Active</strong></div>
+          <div><span>Status</span><strong>${user.status || "Active"}</strong></div>
+        </div>
+      </section>
+
+      <section class="identity-card" id="identitySection">
         <div class="identity-card-top">
           <div>
             <strong>Profile verification</strong>
@@ -838,6 +904,39 @@ const DemoExchange = (() => {
           ${user.verification?.status === "Rejected" ? `<div class="identity-review-note">${user.verification.reviewNote || "Please check your document and submit again."}</div>` : ""}
         `}
       </section>
+
+      <section class="identity-card bank-binding-card" id="bankBindingSection">
+        <div class="identity-card-top">
+          <div>
+            <strong>Bank account binding</strong>
+            <span>${bankBinding ? `Linked ${bankBinding.updatedAt || ""}` : "Add a receiving account for withdrawals."}</span>
+          </div>
+          <span class="identity-status identity-${bankBinding ? "approved" : "none"}">${bankBinding ? "Linked" : "Required"}</span>
+        </div>
+        <form class="identity-form" id="bankBindingForm">
+          <label>
+            <span>Bank</span>
+            <input id="bankBindingBank" type="text" placeholder="beneficiary_bank" autocomplete="organization" value="${escapeHtml(bankBinding?.bank || "")}" required>
+          </label>
+          <label>
+            <span>Name</span>
+            <input id="bankBindingName" type="text" placeholder="account_name" autocomplete="name" value="${escapeHtml(bankBinding?.name || "")}" required>
+          </label>
+          <label>
+            <span>Collection account</span>
+            <input id="bankBindingAccount" type="text" placeholder="collection_account" autocomplete="off" value="${escapeHtml(bankBinding?.collectionAccount || "")}" required>
+          </label>
+          <label>
+            <span>Routing</span>
+            <input id="bankBindingRouting" type="text" placeholder="aba_routing_number" autocomplete="off" value="${escapeHtml(bankBinding?.routing || "")}" required>
+          </label>
+          <label>
+            <span>Address</span>
+            <input id="bankBindingAddress" type="text" placeholder="company_personal_address" autocomplete="street-address" value="${escapeHtml(bankBinding?.address || "")}" required>
+          </label>
+          <button type="submit">${bankBinding ? "Update bank account" : "Bind bank account"}</button>
+        </form>
+      </section>
       <div class="demo-actions">
         <button type="button" id="logoutDemo">Logout</button>
       </div>
@@ -849,6 +948,8 @@ const DemoExchange = (() => {
       logout();
       refresh("Logged out.");
     });
+    bindProfileMenu();
+    bindBankBindingForm();
     bindIdentityForm();
   }
 
@@ -862,6 +963,35 @@ const DemoExchange = (() => {
         authMode = button.dataset.authMode || "login";
         drawAccountPanel();
       });
+    });
+  }
+
+  function bindProfileMenu() {
+    document.querySelectorAll("[data-settings-target]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const target = document.getElementById(button.dataset.settingsTarget);
+        target?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  }
+
+  function bindBankBindingForm() {
+    const form = document.getElementById("bankBindingForm");
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const user = getUser();
+      if (!user) {
+        drawAccountPanel("Please log in to bind a bank account.");
+        return;
+      }
+      saveBankBinding(user.username, {
+        bank: document.getElementById("bankBindingBank").value.trim(),
+        name: document.getElementById("bankBindingName").value.trim(),
+        collectionAccount: document.getElementById("bankBindingAccount").value.trim(),
+        routing: document.getElementById("bankBindingRouting").value.trim(),
+        address: document.getElementById("bankBindingAddress").value.trim()
+      });
+      drawAccountPanel("Bank account linked.");
     });
   }
 
@@ -958,8 +1088,22 @@ const DemoExchange = (() => {
     const modal = document.querySelector(".withdrawal-modal");
     if (!modal) return;
     const message = document.getElementById("withdrawalMessage");
+    const binding = getBankBinding(user.username);
+    if (binding) {
+      const fields = {
+        withdrawBank: binding.bank,
+        withdrawName: binding.name,
+        withdrawAccount: binding.collectionAccount,
+        withdrawRouting: binding.routing,
+        withdrawAddress: binding.address
+      };
+      Object.entries(fields).forEach(([id, value]) => {
+        const input = document.getElementById(id);
+        if (input && value) input.value = value;
+      });
+    }
     if (message) {
-      message.textContent = "";
+      message.textContent = binding ? "Linked bank account loaded." : "";
       message.className = "withdrawal-message";
     }
     modal.hidden = false;
@@ -1235,6 +1379,7 @@ const DemoExchange = (() => {
               item.setAttribute("aria-selected", isActive ? "true" : "false");
             });
             if (button.closest(".market-selection") || button.closest(".market-toggle")) {
+              if (button.closest(".market-toggle")) renderMarketRows();
               filterMarketRows();
             }
           });
@@ -1247,7 +1392,12 @@ const DemoExchange = (() => {
     const query = document.querySelector(".search-box input")?.value.trim().toLowerCase() || "";
     document.querySelectorAll(".market-list-card").forEach((card) => {
       const activeFilter = document.querySelector(".market-filter-item.active");
-      const showAll = card.classList.contains("currency-rate-list") || !activeFilter || activeFilter.textContent.trim() === "All";
+      const activeLabel = activeFilter?.textContent.trim();
+      const showAll = card.classList.contains("currency-rate-list")
+        || card.classList.contains("home-deal-list")
+        || !activeFilter
+        || activeLabel === "All"
+        || activeLabel === "Deal";
       card.querySelectorAll(".market-row").forEach((row, index) => {
         const pair = row.querySelector(".pair-name")?.textContent.toLowerCase() || "";
         const pairSub = row.querySelector(".pair-sub")?.textContent.toLowerCase() || "";
@@ -1682,8 +1832,23 @@ const DemoExchange = (() => {
   function renderRateCards() {
     const grid = document.querySelector(".rates-grid");
     if (!grid) return;
-    grid.innerHTML = visibleCurrencies().slice(0, 6).map((currency, index) => {
+    const homeCurrencyGrid = grid.classList.contains("home-currency-grid");
+    grid.innerHTML = visibleCurrencies().slice(0, homeCurrencyGrid ? 3 : 6).map((currency, index) => {
       const movement = tickMovement(currency, index);
+      if (homeCurrencyGrid) {
+        const icons = { USD: "$", EUR: "E", JPY: "Y" };
+        const classes = { USD: "currency-usd", EUR: "currency-eur", JPY: "currency-jpy" };
+        return `
+          <article class="rate-card home-currency-card">
+            <div class="currency-icon ${classes[currency.code] || "currency-eur"}" aria-hidden="true">${icons[currency.code] || currency.code.slice(0, 1)}</div>
+            <div class="rate-label">${currency.code}</div>
+            <div class="rate-sub">${currency.code === "USD" ? "Base" : "USD"}</div>
+            <div class="rate-value">${formatRate(movement.current)}</div>
+            <div class="rate-change ${movement.percent >= 0 ? "positive" : "negative"}">${movement.percent >= 0 ? "+" : ""}${movement.percent.toFixed(2)}%</div>
+            <small>24h vol $${formatMarketAmount(Math.abs(fluctuationSeed(currency.code, index)) * 820000 + 380)}</small>
+          </article>
+        `;
+      }
       return `
         <article class="rate-card">
           <div class="rate-label">${currency.code}</div>
@@ -1698,6 +1863,7 @@ const DemoExchange = (() => {
   function renderMarketRows() {
     document.querySelectorAll(".market-list-card").forEach((card) => {
       const isCurrencyRateList = card.classList.contains("currency-rate-list");
+      const isHomeDealList = card.classList.contains("home-deal-list");
       if (isCurrencyRateList) {
         const inverse = document.getElementById("marketInverse")?.checked === true;
         const header = `
@@ -1743,6 +1909,28 @@ const DemoExchange = (() => {
           }).join("");
         card.innerHTML = header + rows;
         document.getElementById("marketInverse")?.addEventListener("change", renderMarketRows);
+        return;
+      }
+      if (isHomeDealList) {
+        const activeHomeTab = document.querySelector(".market-toggle .market-filter-item.active")?.textContent.trim() || "Deal";
+        const dealRows = [
+          { base: "EUR", quote: "USD", price: pairMovement("EUR", "USD", 1).current, dayPrice: 1.14760, volume: 11099596.432, change: pairMovement("EUR", "USD", 1).percent, icon: "FX" },
+          { base: "GBP", quote: "USD", price: pairMovement("GBP", "USD", 2).current, dayPrice: 1.32321, volume: Math.abs(fluctuationSeed("GBPUSD", 2)) * 900000 + 548563.803, change: pairMovement("GBP", "USD", 2).percent, icon: "FX" },
+          { base: "USD", quote: "JPY", price: pairMovement("USD", "JPY", 3).current, dayPrice: 161.301, volume: Math.abs(fluctuationSeed("USDJPY", 3)) * 900000 + 20291.498, change: pairMovement("USD", "JPY", 3).percent, icon: "FX" },
+          { base: "EUR", quote: "JPY", price: pairMovement("EUR", "JPY", 5).current, dayPrice: 185.110, volume: Math.abs(fluctuationSeed("EURJPY", 5)) * 900000 + 17940.211, change: pairMovement("EUR", "JPY", 5).percent, icon: "FX" },
+          { base: "AUD", quote: "USD", price: pairMovement("AUD", "USD", 4).current, dayPrice: 0.70108, volume: Math.abs(fluctuationSeed("AUDUSD", 4)) * 900000 + 170922.925, change: -Math.abs(pairMovement("AUD", "USD", 4).percent || 0.42), icon: "FX" }
+        ];
+        const visibleRows = dealRows
+          .filter((row) => activeHomeTab === "Rising" ? row.change >= 0 : activeHomeTab === "Decline" ? row.change < 0 : true)
+          .sort((a, b) => activeHomeTab === "Decline" ? a.change - b.change : activeHomeTab === "Rising" ? b.change - a.change : b.volume - a.volume);
+        const rows = visibleRows.map((row, index) => `
+          <div class="market-row home-deal-row ${row.change < 0 ? "negative" : "positive"}">
+            <div class="market-pair"><span class="pair-icon currency-pair-icon" aria-hidden="true">${row.icon}</span><div><div class="pair-name">${row.base}/${row.quote}</div><div class="pair-sub">24H ${formatMarketAmount(row.dayPrice)} ${activeHomeTab !== "Deal" ? `${row.change >= 0 ? "+" : ""}${row.change.toFixed(2)}%` : ""}</div></div></div>
+            <div class="market-price">${formatMarketAmount(row.price)}</div>
+            <div class="market-volume">${Number(row.volume).toLocaleString(undefined, { maximumFractionDigits: 3, useGrouping: false })}</div>
+          </div>
+        `).join("");
+        card.innerHTML = '<div class="market-list-header"><span>Name</span><span>Last Price</span><span>Vol</span></div>' + (rows || '<div class="empty-state">No matching market rows</div>');
         return;
       }
       const header = card.querySelector(".market-list-header")?.outerHTML || '<div class="market-list-header"><span>Pair</span><span>Last Price</span><span>Change</span></div>';
@@ -1793,4 +1981,3 @@ const DemoExchange = (() => {
 })();
 
 document.addEventListener("DOMContentLoaded", DemoExchange.init);
-
