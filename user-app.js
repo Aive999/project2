@@ -391,6 +391,21 @@ const DemoExchange = (() => {
     localStorage.removeItem(SESSION_KEY);
   }
 
+  function showPublicToast(message, type = "success") {
+    let toast = document.querySelector(".public-toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.className = "public-toast";
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.className = `public-toast ${type} show`;
+    clearTimeout(showPublicToast.timer);
+    showPublicToast.timer = setTimeout(() => {
+      toast.classList.remove("show");
+    }, 4200);
+  }
+
   function resetDemo() {
     const user = getUser();
     if (!user) return;
@@ -961,6 +976,136 @@ const DemoExchange = (() => {
     document.body.classList.remove("withdrawal-modal-open");
   }
 
+  function renderDepositPanel() {
+    if (document.querySelector(".deposit-modal")) return;
+    const modal = document.createElement("div");
+    modal.className = "deposit-modal";
+    modal.hidden = true;
+    modal.innerHTML = `
+      <section class="deposit-panel" role="dialog" aria-modal="true" aria-label="Deposit funds">
+        <div class="deposit-panel-top">
+          <div>
+            <strong>Deposit funds</strong>
+            <span>Submit your deposit details for account credit.</span>
+          </div>
+          <button type="button" class="deposit-close" aria-label="Close">x</button>
+        </div>
+        <form id="depositForm" class="deposit-form">
+          <label>
+            <span>Amount (USD)</span>
+            <input id="depositAmount" type="number" min="0" step="0.01" placeholder="500.00" inputmode="decimal" required>
+          </label>
+          <label>
+            <span>Payment method</span>
+            <select id="depositMethod" required>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Card">Card</option>
+              <option value="Crypto Transfer">Crypto Transfer</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          <label>
+            <span>Sender name</span>
+            <input id="depositSender" type="text" placeholder="sender_name" autocomplete="name" required>
+          </label>
+          <label>
+            <span>Reference number</span>
+            <input id="depositReference" type="text" placeholder="transaction_reference" autocomplete="off" required>
+          </label>
+          <button type="submit">Submit</button>
+        </form>
+        <div class="deposit-message" id="depositMessage"></div>
+      </section>
+    `;
+    document.body.appendChild(modal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeDepositPanel();
+    });
+    modal.querySelector(".deposit-close")?.addEventListener("click", closeDepositPanel);
+    modal.querySelector("#depositForm")?.addEventListener("submit", submitDepositForm);
+  }
+
+  function openDepositPanel() {
+    const user = getUser();
+    if (!user) {
+      openAccountPanel();
+      drawAccountPanel("Please register or log in first.");
+      return;
+    }
+    try {
+      ensureActiveAccount(user);
+    } catch (error) {
+      refresh(error.message);
+      return;
+    }
+    renderDepositPanel();
+    const modal = document.querySelector(".deposit-modal");
+    if (!modal) return;
+    const message = document.getElementById("depositMessage");
+    if (message) {
+      message.textContent = "";
+      message.className = "deposit-message";
+    }
+    modal.hidden = false;
+    modal.classList.add("open");
+    document.body.classList.add("deposit-modal-open");
+  }
+
+  function closeDepositPanel() {
+    const modal = document.querySelector(".deposit-modal");
+    if (modal) {
+      modal.classList.remove("open");
+      modal.hidden = true;
+    }
+    document.body.classList.remove("deposit-modal-open");
+  }
+
+  async function submitDepositForm(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector("button[type='submit']");
+    const message = document.getElementById("depositMessage");
+    const method = document.getElementById("depositMethod").value;
+    const sender = document.getElementById("depositSender").value.trim();
+    const reference = document.getElementById("depositReference").value.trim();
+    try {
+      if (!sender || !reference) throw new Error("Complete all deposit fields.");
+      if (button) {
+        button.disabled = true;
+        button.textContent = "Submitting...";
+      }
+      if (message) {
+        message.textContent = "Submitting deposit request...";
+        message.className = "deposit-message";
+      }
+      showPublicToast("Submitting deposit request...", "info");
+      await accountAction("Deposit", document.getElementById("depositAmount").value, "USD", {
+        depositDetails: { method, sender, reference }
+      });
+      if (message) {
+        message.textContent = "Deposit submitted successfully.";
+        message.className = "deposit-message success";
+      }
+      showPublicToast("Deposit submitted successfully.", "success");
+      form.reset();
+      setTimeout(() => {
+        closeDepositPanel();
+        refresh("Deposit submitted successfully.");
+      }, 700);
+    } catch (error) {
+      showPublicToast(`Deposit failed: ${error.message}`, "error");
+      if (message) {
+        message.textContent = `Deposit failed: ${error.message}`;
+        message.className = "deposit-message error";
+      }
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.textContent = "Submit";
+      }
+    }
+  }
+
   async function submitWithdrawalForm(event) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -985,6 +1130,7 @@ const DemoExchange = (() => {
         message.textContent = "Submitting withdrawal request...";
         message.className = "withdrawal-message";
       }
+      showPublicToast("Submitting withdrawal request...", "info");
       await accountAction("Withdraw", document.getElementById("withdrawAmount").value, "USD", {
         withdrawDetails: details
       });
@@ -992,12 +1138,14 @@ const DemoExchange = (() => {
         message.textContent = "Withdrawal submitted successfully.";
         message.className = "withdrawal-message success";
       }
+      showPublicToast("Withdrawal submitted successfully. Status: Pending review.", "success");
       form.reset();
       setTimeout(() => {
         closeWithdrawalPanel();
         refresh("Withdrawal submitted successfully. Status: Pending review.");
       }, 700);
     } catch (error) {
+      showPublicToast(`Withdrawal failed: ${error.message}`, "error");
       if (message) {
         message.textContent = `Withdrawal failed: ${error.message}`;
         message.className = "withdrawal-message error";
@@ -1182,7 +1330,8 @@ const DemoExchange = (() => {
             openWithdrawalPanel();
             return;
           } else if (action.includes("Deposit")) {
-            await accountAction("Deposit", prompt("Deposit amount", "500"), "USD");
+            openDepositPanel();
+            return;
           } else if (action.includes("Transfer")) {
             await accountAction("Transfer", prompt("Transfer amount", "100"), "USD");
           } else if (action.includes("Exchange")) {

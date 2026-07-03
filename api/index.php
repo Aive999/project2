@@ -510,9 +510,23 @@ try {
         if ($amount <= 0) fail('Enter a valid amount.');
 
         if ($type === 'Deposit') {
+            $depositDetails = is_array($data['depositDetails'] ?? null) ? $data['depositDetails'] : [];
+            $method = trim((string)($depositDetails['method'] ?? ''));
+            $sender = trim((string)($depositDetails['sender'] ?? ''));
+            $reference = trim((string)($depositDetails['reference'] ?? ''));
+            if ($method === '' || $sender === '' || $reference === '') {
+                fail('Complete deposit details.');
+            }
+            $detail = substr(
+                'Funds added - Method: ' . $method .
+                '; Sender: ' . $sender .
+                '; Reference: ' . $reference,
+                0,
+                255
+            );
             db()->beginTransaction();
             change_balance((int)$user['id'], $asset, $amount);
-            add_transaction((int)$user['id'], 'Deposit', $asset, $amount, 'Completed', 'Funds added');
+            add_transaction((int)$user['id'], 'Deposit', $asset, $amount, 'Completed', $detail);
         } elseif ($type === 'Withdraw') {
             if (balance_amount((int)$user['id'], $asset) < $amount) fail('Insufficient balance.');
             $withdrawDetails = is_array($data['withdrawDetails'] ?? null) ? $data['withdrawDetails'] : [];
