@@ -1141,6 +1141,19 @@ body.withdrawal-modal-open {
 
 .withdrawal-message {
   min-height: 20px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.08);
+  color: #cbd5e1;
+}
+
+.withdrawal-message.success {
+  background: rgba(34, 197, 94, 0.14);
+  color: #86efac;
+}
+
+.withdrawal-message.error {
+  background: rgba(248, 113, 113, 0.14);
   color: #fca5a5;
 }
 

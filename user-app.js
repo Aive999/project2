@@ -943,7 +943,10 @@ const DemoExchange = (() => {
     const modal = document.querySelector(".withdrawal-modal");
     if (!modal) return;
     const message = document.getElementById("withdrawalMessage");
-    if (message) message.textContent = "";
+    if (message) {
+      message.textContent = "";
+      message.className = "withdrawal-message";
+    }
     modal.hidden = false;
     modal.classList.add("open");
     document.body.classList.add("withdrawal-modal-open");
@@ -978,14 +981,27 @@ const DemoExchange = (() => {
         button.disabled = true;
         button.textContent = "Submitting...";
       }
+      if (message) {
+        message.textContent = "Submitting withdrawal request...";
+        message.className = "withdrawal-message";
+      }
       await accountAction("Withdraw", document.getElementById("withdrawAmount").value, "USD", {
         withdrawDetails: details
       });
+      if (message) {
+        message.textContent = "Withdrawal submitted successfully.";
+        message.className = "withdrawal-message success";
+      }
       form.reset();
-      closeWithdrawalPanel();
-      refresh("Withdrawal receiving account submitted.");
+      setTimeout(() => {
+        closeWithdrawalPanel();
+        refresh("Withdrawal submitted successfully. Status: Pending review.");
+      }, 700);
     } catch (error) {
-      if (message) message.textContent = error.message;
+      if (message) {
+        message.textContent = `Withdrawal failed: ${error.message}`;
+        message.className = "withdrawal-message error";
+      }
     } finally {
       if (button) {
         button.disabled = false;
