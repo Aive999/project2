@@ -366,6 +366,26 @@ const DemoExchange = (() => {
     return "Pending review";
   }
 
+  function verificationImagePreview(verification) {
+    if (!verification?.frontImage && !verification?.backImage) return "";
+    return `
+      <div class="identity-preview-grid">
+        ${verification.frontImage ? `
+          <a class="identity-preview" href="${verification.frontImage}" target="_blank" rel="noopener">
+            <img src="${verification.frontImage}" alt="Submitted ID front photo">
+            <span>Front photo</span>
+          </a>
+        ` : ""}
+        ${verification.backImage ? `
+          <a class="identity-preview" href="${verification.backImage}" target="_blank" rel="noopener">
+            <img src="${verification.backImage}" alt="Submitted ID back photo">
+            <span>Back photo</span>
+          </a>
+        ` : ""}
+      </div>
+    `;
+  }
+
   function logout() {
     apiRequest("logout").catch(() => {});
     localStorage.removeItem(SESSION_KEY);
@@ -379,7 +399,7 @@ const DemoExchange = (() => {
     saveUser(user);
   }
 
-  async function accountAction(type, amount, asset = "USD") {
+  async function accountAction(type, amount, asset = "USD", extra = {}) {
     await syncCurrentUser();
     const user = getUser();
     if (!user) throw new Error("Please register or log in first.");
@@ -388,7 +408,7 @@ const DemoExchange = (() => {
     if (!value || value <= 0) throw new Error("Enter a valid amount.");
 
     try {
-      const data = await apiRequest("account_action", { type, amount: value, asset });
+      const data = await apiRequest("account_action", { type, amount: value, asset, ...extra });
       cacheServerUser(data.user);
       return;
     } catch (error) {
@@ -740,6 +760,18 @@ const DemoExchange = (() => {
         <span>EUR ${coin(user.balances.EUR)}</span>
         <span>JPY ${coin(user.balances.JPY)}</span>
       </div>
+      <section class="user-settings-card">
+        <div class="settings-card-top">
+          <strong>User settings</strong>
+          <span>Account profile</span>
+        </div>
+        <div class="settings-list">
+          <div><span>Username</span><strong>${user.username}</strong></div>
+          <div><span>Phone</span><strong>${user.phone || "-"}</strong></div>
+          <div><span>Account status</span><strong>${user.status || "Active"}</strong></div>
+          <div><span>Verification</span><strong>${verificationStatusText(user.verification)}</strong></div>
+        </div>
+      </section>
       <section class="identity-card">
         <div class="identity-card-top">
           <div>
@@ -752,6 +784,7 @@ const DemoExchange = (() => {
           <div class="identity-approved">
             ${user.verification.documentType} verified on ${user.verification.reviewedAt || user.verification.submittedAt || "record"}.
           </div>
+          ${verificationImagePreview(user.verification)}
         ` : `
           <form class="identity-form" id="identityForm">
             <label>
@@ -774,8 +807,19 @@ const DemoExchange = (() => {
               <span>ID back photo</span>
               <input id="identityBackImage" type="file" accept="image/png,image/jpeg,image/webp" required>
             </label>
+            <div class="identity-preview-grid" id="identitySelectedPreviews" hidden>
+              <div class="identity-preview" id="frontImagePreview" hidden>
+                <img alt="Selected ID front photo">
+                <span>Front photo</span>
+              </div>
+              <div class="identity-preview" id="backImagePreview" hidden>
+                <img alt="Selected ID back photo">
+                <span>Back photo</span>
+              </div>
+            </div>
             <button type="submit">Submit verification</button>
           </form>
+          ${verificationImagePreview(user.verification)}
           ${user.verification?.status === "Rejected" ? `<div class="identity-review-note">${user.verification.reviewNote || "Please check your document and submit again."}</div>` : ""}
         `}
       </section>
@@ -830,10 +874,131 @@ const DemoExchange = (() => {
     document.body.classList.remove("demo-modal-open");
   }
 
+  function renderWithdrawalPanel() {
+    if (document.querySelector(".withdrawal-modal")) return;
+    const modal = document.createElement("div");
+    modal.className = "withdrawal-modal";
+    modal.hidden = true;
+    modal.innerHTML = `
+      <section class="withdrawal-panel" role="dialog" aria-modal="true" aria-label="Link receiving account">
+        <div class="withdrawal-panel-top">
+          <div>
+            <strong>Receiving account</strong>
+            <span>Link where your withdrawal should be sent.</span>
+          </div>
+          <button type="button" class="withdrawal-close" aria-label="Close">x</button>
+        </div>
+        <form id="withdrawalForm" class="withdrawal-form">
+          <label>
+            <span>Amount (USD)</span>
+            <input id="withdrawAmount" type="number" min="0" step="0.01" placeholder="100.00" inputmode="decimal" required>
+          </label>
+          <label>
+            <span>Bank</span>
+            <input id="withdrawBank" type="text" placeholder="beneficiary_bank" autocomplete="organization" required>
+          </label>
+          <label>
+            <span>Name</span>
+            <input id="withdrawName" type="text" placeholder="account_name" autocomplete="name" required>
+          </label>
+          <label>
+            <span>Collection account</span>
+            <input id="withdrawAccount" type="text" placeholder="collection_account" autocomplete="off" required>
+          </label>
+          <label>
+            <span>Routing</span>
+            <input id="withdrawRouting" type="text" placeholder="aba_routing_number" autocomplete="off" required>
+          </label>
+          <label>
+            <span>Address</span>
+            <input id="withdrawAddress" type="text" placeholder="company_personal_address" autocomplete="street-address" required>
+          </label>
+          <button type="submit">Submit</button>
+        </form>
+        <div class="withdrawal-message" id="withdrawalMessage"></div>
+      </section>
+    `;
+    document.body.appendChild(modal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeWithdrawalPanel();
+    });
+    modal.querySelector(".withdrawal-close")?.addEventListener("click", closeWithdrawalPanel);
+    modal.querySelector("#withdrawalForm")?.addEventListener("submit", submitWithdrawalForm);
+  }
+
+  function openWithdrawalPanel() {
+    const user = getUser();
+    if (!user) {
+      openAccountPanel();
+      drawAccountPanel("Please register or log in first.");
+      return;
+    }
+    try {
+      ensureActiveAccount(user);
+    } catch (error) {
+      refresh(error.message);
+      return;
+    }
+    renderWithdrawalPanel();
+    const modal = document.querySelector(".withdrawal-modal");
+    if (!modal) return;
+    const message = document.getElementById("withdrawalMessage");
+    if (message) message.textContent = "";
+    modal.hidden = false;
+    modal.classList.add("open");
+    document.body.classList.add("withdrawal-modal-open");
+  }
+
+  function closeWithdrawalPanel() {
+    const modal = document.querySelector(".withdrawal-modal");
+    if (modal) {
+      modal.classList.remove("open");
+      modal.hidden = true;
+    }
+    document.body.classList.remove("withdrawal-modal-open");
+  }
+
+  async function submitWithdrawalForm(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector("button[type='submit']");
+    const message = document.getElementById("withdrawalMessage");
+    const details = {
+      bank: document.getElementById("withdrawBank").value.trim(),
+      name: document.getElementById("withdrawName").value.trim(),
+      collectionAccount: document.getElementById("withdrawAccount").value.trim(),
+      routing: document.getElementById("withdrawRouting").value.trim(),
+      address: document.getElementById("withdrawAddress").value.trim()
+    };
+    try {
+      if (Object.values(details).some((value) => !value)) {
+        throw new Error("Complete all receiving account fields.");
+      }
+      if (button) {
+        button.disabled = true;
+        button.textContent = "Submitting...";
+      }
+      await accountAction("Withdraw", document.getElementById("withdrawAmount").value, "USD", {
+        withdrawDetails: details
+      });
+      form.reset();
+      closeWithdrawalPanel();
+      refresh("Withdrawal receiving account submitted.");
+    } catch (error) {
+      if (message) message.textContent = error.message;
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.textContent = "Submit";
+      }
+    }
+  }
+
   function bindAccountButtons() {
     document.querySelectorAll('.account-button, .icon-button[aria-label="Support"], .icon-button[aria-label="Login or register"]').forEach((button) => {
-      button.setAttribute("aria-label", "Login or register");
-      button.setAttribute("title", "Login or register");
+      const label = currentUsername() ? "Account settings" : "Login or register";
+      button.setAttribute("aria-label", label);
+      button.setAttribute("title", label);
       button.addEventListener("click", openAccountPanel);
     });
 
@@ -920,7 +1085,34 @@ const DemoExchange = (() => {
   }
 
   function bindIdentityForm() {
-    document.getElementById("identityForm")?.addEventListener("submit", async (event) => {
+    const form = document.getElementById("identityForm");
+    const frontInput = document.getElementById("identityFrontImage");
+    const backInput = document.getElementById("identityBackImage");
+    const bindPreview = (input, previewId) => {
+      input?.addEventListener("change", async () => {
+        const preview = document.getElementById(previewId);
+        const grid = document.getElementById("identitySelectedPreviews");
+        const image = preview?.querySelector("img");
+        if (!preview || !image || !grid) return;
+        try {
+          const dataUrl = await readVerificationImage(input.files[0]);
+          image.src = dataUrl;
+          preview.hidden = false;
+          grid.hidden = false;
+        } catch (error) {
+          input.value = "";
+          preview.hidden = true;
+          image.removeAttribute("src");
+          const anyVisible = Array.from(grid.querySelectorAll(".identity-preview")).some((item) => !item.hidden);
+          grid.hidden = !anyVisible;
+          drawAccountPanel(error.message);
+        }
+      });
+    };
+    bindPreview(frontInput, "frontImagePreview");
+    bindPreview(backInput, "backImagePreview");
+
+    form?.addEventListener("submit", async (event) => {
       event.preventDefault();
       const button = event.currentTarget.querySelector("button[type='submit']");
       try {
@@ -971,7 +1163,8 @@ const DemoExchange = (() => {
         const action = button.textContent.trim();
         try {
           if (action.includes("Withdraw")) {
-            await accountAction("Withdraw", prompt("Withdrawal amount", "100"), "USD");
+            openWithdrawalPanel();
+            return;
           } else if (action.includes("Deposit")) {
             await accountAction("Deposit", prompt("Deposit amount", "500"), "USD");
           } else if (action.includes("Transfer")) {

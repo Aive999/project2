@@ -852,6 +852,45 @@ body {
   border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
+.user-settings-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.68);
+  border: 1px solid rgba(56, 189, 248, 0.16);
+}
+
+.settings-card-top {
+  display: grid;
+  gap: 4px;
+}
+
+.settings-card-top strong,
+.settings-list strong {
+  color: #f8fafc;
+}
+
+.settings-card-top span,
+.settings-list span {
+  color: #94a3b8;
+  font-size: 0.86rem;
+}
+
+.settings-list {
+  display: grid;
+  gap: 8px;
+}
+
+.settings-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.08);
+}
+
 .identity-card-top {
   display: flex;
   align-items: flex-start;
@@ -948,6 +987,161 @@ body {
 .identity-form button:disabled {
   cursor: progress;
   opacity: 0.72;
+}
+
+.identity-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.identity-preview-grid[hidden],
+.identity-preview[hidden] {
+  display: none !important;
+}
+
+.identity-preview {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 14px;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 0.82rem;
+}
+
+.identity-preview img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #020617;
+}
+
+.identity-preview span {
+  color: #cbd5e1;
+}
+
+.withdrawal-modal[hidden] {
+  display: none !important;
+}
+
+.withdrawal-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.withdrawal-modal.open {
+  display: flex;
+}
+
+body.withdrawal-modal-open {
+  overflow: hidden;
+}
+
+.withdrawal-panel {
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 22px;
+  background: #0f172a;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.46);
+  color: #e2e8f0;
+}
+
+.withdrawal-panel-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.withdrawal-panel-top div {
+  display: grid;
+  gap: 4px;
+}
+
+.withdrawal-panel-top strong {
+  color: #f8fafc;
+}
+
+.withdrawal-panel-top span,
+.withdrawal-form label,
+.withdrawal-message {
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.withdrawal-close {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.16);
+  color: #f8fafc;
+  cursor: pointer;
+}
+
+.withdrawal-form {
+  display: grid;
+  gap: 10px;
+}
+
+.withdrawal-form label {
+  display: grid;
+  gap: 7px;
+}
+
+.withdrawal-form input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 14px;
+  background: #111827;
+  color: #f8fafc;
+  outline: none;
+}
+
+.withdrawal-form input::placeholder {
+  color: #64748b;
+  opacity: 1;
+}
+
+.withdrawal-form button {
+  min-height: 48px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #14b8a6, #2563eb);
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.withdrawal-form button:disabled {
+  cursor: progress;
+  opacity: 0.72;
+}
+
+.withdrawal-message {
+  min-height: 20px;
+  color: #fca5a5;
 }
 
 
@@ -2951,11 +3145,61 @@ body.demo-modal-open .main-nav {
 }
 
 @media (max-width: 600px) {
+    .demo-account-modal.open {
+        align-items: flex-end !important;
+        justify-content: center !important;
+        padding: 8px !important;
+    }
+
     .demo-account-panel {
         width: 100% !important;
-        max-height: min(86vh, calc(100vh - 20px));
+        max-height: min(92vh, calc(100vh - 16px)) !important;
         border-radius: 20px !important;
-        padding: 16px !important;
+        padding: 14px !important;
+        overscroll-behavior: contain;
+    }
+
+    .demo-account-panel .demo-panel-top {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        padding-bottom: 10px;
+        background: #0f172a;
+    }
+
+    .demo-balances,
+    .settings-list,
+    .demo-actions,
+    .identity-preview-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .identity-card-top,
+    .settings-list div {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .identity-status {
+        align-self: flex-start;
+    }
+
+    .identity-form input,
+    .identity-form select,
+    .identity-form button {
+        min-height: 48px;
+    }
+
+    .withdrawal-modal.open {
+        align-items: flex-end;
+        padding: 8px;
+    }
+
+    .withdrawal-panel {
+        width: 100%;
+        max-height: min(92vh, calc(100vh - 16px));
+        padding: 14px;
+        border-radius: 20px;
     }
 }
 
@@ -3515,11 +3759,12 @@ body.account-page .account-summary-usd {
 
 body.account-page .account-actions {
     display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 10px !important;
 }
 
-body.account-page .account-action {
+body.account-page .account-action,
+body.account-page .account-profile-button {
     display: grid !important;
     place-items: center !important;
     gap: 7px !important;
@@ -3536,7 +3781,8 @@ body.account-page .account-action {
     cursor: pointer !important;
 }
 
-body.account-page .account-action > span:first-child {
+body.account-page .account-action > span:first-child,
+body.account-page .account-profile-button > span:first-child {
     display: grid !important;
     place-items: center !important;
     width: 34px !important;
@@ -3669,6 +3915,10 @@ body.account-page .search-row input {
     body.account-page .account-header {
         grid-template-columns: 1fr !important;
         padding: 18px !important;
+    }
+
+    body.account-page .account-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
     body.account-page .exchange-grid,
@@ -4330,6 +4580,196 @@ body:not(.admin-body) {
     body:not(.admin-body) .main-nav .nav-item span:last-child {
         font-size: 11px;
     }
+}
+
+/* Admin contrast guardrails */
+body:has(.admin-shell) {
+    background: #f3f4f6 !important;
+    color: #111827 !important;
+}
+
+.admin-shell,
+.admin-main,
+.admin-dashboard,
+.admin-menu-management,
+.admin-panel,
+.admin-card,
+.table-wrapper,
+.account-table-wrapper {
+    color: #111827 !important;
+}
+
+.admin-panel,
+.admin-card {
+    background: #ffffff !important;
+}
+
+.admin-panel p,
+.admin-panel div,
+.admin-panel span,
+.admin-panel strong,
+.admin-panel label,
+.admin-panel th,
+.admin-panel td,
+.admin-card p,
+.admin-card div,
+.admin-card span,
+.filter-row label,
+.table-tools,
+.column-picker,
+.pagination {
+    color: #111827;
+}
+
+.admin-page-title,
+.panel-header,
+.admin-panel h1,
+.admin-panel h2,
+.admin-panel h3,
+.admin-panel h4,
+.admin-card h1,
+.admin-card h2,
+.admin-card h3,
+.card-value {
+    color: #0f172a !important;
+}
+
+.admin-breadcrumb,
+.admin-panel label span,
+.filter-row span,
+.empty-box p,
+.empty-table-cell,
+.panel-header span,
+.account-op-title {
+    color: #475569 !important;
+}
+
+.admin-sidebar,
+.admin-brand,
+.admin-menu,
+.admin-menu-group,
+.admin-submenu {
+    color: #111827 !important;
+}
+
+.admin-title,
+.admin-menu a,
+.admin-menu-item,
+.admin-menu-group summary,
+.admin-submenu-item {
+    color: #111827 !important;
+}
+
+.admin-submenu-item {
+    color: #334155 !important;
+}
+
+.admin-menu-item.active,
+.admin-menu-item.active a,
+.admin-submenu-item.active,
+.admin-menu a.active {
+    color: #1d4ed8 !important;
+}
+
+.admin-header,
+.admin-header span,
+.admin-profile,
+.admin-profile span,
+.admin-header .icon-button,
+.admin-pill {
+    color: #ffffff !important;
+}
+
+.admin-search input,
+.admin-search input::placeholder {
+    color: #ffffff !important;
+}
+
+.admin-shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.admin-shell select,
+.admin-shell textarea {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border-color: #cbd5e1 !important;
+}
+
+.admin-shell input[type="file"] {
+    color: #111827 !important;
+}
+
+.admin-shell input::placeholder,
+.admin-shell textarea::placeholder {
+    color: #64748b !important;
+    opacity: 1 !important;
+}
+
+.admin-shell option {
+    background: #ffffff;
+    color: #111827;
+}
+
+.admin-shell table,
+.admin-shell thead,
+.admin-shell tbody,
+.admin-shell tr,
+.admin-shell th,
+.admin-shell td,
+.account-table,
+.withdraw-table,
+.market-table,
+.user-config-table {
+    color: #111827 !important;
+}
+
+.admin-shell thead th,
+.account-table thead th,
+.withdraw-table thead th,
+.user-config-table thead th {
+    color: #1f2937 !important;
+    background: #f8fafc;
+}
+
+.admin-shell tbody td {
+    color: #111827 !important;
+}
+
+.admin-shell a:not(.admin-title):not(.admin-submenu-item):not(.admin-menu-item a) {
+    color: #1d4ed8;
+}
+
+.admin-shell .row-action,
+.admin-shell .table-btn,
+.admin-shell .secondary-button,
+.admin-shell #refresh-users-btn,
+.admin-shell #refresh-verifications-btn {
+    color: #1d4ed8 !important;
+}
+
+.admin-shell .primary-button,
+.admin-shell button[type="submit"] {
+    color: #ffffff !important;
+}
+
+.admin-shell .status-badge,
+.admin-shell .message-box,
+.admin-shell .admin-toast {
+    color: inherit;
+}
+
+.admin-shell .status-active,
+.admin-shell .verification-status-approved,
+.admin-shell .message-box.success {
+    color: #166534 !important;
+}
+
+.admin-shell .status-frozen,
+.admin-shell .verification-status-rejected,
+.admin-shell .message-box.error {
+    color: #991b1b !important;
+}
+
+.admin-shell .verification-status-pending {
+    color: #92400e !important;
 }
 
 

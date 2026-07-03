@@ -219,7 +219,7 @@ function public_user(array $user): array
         'created' => $user['created_at'] ?? '',
         'balances' => $balances,
         'transactions' => $transactions,
-        'verification' => $verification ? public_verification($verification, false) : null,
+        'verification' => $verification ? public_verification($verification, true) : null,
     ];
 }
 
@@ -515,9 +515,27 @@ try {
             add_transaction((int)$user['id'], 'Deposit', $asset, $amount, 'Completed', 'Funds added');
         } elseif ($type === 'Withdraw') {
             if (balance_amount((int)$user['id'], $asset) < $amount) fail('Insufficient balance.');
+            $withdrawDetails = is_array($data['withdrawDetails'] ?? null) ? $data['withdrawDetails'] : [];
+            $bank = trim((string)($withdrawDetails['bank'] ?? ''));
+            $name = trim((string)($withdrawDetails['name'] ?? ''));
+            $collectionAccount = trim((string)($withdrawDetails['collectionAccount'] ?? ''));
+            $routing = trim((string)($withdrawDetails['routing'] ?? ''));
+            $address = trim((string)($withdrawDetails['address'] ?? ''));
+            if ($bank === '' || $name === '' || $collectionAccount === '' || $routing === '' || $address === '') {
+                fail('Complete receiving account details.');
+            }
+            $detail = substr(
+                'Withdrawal request - Bank: ' . $bank .
+                '; Name: ' . $name .
+                '; Account: ' . $collectionAccount .
+                '; Routing: ' . $routing .
+                '; Address: ' . $address,
+                0,
+                255
+            );
             db()->beginTransaction();
             change_balance((int)$user['id'], $asset, -$amount);
-            add_transaction((int)$user['id'], 'Withdraw', $asset, $amount, 'Pending', 'Withdrawal request');
+            add_transaction((int)$user['id'], 'Withdraw', $asset, $amount, 'Pending', $detail);
         } elseif ($type === 'Transfer') {
             if (balance_amount((int)$user['id'], $asset) < $amount) fail('Insufficient balance.');
             db()->beginTransaction();
