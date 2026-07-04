@@ -6184,6 +6184,66 @@ body.account-page .account-status,
     border-color: rgba(56, 189, 248, 0.16) !important;
 }
 
+body.account-page .account-header {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+}
+
+body.account-page .account-actions {
+    display: grid !important;
+    grid-template-columns: repeat(4, 76px) !important;
+    justify-content: end !important;
+    gap: 10px !important;
+}
+
+body.account-page .account-action,
+body.account-page .account-profile-button {
+    width: 76px !important;
+    min-height: 76px !important;
+    padding: 9px 6px !important;
+    border-radius: 14px !important;
+    background: rgba(14, 45, 91, 0.72) !important;
+    border-color: rgba(56, 189, 248, 0.18) !important;
+    color: #f8fafc !important;
+    text-decoration: none !important;
+    box-shadow: none !important;
+}
+
+body.account-page .account-action > span:first-child,
+body.account-page .account-profile-button > span:first-child {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 12px !important;
+    background: rgba(56, 189, 248, 0.18) !important;
+}
+
+body.account-page .account-action > span:last-child,
+body.account-page .account-profile-button > span:last-child {
+    color: inherit !important;
+    font-size: 0.82rem !important;
+    line-height: 1.1 !important;
+    text-decoration: none !important;
+}
+
+body.account-page .support-button::after {
+    display: none !important;
+}
+
+@media (max-width: 680px) {
+    body.account-page .account-header {
+        grid-template-columns: 1fr !important;
+    }
+
+    body.account-page .account-actions {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        justify-content: stretch !important;
+    }
+
+    body.account-page .account-action,
+    body.account-page .account-profile-button {
+        width: auto !important;
+    }
+}
+
 .currency-pair-icon {
     background: linear-gradient(135deg, #facc15, #a16207) !important;
     color: #ffffff !important;
