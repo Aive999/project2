@@ -111,6 +111,28 @@ function ensure_identity_table(): void
     }
 }
 
+function ensure_bank_binding_table(): void
+{
+    db()->exec("CREATE TABLE IF NOT EXISTS bank_binding_reviews (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id INT UNSIGNED NOT NULL,
+        bank VARCHAR(120) NOT NULL,
+        account_name VARCHAR(120) NOT NULL,
+        collection_account VARCHAR(160) NOT NULL,
+        routing VARCHAR(80) NOT NULL,
+        address VARCHAR(255) NOT NULL,
+        status ENUM('Pending','Approved','Rejected') NOT NULL DEFAULT 'Pending',
+        review_note VARCHAR(255) NOT NULL DEFAULT '',
+        reviewed_by VARCHAR(80) NOT NULL DEFAULT '',
+        submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        reviewed_at TIMESTAMP NULL DEFAULT NULL,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT fk_bank_binding_reviews_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_bank_binding_reviews_status (status),
+        INDEX idx_bank_binding_reviews_user_time (user_id, submitted_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+}
+
 function currency_rows(): array
 {
     $stmt = db()->prepare('SELECT value_json FROM admin_storage WHERE storage_key = ? LIMIT 1');
@@ -189,6 +211,7 @@ function public_user(array $user): array
 {
     ensure_balances((int)$user['id']);
     $verification = latest_verification((int)$user['id']);
+    $bankBinding = latest_bank_binding((int)$user['id']);
 
     $balanceStmt = db()->prepare('SELECT asset, amount FROM balances WHERE user_id = ? AND asset IN ("USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "NZD", "SGD", "HKD", "CNY", "PHP") ORDER BY FIELD(asset, "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "NZD", "SGD", "HKD", "CNY", "PHP")');
     $balanceStmt->execute([(int)$user['id']]);
@@ -220,6 +243,7 @@ function public_user(array $user): array
         'balances' => $balances,
         'transactions' => $transactions,
         'verification' => $verification ? public_verification($verification, true) : null,
+        'bankBinding' => $bankBinding ? public_bank_binding($bankBinding) : null,
     ];
 }
 
@@ -249,6 +273,33 @@ function public_verification(array $row, bool $includeImage = true): array
         $verification['backImage'] = $row['back_image'] ?? '';
     }
     return $verification;
+}
+
+function latest_bank_binding(int $userId): ?array
+{
+    ensure_bank_binding_table();
+    $stmt = db()->prepare('SELECT * FROM bank_binding_reviews WHERE user_id = ? ORDER BY submitted_at DESC, id DESC LIMIT 1');
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch();
+    return $row ?: null;
+}
+
+function public_bank_binding(array $row): array
+{
+    return [
+        'id' => 'BANK-' . $row['id'],
+        'bank' => $row['bank'],
+        'name' => $row['account_name'],
+        'collectionAccount' => $row['collection_account'],
+        'routing' => $row['routing'],
+        'address' => $row['address'],
+        'status' => $row['status'],
+        'reviewNote' => $row['review_note'] ?? '',
+        'reviewedBy' => $row['reviewed_by'] ?? '',
+        'submittedAt' => $row['submitted_at'] ?? '',
+        'reviewedAt' => $row['reviewed_at'] ?? '',
+        'updatedAt' => $row['updated_at'] ?? '',
+    ];
 }
 
 function mask_id_number(string $idNumber): string
@@ -529,6 +580,31 @@ try {
         respond(['ok' => true, 'user' => public_user(user_by_username($user['username']))]);
     }
 
+    if ($action === 'submit_bank_binding') {
+        $user = require_user();
+        ensure_bank_binding_table();
+        $bank = trim((string)($data['bank'] ?? ''));
+        $name = trim((string)($data['name'] ?? ''));
+        $collectionAccount = trim((string)($data['collectionAccount'] ?? ''));
+        $routing = trim((string)($data['routing'] ?? ''));
+        $address = trim((string)($data['address'] ?? ''));
+        if ($bank === '' || $name === '' || $collectionAccount === '' || $routing === '' || $address === '') {
+            fail('Complete bank account details.');
+        }
+        $stmt = db()->prepare('INSERT INTO bank_binding_reviews (user_id, bank, account_name, collection_account, routing, address, status) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([
+            (int)$user['id'],
+            substr($bank, 0, 120),
+            substr($name, 0, 120),
+            substr($collectionAccount, 0, 160),
+            substr($routing, 0, 80),
+            substr($address, 0, 255),
+            'Pending',
+        ]);
+        write_log($user['username'], 'user', 'Bank Account Binding', 'Pending');
+        respond(['ok' => true, 'user' => public_user(user_by_username($user['username']))]);
+    }
+
     if ($action === 'account_action') {
         $user = require_user();
         $type = (string)($data['type'] ?? '');
@@ -724,6 +800,49 @@ try {
         $update = db()->prepare('UPDATE identity_verifications SET status = ?, review_note = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?');
         $update->execute([$status, substr($note, 0, 255), $adminName, $id]);
         write_log((string)$verification['username'], 'admin', 'Identity Verification', $status);
+        respond(['ok' => true]);
+    }
+
+    if ($action === 'admin_bank_bindings') {
+        require_admin();
+        ensure_bank_binding_table();
+        $status = trim((string)($data['status'] ?? ''));
+        $sql = 'SELECT b.*, u.username, u.phone
+                FROM bank_binding_reviews b
+                JOIN users u ON u.id = b.user_id';
+        $params = [];
+        if (in_array($status, ['Pending', 'Approved', 'Rejected'], true)) {
+            $sql .= ' WHERE b.status = ?';
+            $params[] = $status;
+        }
+        $sql .= ' ORDER BY FIELD(b.status, "Pending", "Rejected", "Approved"), b.submitted_at DESC, b.id DESC LIMIT 300';
+        $stmt = db()->prepare($sql);
+        $stmt->execute($params);
+        $bindings = [];
+        foreach ($stmt as $row) {
+            $binding = public_bank_binding($row);
+            $binding['username'] = $row['username'];
+            $binding['phone'] = $row['phone'];
+            $bindings[] = $binding;
+        }
+        respond(['ok' => true, 'bindings' => $bindings]);
+    }
+
+    if ($action === 'admin_bank_binding_review') {
+        require_admin();
+        ensure_bank_binding_table();
+        $id = (int)preg_replace('/^BANK-/', '', (string)($data['bindingId'] ?? ''));
+        $status = (string)($data['status'] ?? '');
+        $note = trim((string)($data['note'] ?? ''));
+        if ($id <= 0) fail('Bank binding request is required.');
+        if (!in_array($status, ['Approved', 'Rejected'], true)) fail('Choose Approved or Rejected.');
+        $stmt = db()->prepare('SELECT b.*, u.username FROM bank_binding_reviews b JOIN users u ON u.id = b.user_id WHERE b.id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        $binding = $stmt->fetch();
+        if (!$binding) fail('Bank binding request not found.', 404);
+        $update = db()->prepare('UPDATE bank_binding_reviews SET status = ?, review_note = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?');
+        $update->execute([$status, substr($note, 0, 255), 'admin', $id]);
+        write_log((string)$binding['username'], 'admin', 'Bank Account Binding', $status);
         respond(['ok' => true]);
     }
 

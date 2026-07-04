@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gemini Currency Account</title>
-  <link rel="stylesheet" href="styles.css?v=currency-row-colors-20260703" />
+  <link rel="stylesheet" href="styles.css?v=separate-support-page-20260703" />
 </head>
 <body class="account-page">
   <div class="page-shell">
@@ -17,7 +17,7 @@
       <div class="account-actions">
         <button class="account-action"><span aria-hidden="true">&#11015;</span><span>Deposit</span></button>
         <button class="account-action"><span aria-hidden="true">&#11014;</span><span>Withdraw</span></button>
-        <button class="account-action"><span aria-hidden="true">&#128177;</span><span>Exchange</span></button>
+        <a href="support.html" class="account-profile-button support-button" aria-label="Chat support" title="Chat support"><span aria-hidden="true">&#127911;</span><span>Support</span></a>
         <button class="account-profile-button account-button" type="button" aria-label="Account settings" title="Account settings"><span aria-hidden="true">&#9881;</span><span>Settings</span></button>
       </div>
     </header>
@@ -35,24 +35,6 @@
         <div class="account-status">
           <div class="account-status-message">Login status expired, please log in again!</div>
         </div>
-        <section class="exchange-panel" aria-label="Currency exchange">
-          <div class="exchange-grid">
-            <label>
-              <span>From</span>
-              <select id="exchangeFrom"></select>
-            </label>
-            <label>
-              <span>To</span>
-              <select id="exchangeTo"></select>
-            </label>
-            <label>
-              <span>Amount</span>
-              <input id="exchangeAmount" type="number" min="0" step="0.01" placeholder="100.00" inputmode="decimal" />
-            </label>
-            <button id="exchangeSubmit" type="button">Exchange</button>
-          </div>
-          <div class="exchange-quote" id="exchangeQuote"></div>
-        </section>
         <div class="account-controls">
           <label class="checkbox-row"><input type="checkbox" /> Hide Small Currency</label>
           <div class="search-row">
@@ -70,6 +52,6 @@
       </nav>
     </main>
   </div>
-  <script src="user-app.js?v=currency-row-colors-20260703"></script>
+  <script src="user-app.js?v=separate-support-page-20260703"></script>
 </body>
 </html>

@@ -174,12 +174,42 @@ if(localStorage.getItem("adminLogin") !== "true"){
         </div>
       </div>
       <main class="admin-dashboard admin-menu-management">
-        <div class="admin-layout-grid">
-          <section class="admin-panel">
+        <div class="admin-layout-grid verification-admin-grid">
+          <section class="admin-panel verification-review-panel">
             <div class="panel-header">
-              <div>Advanced Real-Name</div>
+              <div>Bank Account Binding Review</div>
+              <div class="panel-actions">
+                <select id="bank-status-filter" aria-label="Bank binding status filter">
+                  <option value="">All status</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+                <button id="refresh-bank-bindings-btn" class="secondary-button" type="button">Refresh</button>
+              </div>
             </div>
-            <p>Placeholder content for Advanced Real-Name.</p>
+            <div id="bank-binding-message" class="message-box" style="display:none"></div>
+            <div class="account-table-wrapper">
+              <table class="account-table verification-table">
+                <thead>
+                  <tr>
+                    <th>Request ID</th>
+                    <th>Customer</th>
+                    <th>Phone</th>
+                    <th>Bank</th>
+                    <th>Name</th>
+                    <th>Collection Account</th>
+                    <th>Routing</th>
+                    <th>Address</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th>Review Note</th>
+                    <th>Operation</th>
+                  </tr>
+                </thead>
+                <tbody id="bank-binding-table-body"></tbody>
+              </table>
+            </div>
           </section>
         </div>
       </main>
@@ -242,6 +272,118 @@ if(localStorage.getItem("adminLogin") !== "true"){
 </script>
 
 <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+  <script>
+    const bankBindingBody = document.getElementById('bank-binding-table-body');
+    const bankBindingMessage = document.getElementById('bank-binding-message');
+    const bankStatusFilter = document.getElementById('bank-status-filter');
+    const refreshBankBindingsBtn = document.getElementById('refresh-bank-bindings-btn');
+
+    async function bankBindingApi(action, payload = {}) {
+      if (window.AdminStore?.api) {
+        return window.AdminStore.api(action, payload);
+      }
+      const response = await fetch('../api/index.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ action, ...payload })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || 'Server request failed.');
+      }
+      return data;
+    }
+
+    function showBankBindingMessage(text, type = 'success') {
+      bankBindingMessage.textContent = text;
+      bankBindingMessage.className = `message-box ${type}`;
+      bankBindingMessage.style.display = 'block';
+      setTimeout(() => {
+        bankBindingMessage.style.display = 'none';
+      }, 4200);
+    }
+
+    function escapeCell(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    function statusBadge(status) {
+      const className = status === 'Approved'
+        ? 'verification-status-approved'
+        : status === 'Rejected'
+          ? 'verification-status-rejected'
+          : 'verification-status-pending';
+      return `<span class="status-badge ${className}">${escapeCell(status)}</span>`;
+    }
+
+    function renderBankBindings(rows) {
+      bankBindingBody.innerHTML = rows.length ? rows.map((row) => `
+        <tr>
+          <td>${escapeCell(row.id)}</td>
+          <td>${escapeCell(row.username)}</td>
+          <td>${escapeCell(row.phone || '-')}</td>
+          <td>${escapeCell(row.bank)}</td>
+          <td>${escapeCell(row.name)}</td>
+          <td>${escapeCell(row.collectionAccount)}</td>
+          <td>${escapeCell(row.routing)}</td>
+          <td>${escapeCell(row.address)}</td>
+          <td>${statusBadge(row.status)}</td>
+          <td>${escapeCell(row.submittedAt || '-')}</td>
+          <td>${escapeCell(row.reviewNote || '-')}</td>
+          <td>
+            ${row.status === 'Pending' ? `
+              <button class="row-action account-action-enable" type="button" onclick="reviewBankBinding('${escapeCell(row.id)}', 'Approved')">Approve</button>
+              <button class="row-action account-action-delete" type="button" onclick="reviewBankBinding('${escapeCell(row.id)}', 'Rejected')">Reject</button>
+            ` : '-'}
+          </td>
+        </tr>
+      `).join('') : '<tr><td colspan="12" style="color:#64748b;">No bank binding requests found.</td></tr>';
+    }
+
+    async function loadBankBindings() {
+      bankBindingBody.innerHTML = '<tr><td colspan="12" style="color:#64748b;">Loading bank binding requests...</td></tr>';
+      try {
+        const data = await bankBindingApi('admin_bank_bindings', { status: bankStatusFilter.value });
+        renderBankBindings(data.bindings || []);
+      } catch (error) {
+        renderBankBindings([]);
+        showBankBindingMessage(error.message || 'Unable to load bank binding requests.', 'error');
+        if ((error.message || '').toLowerCase().includes('admin login')) {
+          setTimeout(() => { window.location.href = 'login.html'; }, 1200);
+        }
+      }
+    }
+
+    async function reviewBankBinding(id, status) {
+      const note = status === 'Rejected'
+        ? prompt('Reason for rejection', 'Bank details are incomplete or do not match the profile.')
+        : prompt('Approval note', 'Bank account binding verified.');
+      if (note === null) return;
+      try {
+        await bankBindingApi('admin_bank_binding_review', {
+          bindingId: id,
+          status,
+          note
+        });
+        await loadBankBindings();
+        showBankBindingMessage(`Bank binding ${status.toLowerCase()}.`);
+      } catch (error) {
+        showBankBindingMessage(error.message || 'Unable to update bank binding.', 'error');
+      }
+    }
+
+    refreshBankBindingsBtn.addEventListener('click', loadBankBindings);
+    bankStatusFilter.addEventListener('change', loadBankBindings);
+    window.reviewBankBinding = reviewBankBinding;
+    setTimeout(loadBankBindings, 200);
+  </script>
   <script src="admin-ui.js?v=withdrawal-approve-buttons-20260703"></script>
 </body>
 </html>

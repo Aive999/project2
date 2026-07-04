@@ -3,10 +3,12 @@ const DemoExchange = (() => {
   const SESSION_KEY = "demoExchangeSession";
   const USER_LOG_KEY = "userLoginLog";
   const BANK_BINDINGS_KEY = "demoExchangeBankBindings";
+  const SUPPORT_MESSAGES_KEY = "demoSupportMessages";
   const API_URL = "api/index.php";
   let accountNotice = "";
   let authMode = "login";
   let accountMode = "Balances";
+  let accountPanelView = "menu";
   const CURRENCY_KEY = "demoCurrencySettings";
   const FLUCTUATION_INTERVAL_MS = 12000;
   const currentRateMap = {
@@ -65,7 +67,8 @@ const DemoExchange = (() => {
     return {
       ...user,
       balances: normalizeBalances(user.balances),
-      transactions: Array.isArray(user.transactions) ? user.transactions : []
+      transactions: Array.isArray(user.transactions) ? user.transactions : [],
+      bankBinding: user.bankBinding || null
     };
   }
 
@@ -241,7 +244,7 @@ const DemoExchange = (() => {
 
   function getBankBinding(username = currentUsername()) {
     if (!username) return null;
-    return readBankBindings()[username] || null;
+    return getUser()?.bankBinding || readBankBindings()[username] || null;
   }
 
   function saveBankBinding(username, binding) {
@@ -253,9 +256,34 @@ const DemoExchange = (() => {
       collectionAccount: binding.collectionAccount || "",
       routing: binding.routing || "",
       address: binding.address || "",
+      status: binding.status || "Pending",
+      reviewNote: binding.reviewNote || "",
       updatedAt: new Date().toLocaleString()
     };
     localStorage.setItem(BANK_BINDINGS_KEY, JSON.stringify(bindings));
+  }
+
+  async function submitBankBinding(binding) {
+    const user = getUser();
+    if (!user) throw new Error("Please register or log in first.");
+    ensureActiveAccount(user);
+    const cleanBinding = {
+      bank: String(binding.bank || "").trim(),
+      name: String(binding.name || "").trim(),
+      collectionAccount: String(binding.collectionAccount || "").trim(),
+      routing: String(binding.routing || "").trim(),
+      address: String(binding.address || "").trim()
+    };
+    if (Object.values(cleanBinding).some((value) => !value)) {
+      throw new Error("Complete bank account details.");
+    }
+    try {
+      const data = await apiRequest("submit_bank_binding", cleanBinding);
+      cacheServerUser(data.user);
+    } catch (error) {
+      if (!backendUnavailable(error)) throw error;
+    }
+    saveBankBinding(user.username, { ...cleanBinding, status: "Pending" });
   }
 
   function getUser() {
@@ -387,19 +415,41 @@ const DemoExchange = (() => {
     if (!cleanId) throw new Error("Enter your ID number.");
     const frontImage = await readVerificationImage(frontFile);
     const backImage = await readVerificationImage(backFile);
-    const data = await apiRequest("submit_identity_verification", {
-      documentType,
-      idNumber: cleanId,
-      frontImage,
-      backImage
-    });
-    cacheServerUser(data.user);
+    try {
+      const data = await apiRequest("submit_identity_verification", {
+        documentType,
+        idNumber: cleanId,
+        frontImage,
+        backImage
+      });
+      cacheServerUser(data.user);
+    } catch (error) {
+      if (!backendUnavailable(error)) throw error;
+      user.verification = {
+        id: "LOCAL-VER-" + Date.now(),
+        documentType,
+        idNumber: cleanId,
+        frontImage,
+        backImage,
+        status: "Pending",
+        reviewNote: "",
+        submittedAt: new Date().toLocaleString()
+      };
+      saveUser(user);
+    }
   }
 
   function verificationStatusText(verification) {
     if (!verification) return "Not submitted";
     if (verification.status === "Approved") return "Verified";
     if (verification.status === "Rejected") return "Rejected";
+    return "Pending review";
+  }
+
+  function bankBindingStatusText(binding) {
+    if (!binding) return "Not linked";
+    if (binding.status === "Approved") return "Linked";
+    if (binding.status === "Rejected") return "Rejected";
     return "Pending review";
   }
 
@@ -805,7 +855,7 @@ const DemoExchange = (() => {
         <button type="button" class="demo-close" aria-label="Close">x</button>
       </div>
 
-      <section class="profile-menu-card">
+      <section class="profile-menu-card ${accountPanelView === "menu" ? "" : "account-view-hidden"}">
         <button type="button" class="profile-menu-item" data-settings-target="identitySection">
           <span class="profile-menu-icon" aria-hidden="true">ID</span>
           <span>Identity Verification</span>
@@ -814,7 +864,7 @@ const DemoExchange = (() => {
         <button type="button" class="profile-menu-item" data-settings-target="bankBindingSection">
           <span class="profile-menu-icon" aria-hidden="true">$</span>
           <span>Bank Account Binding</span>
-          <strong>${bankBinding ? "Linked" : "Not linked"}</strong>
+          <strong>${bankBindingStatusText(bankBinding)}</strong>
         </button>
         <button type="button" class="profile-menu-item" data-settings-target="securitySection">
           <span class="profile-menu-icon" aria-hidden="true">!</span>
@@ -828,7 +878,8 @@ const DemoExchange = (() => {
         </button>
       </section>
 
-      <section class="user-settings-card" id="accountSettingsSection">
+      <section class="user-settings-card ${accountPanelView === "accountSettingsSection" ? "" : "account-view-hidden"}" id="accountSettingsSection">
+        <button type="button" class="settings-back-button" data-settings-back>Back</button>
         <div class="settings-card-top">
           <strong>User settings</strong>
           <span>Account profile</span>
@@ -841,7 +892,8 @@ const DemoExchange = (() => {
         </div>
       </section>
 
-      <section class="user-settings-card" id="securitySection">
+      <section class="user-settings-card ${accountPanelView === "securitySection" ? "" : "account-view-hidden"}" id="securitySection">
+        <button type="button" class="settings-back-button" data-settings-back>Back</button>
         <div class="settings-card-top">
           <strong>Security Center</strong>
           <span>Login and account state</span>
@@ -853,7 +905,8 @@ const DemoExchange = (() => {
         </div>
       </section>
 
-      <section class="identity-card" id="identitySection">
+      <section class="identity-card ${accountPanelView === "identitySection" ? "" : "account-view-hidden"}" id="identitySection">
+        <button type="button" class="settings-back-button" data-settings-back>Back</button>
         <div class="identity-card-top">
           <div>
             <strong>Profile verification</strong>
@@ -905,13 +958,14 @@ const DemoExchange = (() => {
         `}
       </section>
 
-      <section class="identity-card bank-binding-card" id="bankBindingSection">
+      <section class="identity-card bank-binding-card ${accountPanelView === "bankBindingSection" ? "" : "account-view-hidden"}" id="bankBindingSection">
+        <button type="button" class="settings-back-button" data-settings-back>Back</button>
         <div class="identity-card-top">
           <div>
             <strong>Bank account binding</strong>
-            <span>${bankBinding ? `Linked ${bankBinding.updatedAt || ""}` : "Add a receiving account for withdrawals."}</span>
+            <span>${bankBinding ? `${bankBindingStatusText(bankBinding)} ${bankBinding.updatedAt || bankBinding.submittedAt || ""}` : "Add a receiving account for withdrawals."}</span>
           </div>
-          <span class="identity-status identity-${bankBinding ? "approved" : "none"}">${bankBinding ? "Linked" : "Required"}</span>
+          <span class="identity-status identity-${(bankBinding?.status || "none").toLowerCase()}">${bankBindingStatusText(bankBinding)}</span>
         </div>
         <form class="identity-form" id="bankBindingForm">
           <label>
@@ -934,8 +988,9 @@ const DemoExchange = (() => {
             <span>Address</span>
             <input id="bankBindingAddress" type="text" placeholder="company_personal_address" autocomplete="street-address" value="${escapeHtml(bankBinding?.address || "")}" required>
           </label>
-          <button type="submit">${bankBinding ? "Update bank account" : "Bind bank account"}</button>
+          <button type="submit">${bankBinding ? "Submit bank review" : "Bind bank account"}</button>
         </form>
+        ${bankBinding?.status === "Rejected" ? `<div class="identity-review-note">${bankBinding.reviewNote || "Please check your bank details and submit again."}</div>` : ""}
       </section>
       <div class="demo-actions">
         <button type="button" id="logoutDemo">Logout</button>
@@ -945,6 +1000,7 @@ const DemoExchange = (() => {
     applyAccountModalStyles();
     bindPanelClose();
     document.getElementById("logoutDemo").addEventListener("click", () => {
+      accountPanelView = "menu";
       logout();
       refresh("Logged out.");
     });
@@ -969,29 +1025,45 @@ const DemoExchange = (() => {
   function bindProfileMenu() {
     document.querySelectorAll("[data-settings-target]").forEach((button) => {
       button.addEventListener("click", () => {
-        const target = document.getElementById(button.dataset.settingsTarget);
-        target?.scrollIntoView({ behavior: "smooth", block: "start" });
+        accountPanelView = button.dataset.settingsTarget || "menu";
+        drawAccountPanel();
+      });
+    });
+    document.querySelectorAll("[data-settings-back]").forEach((button) => {
+      button.addEventListener("click", () => {
+        accountPanelView = "menu";
+        drawAccountPanel();
       });
     });
   }
 
   function bindBankBindingForm() {
     const form = document.getElementById("bankBindingForm");
-    form?.addEventListener("submit", (event) => {
+    form?.addEventListener("submit", async (event) => {
       event.preventDefault();
       const user = getUser();
       if (!user) {
         drawAccountPanel("Please log in to bind a bank account.");
         return;
       }
-      saveBankBinding(user.username, {
-        bank: document.getElementById("bankBindingBank").value.trim(),
-        name: document.getElementById("bankBindingName").value.trim(),
-        collectionAccount: document.getElementById("bankBindingAccount").value.trim(),
-        routing: document.getElementById("bankBindingRouting").value.trim(),
-        address: document.getElementById("bankBindingAddress").value.trim()
-      });
-      drawAccountPanel("Bank account linked.");
+      const button = event.currentTarget.querySelector("button[type='submit']");
+      try {
+        if (button) {
+          button.disabled = true;
+          button.textContent = "Submitting...";
+        }
+        await submitBankBinding({
+          bank: document.getElementById("bankBindingBank").value.trim(),
+          name: document.getElementById("bankBindingName").value.trim(),
+          collectionAccount: document.getElementById("bankBindingAccount").value.trim(),
+          routing: document.getElementById("bankBindingRouting").value.trim(),
+          address: document.getElementById("bankBindingAddress").value.trim()
+        });
+        accountPanelView = "bankBindingSection";
+        drawAccountPanel("Bank account binding submitted for admin review.");
+      } catch (error) {
+        drawAccountPanel(error.message);
+      }
     });
   }
 
@@ -1002,6 +1074,8 @@ const DemoExchange = (() => {
       modal = document.querySelector(".demo-account-modal");
     }
     if (!modal) return;
+    accountPanelView = "menu";
+    drawAccountPanel();
     modal.hidden = false;
     modal.style.display = "flex";
     applyAccountModalStyles();
@@ -1204,6 +1278,145 @@ const DemoExchange = (() => {
     document.body.classList.remove("deposit-modal-open");
   }
 
+  function renderSupportPanel() {
+    if (document.querySelector(".support-modal")) return;
+    const modal = document.createElement("div");
+    modal.className = "support-modal";
+    modal.hidden = true;
+    modal.innerHTML = `
+      <section class="support-panel" role="dialog" aria-modal="true" aria-label="Chat support">
+        <div class="support-topbar">
+          <strong>Chat Support</strong>
+          <button type="button" class="support-close" aria-label="Close">x</button>
+        </div>
+        <div class="support-thread">
+          <button type="button" class="support-more">More messages</button>
+          <div class="support-message-row">
+            <div class="support-avatar support-headset" aria-hidden="true"><span>&#127911;</span></div>
+            <div class="support-message-body">
+              <div class="support-agent-line"><strong>Online Service</strong><span>${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></div>
+              <div class="support-bubble">The customer service is very busy and is taking a break. Please leave your email address and other contact information. We will contact you as soon as we are online.</div>
+            </div>
+          </div>
+        </div>
+        <div class="support-ended">
+          <p>This conversation has ended. You can choose to</p>
+          <div class="support-actions">
+            <button type="button" id="supportContinue"><span aria-hidden="true">&#128172;</span><strong>Continue chatting</strong></button>
+            <button type="button" id="supportLeaveMessage"><span aria-hidden="true">&#9998;</span><strong>Leave a message</strong></button>
+          </div>
+        </div>
+      </section>
+    `;
+    document.body.appendChild(modal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeSupportPanel();
+    });
+    modal.querySelector(".support-close")?.addEventListener("click", closeSupportPanel);
+    modal.querySelector("#supportContinue")?.addEventListener("click", () => {
+      showPublicToast("Support is offline. Please leave a message.", "info");
+      openSupportMessageDialog();
+    });
+    modal.querySelector("#supportLeaveMessage")?.addEventListener("click", openSupportMessageDialog);
+  }
+
+  function openSupportPanel() {
+    renderSupportPanel();
+    const modal = document.querySelector(".support-modal");
+    if (!modal) return;
+    modal.hidden = false;
+    modal.classList.add("open");
+    document.body.classList.add("support-modal-open");
+  }
+
+  function closeSupportPanel() {
+    const modal = document.querySelector(".support-modal");
+    if (modal) {
+      modal.classList.remove("open");
+      modal.hidden = true;
+    }
+    document.body.classList.remove("support-modal-open");
+  }
+
+  function openSupportMessageDialog() {
+    let modal = document.querySelector(".support-message-modal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.className = "support-message-modal";
+      modal.hidden = true;
+      modal.innerHTML = `
+        <section class="support-message-panel" role="dialog" aria-modal="true" aria-label="Leave a support message">
+          <div class="support-message-top">
+            <strong>Please leave a message</strong>
+            <button type="button" class="support-message-close" aria-label="Close">x</button>
+          </div>
+          <p>The current customer service is not online, please leave a message if you need help.</p>
+          <form id="supportMessageForm" class="support-message-form">
+            <label>
+              <span>Message <b>*</b></span>
+              <textarea id="supportMessageText" required></textarea>
+            </label>
+            <label>
+              <span>Email or phone</span>
+              <input id="supportContactInfo" type="text" autocomplete="email" placeholder="email@example.com">
+            </label>
+            <button type="submit">Submit</button>
+          </form>
+        </section>
+      `;
+      document.body.appendChild(modal);
+      modal.addEventListener("click", (event) => {
+        if (event.target === modal) closeSupportMessageDialog();
+      });
+      modal.querySelector(".support-message-close")?.addEventListener("click", closeSupportMessageDialog);
+      modal.querySelector("#supportMessageForm")?.addEventListener("submit", submitSupportMessage);
+    }
+    modal.hidden = false;
+    modal.classList.add("open");
+    document.body.classList.add("support-message-open");
+    document.getElementById("supportMessageText")?.focus();
+  }
+
+  function closeSupportMessageDialog() {
+    const modal = document.querySelector(".support-message-modal");
+    if (modal) {
+      modal.classList.remove("open");
+      modal.hidden = true;
+    }
+    document.body.classList.remove("support-message-open");
+  }
+
+  function submitSupportMessage(event) {
+    event.preventDefault();
+    const message = document.getElementById("supportMessageText")?.value.trim() || "";
+    const contact = document.getElementById("supportContactInfo")?.value.trim() || "";
+    if (!message) return;
+    const messages = JSON.parse(localStorage.getItem(SUPPORT_MESSAGES_KEY) || "[]");
+    messages.unshift({
+      id: "SM" + Date.now(),
+      username: currentUsername() || "guest",
+      message,
+      contact,
+      time: new Date().toLocaleString(),
+      status: "New"
+    });
+    localStorage.setItem(SUPPORT_MESSAGES_KEY, JSON.stringify(messages.slice(0, 100)));
+    event.target.reset();
+    closeSupportMessageDialog();
+    closeSupportPanel();
+    showPublicToast("Support message submitted.", "success");
+  }
+
+  function bindSupportPage() {
+    if (!document.body.classList.contains("support-page")) return;
+    document.getElementById("supportPageContinue")?.addEventListener("click", () => {
+      showPublicToast("Support is offline. Please leave a message.", "info");
+      openSupportMessageDialog();
+    });
+    document.getElementById("supportPageLeaveMessage")?.addEventListener("click", openSupportMessageDialog);
+    window.requestAnimationFrame(openSupportMessageDialog);
+  }
+
   async function submitDepositForm(event) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -1303,11 +1516,18 @@ const DemoExchange = (() => {
   }
 
   function bindAccountButtons() {
-    document.querySelectorAll('.account-button, .icon-button[aria-label="Support"], .icon-button[aria-label="Login or register"]').forEach((button) => {
+    document.querySelectorAll('.account-button, .icon-button[aria-label="Login or register"]').forEach((button) => {
       const label = currentUsername() ? "Account settings" : "Login or register";
       button.setAttribute("aria-label", label);
       button.setAttribute("title", label);
       button.addEventListener("click", openAccountPanel);
+    });
+
+    document.querySelectorAll('.icon-button[aria-label="Help center"], .icon-button[aria-label="Support"], .support-button').forEach((button) => {
+      button.setAttribute("aria-label", "Chat support");
+      button.setAttribute("title", "Chat support");
+      if (button.matches("a[href]")) return;
+      button.addEventListener("click", openSupportPanel);
     });
 
     document.querySelectorAll(".main-nav a[href$='account.html'], .main-nav a[href*='account.html']").forEach((link) => {
@@ -1450,6 +1670,7 @@ const DemoExchange = (() => {
           document.getElementById("identityFrontImage").files[0],
           document.getElementById("identityBackImage").files[0]
         );
+        accountPanelView = "identitySection";
         refresh("Verification submitted for admin review.");
       } catch (error) {
         drawAccountPanel(error.message);
@@ -1969,6 +2190,7 @@ const DemoExchange = (() => {
     await syncCurrentUser();
     renderAccountPanel();
     bindAccountButtons();
+    bindSupportPage();
     bindUserTabs();
     bindMarketSearch();
     bindTradingPage();

@@ -868,6 +868,23 @@ body {
   cursor: pointer;
 }
 
+.support-button {
+  position: relative;
+}
+
+.support-button::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 10px;
+  height: 5px;
+  border-right: 2px solid #facc15;
+  border-bottom: 2px solid #facc15;
+  border-radius: 0 0 8px 0;
+  pointer-events: none;
+}
+
 .profile-menu-item:hover,
 .profile-menu-item:focus-visible {
   background: rgba(56, 189, 248, 0.12);
@@ -1276,6 +1293,334 @@ body.deposit-modal-open {
 .public-toast.info {
   background: #1e3a8a;
   border-color: rgba(147, 197, 253, 0.32);
+}
+
+.support-modal[hidden],
+.support-message-modal[hidden] {
+  display: none !important;
+}
+
+.support-modal,
+.support-message-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10040;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(2, 6, 23, 0.72);
+}
+
+.support-modal.open,
+.support-message-modal.open {
+  display: flex;
+}
+
+body.support-modal-open,
+body.support-message-open {
+  overflow: hidden;
+}
+
+.support-panel {
+  width: min(560px, calc(100vw - 28px));
+  height: min(760px, calc(100vh - 28px));
+  display: grid;
+  grid-template-rows: 68px minmax(0, 1fr) auto;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #eef2f7;
+  color: #111827;
+  box-shadow: 0 26px 80px rgba(0, 0, 0, 0.42);
+}
+
+.support-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 20px;
+  background: #1267f2;
+  color: #ffffff;
+}
+
+.support-close,
+.support-message-close {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.16);
+  color: inherit;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.support-thread {
+  overflow-y: auto;
+  padding: 22px 18px;
+}
+
+.support-more {
+  display: block;
+  margin: 0 auto 16px;
+  border: 0;
+  background: transparent;
+  color: #475569;
+  font: inherit;
+  cursor: pointer;
+}
+
+.support-message-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.support-avatar {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.support-headset {
+  position: relative;
+  font-size: 1.35rem;
+}
+
+.support-headset::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  bottom: 9px;
+  width: 12px;
+  height: 6px;
+  border-right: 3px solid #2563eb;
+  border-bottom: 3px solid #2563eb;
+  border-radius: 0 0 8px 0;
+}
+
+.support-message-body {
+  display: grid;
+  gap: 8px;
+}
+
+.support-agent-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  color: #64748b;
+}
+
+.support-agent-line strong {
+  color: #475569;
+  font-weight: 700;
+}
+
+.support-bubble {
+  max-width: 420px;
+  padding: 14px 18px;
+  border-radius: 0 18px 18px 18px;
+  background: #ffffff;
+  color: #020617;
+  line-height: 1.45;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+.support-ended {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+  background: #ffffff;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.support-ended p {
+  margin: 0;
+}
+
+.support-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.support-actions button {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: #9ca3af;
+  font: inherit;
+  cursor: pointer;
+}
+
+.support-actions span {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #647dee;
+  color: #ffffff;
+  font-size: 1.4rem;
+}
+
+.support-actions button:last-child span {
+  background: #22c1d6;
+}
+
+body.support-page {
+  min-height: 100vh;
+  padding-bottom: 116px;
+  background: #eef2f7;
+}
+
+.support-page-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.support-page .support-page-panel {
+  width: min(680px, 100%);
+  height: min(820px, calc(100vh - 150px));
+  min-height: 620px;
+  border-radius: 18px;
+}
+
+.support-page .support-close {
+  text-decoration: none;
+}
+
+.support-message-panel {
+  width: min(530px, calc(100vw - 40px));
+  min-height: min(560px, calc(100vh - 40px));
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  box-shadow: 0 26px 80px rgba(0, 0, 0, 0.46);
+}
+
+.support-message-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.support-message-top strong {
+  font-size: 1.25rem;
+}
+
+.support-message-close {
+  background: transparent;
+  color: #c4c4c4;
+  font-size: 1.75rem;
+}
+
+.support-message-panel p {
+  margin: 0;
+  color: #6b7280;
+  line-height: 1.45;
+}
+
+.support-message-form {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 12px;
+}
+
+.support-message-form label {
+  display: grid;
+  gap: 8px;
+  color: #6b7280;
+}
+
+.support-message-form b {
+  color: #ef4444;
+}
+
+.support-message-form textarea,
+.support-message-form input {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 3px;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+  outline: none;
+}
+
+.support-message-form textarea {
+  min-height: 74px;
+  resize: vertical;
+  padding: 10px;
+}
+
+.support-message-form input {
+  min-height: 42px;
+  padding: 0 10px;
+}
+
+.support-message-form button {
+  align-self: end;
+  min-height: 42px;
+  border: 0;
+  border-radius: 4px;
+  background: #1267f2;
+  color: #ffffff;
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (max-width: 620px) {
+  .support-modal,
+  .support-message-modal {
+    padding: 0;
+  }
+
+  .support-panel {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  body.support-page {
+    padding-bottom: 86px;
+  }
+
+  .support-page-shell {
+    display: block;
+    padding: 0;
+  }
+
+  .support-page .support-page-panel {
+    width: 100vw;
+    height: calc(100vh - 86px);
+    min-height: 0;
+    border-radius: 0;
+  }
+
+  .support-message-panel {
+    width: calc(100vw - 40px);
+    min-height: min(620px, calc(100vh - 60px));
+  }
 }
 
 
@@ -3895,7 +4240,7 @@ body.account-page .account-summary-usd {
 
 body.account-page .account-actions {
     display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     gap: 10px !important;
 }
 
@@ -5773,6 +6118,70 @@ body:has(.home-currency-grid):not(.account-page):not(.admin-body) .home-deal-lis
 
 body:has(.home-currency-grid):not(.account-page):not(.admin-body) .home-deal-row {
     min-height: 74px;
+}
+
+.account-view-hidden {
+    display: none !important;
+}
+
+.settings-back-button {
+    justify-self: start;
+    min-height: 34px;
+    padding: 0 12px;
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    border-radius: 10px;
+    background: rgba(14, 45, 91, 0.84);
+    color: #dbeafe;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.settings-back-button:hover,
+.settings-back-button:focus-visible {
+    background: rgba(37, 99, 235, 0.4);
+    outline: none;
+}
+
+body:not(.admin-body) {
+    background:
+        radial-gradient(circle at 18% 0%, rgba(56, 189, 248, 0.16), transparent 28%),
+        linear-gradient(180deg, #071323 0%, #07111f 48%, #050b17 100%) !important;
+}
+
+body:not(.account-page):not(.admin-body),
+body:not(.account-page):not(.admin-body) .market-list-card {
+    background-color: #07111f;
+}
+
+body:not(.account-page):not(.admin-body) .hero-banner,
+body:has(.home-currency-grid):not(.account-page):not(.admin-body) .hero-banner {
+    background:
+        linear-gradient(135deg, rgba(14, 45, 91, 0.98), rgba(9, 24, 46, 0.98)),
+        radial-gradient(circle at 82% 40%, rgba(56, 189, 248, 0.3), transparent 34%) !important;
+}
+
+body:not(.account-page):not(.admin-body) .home-currency-card,
+body:not(.account-page):not(.admin-body) .home-mining-panel,
+body:has(.home-currency-grid):not(.account-page):not(.admin-body) .market-tab {
+    background: #0b1b31;
+    border-color: rgba(56, 189, 248, 0.14);
+}
+
+body.account-page .account-header,
+body.account-page .account-panel,
+.demo-account-panel,
+.withdrawal-panel,
+.deposit-panel {
+    background: #071323 !important;
+    border-color: rgba(56, 189, 248, 0.18) !important;
+}
+
+body.account-page .account-status,
+.identity-card,
+.user-settings-card,
+.profile-menu-card {
+    background: rgba(8, 25, 46, 0.86) !important;
+    border-color: rgba(56, 189, 248, 0.16) !important;
 }
 
 .currency-pair-icon {
