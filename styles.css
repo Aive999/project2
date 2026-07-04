@@ -6242,6 +6242,44 @@ body.account-page .support-button::after {
     body.account-page .account-profile-button {
         width: auto !important;
     }
+
+    body.account-page .account-top-header .header-top {
+        grid-template-columns: 44px minmax(0, 1fr) auto !important;
+        gap: 10px !important;
+        padding-bottom: 10px !important;
+    }
+
+    body.account-page .account-top-header .avatar {
+        width: 42px !important;
+        height: 42px !important;
+    }
+
+    body.account-page .account-top-header .search-box {
+        height: 46px !important;
+        grid-template-columns: 24px minmax(0, 1fr) !important;
+        gap: 8px !important;
+    }
+
+    body.account-page .account-top-header .search-icon {
+        font-size: 1.1rem !important;
+        text-shadow: none !important;
+    }
+
+    body.account-page .account-top-header .search-box input {
+        height: 46px !important;
+        font-size: 1rem !important;
+        padding: 0 12px !important;
+    }
+
+    body.account-page .account-top-header .header-actions {
+        gap: 8px !important;
+    }
+
+    body.account-page .account-top-header .icon-button {
+        width: 34px !important;
+        height: 34px !important;
+        font-size: 1.35rem !important;
+    }
 }
 
 .currency-pair-icon {
@@ -6380,5 +6418,352 @@ body.account-page .support-button::after {
 
     body:has(.home-currency-grid):not(.account-page):not(.admin-body) .home-currency-card small {
         display: none;
+    }
+}
+
+/* User header consistency overrides */
+body.account-page .page-shell {
+    width: min(100%, 1180px) !important;
+    max-width: 1180px !important;
+    padding: 24px 24px 118px !important;
+}
+
+body.account-page .account-header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 18px !important;
+    margin: 0 0 18px !important;
+    padding: 24px !important;
+    border-radius: 24px !important;
+    background: #071323 !important;
+    border: 1px solid rgba(56, 189, 248, 0.18) !important;
+    box-shadow: 0 18px 50px rgba(2, 6, 23, 0.18) !important;
+}
+
+body.account-page .account-actions {
+    display: grid !important;
+    grid-template-columns: repeat(4, 72px) !important;
+    justify-content: end !important;
+    gap: 10px !important;
+}
+
+body.account-page .account-action,
+body.account-page .account-profile-button {
+    width: 72px !important;
+    min-height: 72px !important;
+    padding: 8px 6px !important;
+    border-radius: 14px !important;
+    background: rgba(14, 45, 91, 0.72) !important;
+    border: 1px solid rgba(56, 189, 248, 0.18) !important;
+    color: #f8fafc !important;
+    text-decoration: none !important;
+}
+
+body.account-page .account-action > span:first-child,
+body.account-page .account-profile-button > span:first-child {
+    width: 32px !important;
+    height: 32px !important;
+}
+
+body.account-page .account-action > span:last-child,
+body.account-page .account-profile-button > span:last-child {
+    font-size: 0.78rem !important;
+    text-decoration: none !important;
+}
+
+body.account-page .support-button::after {
+    display: none !important;
+}
+
+body.account-page .account-top-header {
+    margin: 0 0 14px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+}
+
+body.account-page .account-top-header .header-top {
+    min-height: 48px !important;
+    display: grid !important;
+    grid-template-columns: 40px minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 0 0 12px !important;
+}
+
+body.account-page .account-top-header .avatar {
+    display: grid !important;
+    width: 38px !important;
+    height: 38px !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background:
+        radial-gradient(circle at 50% 35%, #d1d5db 0 8px, transparent 9px),
+        radial-gradient(circle at 50% 82%, #d1d5db 0 15px, transparent 16px),
+        #4b5563 !important;
+    cursor: pointer !important;
+}
+
+body.account-page .account-top-header .search-box {
+    max-width: none !important;
+    height: 42px !important;
+    display: grid !important;
+    grid-template-columns: 24px minmax(0, 1fr) !important;
+    gap: 8px !important;
+    align-items: center !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+}
+
+body.account-page .account-top-header .search-icon {
+    color: #67e8f9 !important;
+    font-size: 1.15rem !important;
+    line-height: 1 !important;
+    text-shadow: none !important;
+}
+
+body.account-page .account-top-header .search-box input {
+    height: 42px !important;
+    padding: 0 14px !important;
+    border-radius: 16px !important;
+    background: rgba(15, 23, 42, 0.68) !important;
+    border: 1px solid rgba(148, 163, 184, 0.14) !important;
+    color: #cbd5e1 !important;
+    font-size: 1rem !important;
+    box-shadow: none !important;
+}
+
+body.account-page .account-top-header .search-box input::placeholder {
+    color: #9ca3af !important;
+}
+
+body.account-page .account-top-header .header-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+body.account-page .account-top-header .icon-button {
+    width: 38px !important;
+    height: 38px !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: #67e8f9 !important;
+    font-size: 1.45rem !important;
+}
+
+body.account-page .account-top-header .support-button {
+    color: #e5e7eb !important;
+}
+
+@media (max-width: 760px) {
+    body.account-page .account-top-header .header-top {
+        grid-template-columns: 44px minmax(0, 1fr) auto !important;
+        gap: 10px !important;
+        padding-bottom: 10px !important;
+    }
+
+    body.account-page .account-top-header .avatar {
+        width: 42px !important;
+        height: 42px !important;
+    }
+
+    body.account-page .account-top-header .search-box {
+        height: 46px !important;
+        grid-template-columns: 24px minmax(0, 1fr) !important;
+        gap: 8px !important;
+    }
+
+    body.account-page .account-top-header .search-icon {
+        font-size: 1.1rem !important;
+        text-shadow: none !important;
+    }
+
+    body.account-page .account-top-header .search-box input {
+        height: 46px !important;
+        font-size: 1rem !important;
+        padding: 0 12px !important;
+    }
+
+    body.account-page .account-top-header .header-actions {
+        gap: 8px !important;
+    }
+
+    body.account-page .account-top-header .icon-button {
+        width: 34px !important;
+        height: 34px !important;
+        font-size: 1.35rem !important;
+    }
+}
+
+body.account-page .search-row {
+    min-height: 42px !important;
+    display: grid !important;
+    grid-template-columns: 24px minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 0 14px !important;
+    border-radius: 16px !important;
+    background: rgba(15, 23, 42, 0.68) !important;
+    border: 1px solid rgba(148, 163, 184, 0.14) !important;
+}
+
+body.account-page .search-row .search-icon {
+    color: #67e8f9 !important;
+    font-size: 1.25rem !important;
+}
+
+body.account-page .search-row input {
+    min-width: 0 !important;
+    height: 40px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: #cbd5e1 !important;
+    font-size: 1rem !important;
+}
+
+body.account-page .search-row input::placeholder {
+    color: #9ca3af !important;
+}
+
+@media (max-width: 760px) {
+    body.account-page .page-shell {
+        max-width: 720px !important;
+        padding: 12px 10px 118px !important;
+    }
+
+    body.account-page .account-header {
+        grid-template-columns: 1fr !important;
+        padding: 18px !important;
+        border-radius: 12px !important;
+    }
+
+    body.account-page .account-actions {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        justify-content: stretch !important;
+    }
+
+    body.account-page .account-action,
+    body.account-page .account-profile-button {
+        width: auto !important;
+    }
+}
+
+/* User search/header consistency */
+body:not(.account-page):not(.admin-body) .header-top {
+    min-height: 48px !important;
+    display: grid !important;
+    grid-template-columns: 40px minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 0 0 12px !important;
+}
+
+body:not(.account-page):not(.admin-body) .avatar {
+    width: 38px !important;
+    height: 38px !important;
+    flex: 0 0 38px !important;
+    background:
+        radial-gradient(circle at 50% 35%, #d1d5db 0 8px, transparent 9px),
+        radial-gradient(circle at 50% 82%, #d1d5db 0 15px, transparent 16px),
+        #4b5563 !important;
+}
+
+body:not(.account-page):not(.admin-body) .search-box {
+    max-width: none !important;
+    height: 42px !important;
+    display: grid !important;
+    grid-template-columns: 24px minmax(0, 1fr) !important;
+    gap: 8px !important;
+    align-items: center !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+}
+
+body:not(.account-page):not(.admin-body) .search-icon {
+    color: #67e8f9 !important;
+    font-size: 1.15rem !important;
+    line-height: 1 !important;
+    text-shadow: none !important;
+}
+
+body:not(.account-page):not(.admin-body) .search-box input {
+    height: 42px !important;
+    padding: 0 14px !important;
+    border-radius: 16px !important;
+    background: rgba(15, 23, 42, 0.68) !important;
+    border: 1px solid rgba(148, 163, 184, 0.14) !important;
+    color: #cbd5e1 !important;
+    font-size: 1rem !important;
+    box-shadow: none !important;
+}
+
+body:not(.account-page):not(.admin-body) .search-box input::placeholder {
+    color: #9ca3af !important;
+}
+
+body:not(.account-page):not(.admin-body) .header-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+body:not(.account-page):not(.admin-body) .icon-button {
+    width: 38px !important;
+    height: 38px !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: #67e8f9 !important;
+    font-size: 1.45rem !important;
+}
+
+body:not(.account-page):not(.admin-body) .support-button {
+    color: #e5e7eb !important;
+}
+
+@media (max-width: 760px) {
+    body:not(.account-page):not(.admin-body) .header-top {
+        grid-template-columns: 44px minmax(0, 1fr) auto !important;
+        gap: 10px !important;
+        padding-bottom: 10px !important;
+    }
+
+    body:not(.account-page):not(.admin-body) .avatar {
+        width: 42px !important;
+        height: 42px !important;
+    }
+
+    body:not(.account-page):not(.admin-body) .search-box {
+        height: 46px !important;
+        grid-template-columns: 24px minmax(0, 1fr) !important;
+        gap: 8px !important;
+    }
+
+    body:not(.account-page):not(.admin-body) .search-icon {
+        font-size: 1.1rem !important;
+        text-shadow: none !important;
+    }
+
+    body:not(.account-page):not(.admin-body) .search-box input {
+        height: 46px !important;
+        font-size: 1rem !important;
+        padding: 0 12px !important;
+    }
+
+    body:not(.account-page):not(.admin-body) .header-actions {
+        gap: 8px !important;
+    }
+
+    body:not(.account-page):not(.admin-body) .icon-button {
+        width: 34px !important;
+        height: 34px !important;
+        font-size: 1.35rem !important;
     }
 }
