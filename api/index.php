@@ -466,21 +466,23 @@ function clean_admin_storage_value(string $key, mixed $value): mixed
     }));
 }
 
-function admin_adjust_usd(string $accountId, float $amount, string $detail): array
+function admin_adjust_balance(string $accountId, string $asset, float $amount, string $detail): array
 {
     require_admin();
     $username = preg_replace('/^USER-/', '', $accountId);
     if ($username === '') fail('User is required.');
+    $asset = strtoupper($asset);
+    if (!in_array($asset, ASSETS, true)) fail('Unsupported asset.');
     if ($amount == 0.0) fail('Enter a valid amount.');
     $user = user_by_username($username);
     if (!$user) fail('User not found.', 404);
-    if ($amount < 0 && balance_amount((int)$user['id'], 'USD') < abs($amount)) {
-        fail('Insufficient USD balance.');
+    if ($amount < 0 && balance_amount((int)$user['id'], $asset) < abs($amount)) {
+        fail('Insufficient ' . $asset . ' balance.');
     }
 
     db()->beginTransaction();
-    change_balance((int)$user['id'], 'USD', $amount);
-    add_transaction((int)$user['id'], 'Admin Adjustment', 'USD', abs($amount), 'Completed', $detail);
+    change_balance((int)$user['id'], $asset, $amount);
+    add_transaction((int)$user['id'], 'Admin Adjustment', $asset, abs($amount), 'Completed', $detail);
     db()->commit();
 
     $updated = user_by_username($username);
@@ -643,7 +645,8 @@ try {
                 fail('Complete receiving account details.');
             }
             $detail = substr(
-                'Withdrawal request - Bank: ' . $bank .
+                'Withdrawal request - Debit timing: approval' .
+                '; Bank: ' . $bank .
                 '; Name: ' . $name .
                 '; Account: ' . $collectionAccount .
                 '; Routing: ' . $routing .
@@ -652,7 +655,6 @@ try {
                 255
             );
             db()->beginTransaction();
-            change_balance((int)$user['id'], $asset, -$amount);
             add_transaction((int)$user['id'], 'Withdraw', $asset, $amount, 'Pending', $detail);
         } elseif ($type === 'Transfer') {
             if (balance_amount((int)$user['id'], $asset) < $amount) fail('Insufficient balance.');
@@ -1022,7 +1024,17 @@ try {
             if ($tx['type'] !== 'Withdraw') fail('Only withdrawals can be reviewed.');
             if ($tx['status'] !== 'Pending') fail('This withdrawal has already been reviewed.');
 
-            if ($status === 'Failed') {
+            $debitOnApproval = str_contains((string)$tx['detail'], 'Debit timing: approval');
+            if ($status === 'Completed' && $debitOnApproval) {
+                $balanceStmt = $pdo->prepare('SELECT amount FROM balances WHERE user_id = ? AND asset = ? FOR UPDATE');
+                $balanceStmt->execute([(int)$tx['user_id'], (string)$tx['asset']]);
+                $available = (float)$balanceStmt->fetchColumn();
+                if ($available < (float)$tx['amount']) {
+                    fail('Insufficient balance to approve this withdrawal. The request remains pending.');
+                }
+                change_balance((int)$tx['user_id'], (string)$tx['asset'], -(float)$tx['amount']);
+            } elseif ($status === 'Failed' && !$debitOnApproval) {
+                // Requests created before debit-on-approval was introduced were charged up front.
                 change_balance((int)$tx['user_id'], (string)$tx['asset'], (float)$tx['amount']);
             }
 
@@ -1063,17 +1075,20 @@ try {
     if ($action === 'admin_adjust') {
         $amount = (float)($data['amount'] ?? 0);
         $detail = (string)($data['detail'] ?? 'Admin adjustment');
-        $user = admin_adjust_usd((string)($data['accountId'] ?? ''), $amount, $detail);
+        $user = admin_adjust_balance((string)($data['accountId'] ?? ''), 'USD', $amount, $detail);
         respond(['ok' => true, 'user' => $user]);
     }
 
     if ($action === 'admin_recharge') {
         $amount = (float)($data['amount'] ?? 0);
+        $asset = strtoupper((string)($data['asset'] ?? 'USD'));
+        if (!in_array($asset, ['USD', 'GBP'], true)) fail('Recharge currency must be USD or GBP.');
         if ($amount <= 0) fail('Enter a valid recharge amount.');
-        $user = admin_adjust_usd(
+        $user = admin_adjust_balance(
             (string)($data['accountId'] ?? ''),
+            $asset,
             $amount,
-            'Admin recharged ' . $amount . ' USD'
+            'Admin recharged ' . $amount . ' ' . $asset
         );
         respond(['ok' => true, 'user' => $user]);
     }
@@ -1081,8 +1096,9 @@ try {
     if ($action === 'admin_reduce') {
         $amount = (float)($data['amount'] ?? 0);
         if ($amount <= 0) fail('Enter a valid reduction amount.');
-        $user = admin_adjust_usd(
+        $user = admin_adjust_balance(
             (string)($data['accountId'] ?? ''),
+            'USD',
             -$amount,
             'Admin reduced ' . $amount . ' USD'
         );

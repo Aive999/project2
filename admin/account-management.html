@@ -178,7 +178,14 @@
                 <select id="account-select"></select>
               </label>
               <label>
-                <span>Amount (USD)</span>
+                <span>Recharge currency</span>
+                <select id="recharge-asset">
+                  <option value="USD">US Dollar (USD)</option>
+                  <option value="GBP">British Pound (GBP)</option>
+                </select>
+              </label>
+              <label>
+                <span id="balance-amount-label">Amount (USD)</span>
                 <input type="text" id="balance-amount" placeholder="100.00" inputmode="decimal" />
               </label>
               <label>
@@ -237,6 +244,8 @@
     const accountSelect = document.getElementById('account-select');
     const freezeAccountSelect = document.getElementById('freeze-account-select');
     const balanceAmountInput = document.getElementById('balance-amount');
+    const rechargeAssetSelect = document.getElementById('recharge-asset');
+    const balanceAmountLabel = document.getElementById('balance-amount-label');
     const toggleFreezeBtn = document.getElementById('toggle-freeze-btn');
     const refreshUsersBtn = document.getElementById('refresh-users-btn');
 
@@ -363,14 +372,16 @@
       }
 
       try {
+        const asset = mode === 'recharge' ? rechargeAssetSelect.value : 'USD';
         await adminApi(mode === 'recharge' ? 'admin_recharge' : 'admin_reduce', {
           accountId,
-          amount
+          amount,
+          asset
         });
         balanceAmountInput.value = '';
         await syncServerUsers();
         showMessage(mode === 'recharge'
-          ? `Recharged ${formatCurrency(amount)} USD to ${account.name}.`
+          ? `Recharged ${formatCurrency(amount)} ${asset} to ${account.name}.`
           : `Reduced ${formatCurrency(amount)} USD from ${account.name}.`);
       } catch (error) {
         showMessage(error.message, 'error');
@@ -419,6 +430,9 @@
     document.getElementById('reduce-btn').addEventListener('click', () => adjustBalance('reduce'));
     toggleFreezeBtn.addEventListener('click', () => toggleBalanceFreeze());
     freezeAccountSelect.addEventListener('change', updateFreezeButton);
+    rechargeAssetSelect.addEventListener('change', () => {
+      balanceAmountLabel.textContent = `Amount (${rechargeAssetSelect.value})`;
+    });
     refreshUsersBtn.addEventListener('click', syncServerUsers);
 
     renderAccounts();
