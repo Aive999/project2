@@ -611,6 +611,8 @@
     return records.map((record) => {
       const reviewActions = isWithdrawalPage && record.status === "Pending" && record.id
         ? `<button class="row-action" data-action="approve-withdrawal" data-id="${record.id}">Approve</button><button class="row-action row-action-danger" data-action="fail-withdrawal" data-id="${record.id}">Fail</button><button class="row-action" data-action="view">View</button>`
+        : isDeposit && record.status === "Pending" && record.id
+        ? `<button class="row-action" data-action="approve-deposit" data-id="${record.id}">Approve</button><button class="row-action row-action-danger" data-action="fail-deposit" data-id="${record.id}">Reject</button><button class="row-action" data-action="view">View</button>`
         : `<button class="row-action" data-action="view">View</button><button class="row-action" data-action="edit">Edit</button>`;
       return `
         <tr>
@@ -652,6 +654,9 @@
       if (pageName === "new-withdrawal-records.html" && type === "Withdraw") {
         payload.status = "Pending";
       }
+      if (pageName === "recharge-review.html" && type === "Deposit") {
+        payload.status = "Pending";
+      }
       const data = await adminApi("admin_transactions", payload);
       const records = data.transactions || [];
       if (!records.length) {
@@ -666,11 +671,17 @@
 
   async function updatePendingReviewCounts() {
     try {
-      const data = await adminApi("admin_transactions", { type: "Withdraw", status: "Pending" });
-      const count = (data.transactions || []).length;
+      const [withdrawals, deposits] = await Promise.all([
+        adminApi("admin_transactions", { type: "Withdraw", status: "Pending" }),
+        adminApi("admin_transactions", { type: "Deposit", status: "Pending" })
+      ]);
+      const withdrawalCount = (withdrawals.transactions || []).length;
+      const depositCount = (deposits.transactions || []).length;
       $$(".admin-pill").forEach((button) => {
         if (/Withdrawal Review/i.test(button.textContent)) {
-          button.textContent = `Withdrawal Review (${count})`;
+          button.textContent = `Withdrawal Review (${withdrawalCount})`;
+        } else if (/Recharge Review/i.test(button.textContent)) {
+          button.textContent = `Recharge Review (${depositCount})`;
         }
       });
     } catch {
@@ -798,6 +809,18 @@
           .catch((error) => {
             showToast(error.message || "Unable to review withdrawal.", "error");
           });
+        return;
+      }
+      if (action.dataset.action === "approve-deposit" || action.dataset.action === "fail-deposit") {
+        const nextStatus = action.dataset.action === "approve-deposit" ? "Completed" : "Failed";
+        if (!confirm(`Mark this recharge as ${nextStatus.toLowerCase()}?`)) return;
+        adminApi("admin_review_deposit", { id: Number(action.dataset.id), status: nextStatus })
+          .then(() => {
+            showToast(`Recharge marked ${nextStatus.toLowerCase()}.`);
+            renderServerTransactionTable("Deposit");
+            updatePendingReviewCounts();
+          })
+          .catch((error) => showToast(error.message || "Unable to review recharge.", "error"));
         return;
       }
       if (action.dataset.action === "delete") {

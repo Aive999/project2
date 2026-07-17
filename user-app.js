@@ -1204,13 +1204,13 @@ const DemoExchange = (() => {
         <div class="deposit-panel-top">
           <div>
             <strong>Deposit funds</strong>
-            <span>Submit your deposit details for account credit.</span>
+            <span>Submit your GBP recharge details for review.</span>
           </div>
           <button type="button" class="deposit-close" aria-label="Close">x</button>
         </div>
         <form id="depositForm" class="deposit-form">
           <label>
-            <span>Amount (USD)</span>
+            <span>Amount (GBP)</span>
             <input id="depositAmount" type="number" min="0" step="0.01" placeholder="500.00" inputmode="decimal" required>
           </label>
           <label>
@@ -1436,18 +1436,18 @@ const DemoExchange = (() => {
         message.className = "deposit-message";
       }
       showPublicToast("Submitting deposit request...", "info");
-      await accountAction("Deposit", document.getElementById("depositAmount").value, "USD", {
+      await accountAction("Deposit", document.getElementById("depositAmount").value, "GBP", {
         depositDetails: { method, sender, reference }
       });
       if (message) {
-        message.textContent = "Deposit submitted successfully.";
+        message.textContent = "Recharge submitted for review.";
         message.className = "deposit-message success";
       }
-      showPublicToast("Deposit submitted successfully.", "success");
+      showPublicToast("Recharge submitted successfully. Status: Pending review.", "success");
       form.reset();
       setTimeout(() => {
         closeDepositPanel();
-        refresh("Deposit submitted successfully.");
+        refresh("Recharge submitted successfully. Status: Pending review.");
       }, 700);
     } catch (error) {
       showPublicToast(`Deposit failed: ${error.message}`, "error");

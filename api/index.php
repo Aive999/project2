@@ -631,8 +631,7 @@ try {
                 255
             );
             db()->beginTransaction();
-            change_balance((int)$user['id'], $asset, $amount);
-            add_transaction((int)$user['id'], 'Deposit', $asset, $amount, 'Completed', $detail);
+            add_transaction((int)$user['id'], 'Deposit', $asset, $amount, 'Pending', $detail);
         } elseif ($type === 'Withdraw') {
             if (balance_amount((int)$user['id'], $asset) < $amount) fail('Insufficient balance.');
             $withdrawDetails = is_array($data['withdrawDetails'] ?? null) ? $data['withdrawDetails'] : [];
@@ -1050,6 +1049,42 @@ try {
         respond(['ok' => true]);
     }
 
+    if ($action === 'admin_review_deposit') {
+        require_admin();
+        $id = (int)($data['id'] ?? 0);
+        $status = (string)($data['status'] ?? '');
+        if ($id <= 0) fail('Invalid deposit.');
+        if (!in_array($status, ['Completed', 'Failed'], true)) fail('Choose Completed or Failed.');
+
+        $pdo = db();
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare('SELECT t.id, t.user_id, u.username, t.type, t.asset, t.amount, t.status, t.detail
+                FROM transactions t
+                JOIN users u ON u.id = t.user_id
+                WHERE t.id = ?
+                FOR UPDATE');
+            $stmt->execute([$id]);
+            $tx = $stmt->fetch();
+            if (!$tx) fail('Deposit not found.', 404);
+            if ($tx['type'] !== 'Deposit') fail('Only deposits can be reviewed.');
+            if ($tx['status'] !== 'Pending') fail('This deposit has already been reviewed.');
+
+            if ($status === 'Completed') {
+                change_balance((int)$tx['user_id'], (string)$tx['asset'], (float)$tx['amount']);
+            }
+            $detail = substr((string)$tx['detail'] . '; Admin review: ' . $status, 0, 255);
+            $update = $pdo->prepare('UPDATE transactions SET status = ?, detail = ? WHERE id = ?');
+            $update->execute([$status, $detail, $id]);
+            write_log((string)$tx['username'], 'admin', 'Deposit Review', $status);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
+        respond(['ok' => true]);
+    }
+
     if ($action === 'admin_storage_all') {
         require_admin();
         $rows = db()->query('SELECT storage_key, value_json FROM admin_storage')->fetchAll();
@@ -1082,7 +1117,7 @@ try {
     if ($action === 'admin_recharge') {
         $amount = (float)($data['amount'] ?? 0);
         $asset = strtoupper((string)($data['asset'] ?? 'USD'));
-        if (!in_array($asset, ['USD', 'GBP'], true)) fail('Recharge currency must be USD or GBP.');
+        if ($asset !== 'GBP') fail('Recharge currency must be GBP.');
         if ($amount <= 0) fail('Enter a valid recharge amount.');
         $user = admin_adjust_balance(
             (string)($data['accountId'] ?? ''),
