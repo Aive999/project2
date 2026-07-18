@@ -577,14 +577,31 @@ const DemoExchange = (() => {
     return { current, percent };
   }
 
+  const tradeChartHistory = new Map();
+
   function tradeChartPaths(base, quote) {
-    const basePrice = pairPrice(base, quote);
-    const values = Array.from({ length: 34 }, (_, index) => {
-      const wave = fluctuationSeed(base + quote, index / 4);
-      const pulse = Math.sin((Date.now() / FLUCTUATION_INTERVAL_MS + index) * 0.62) * 0.0035;
-      const drift = (index - 16) * 0.00008;
-      return basePrice * (1 + wave * 0.006 + pulse + drift);
-    });
+    const pair = `${base}/${quote}`;
+    const tick = Math.floor(Date.now() / FLUCTUATION_INTERVAL_MS);
+    const currentPrice = pairMovement(base, quote).current;
+    let history = tradeChartHistory.get(pair);
+
+    if (!history) {
+      const values = Array.from({ length: 72 }, (_, index) => {
+        const distance = 71 - index;
+        const movement = fluctuationSeed(`${pair}-history`, index) * 0.0022;
+        return currentPrice * (1 + movement - distance * 0.000035);
+      });
+      values[values.length - 1] = currentPrice;
+      history = { tick, values };
+      tradeChartHistory.set(pair, history);
+    } else if (history.tick !== tick) {
+      // Add only one closing price per second so the graph scrolls like a live forex feed.
+      history.values.push(currentPrice);
+      if (history.values.length > 72) history.values.shift();
+      history.tick = tick;
+    }
+
+    const values = history.values;
     const min = Math.min(...values);
     const max = Math.max(...values);
     const span = max - min || 1;

@@ -411,22 +411,66 @@ function normalize_simulation_action(mixed $value): string
     };
 }
 
-function trade_simulation_config(): ?array
+function trade_outcome_status(string $action): string
+{
+    return match ($action) {
+        'approve' => 'Approved',
+        'decline' => 'Declined',
+        'duplicate' => 'Simulated Failed',
+        'timeout' => 'Timed Out',
+        default => 'Simulated Failed',
+    };
+}
+
+function apply_trade_outcome_to_latest_record(string $username, string $action, int $trigger): int
+{
+    $sql = 'SELECT t.id, t.detail
+        FROM transactions t
+        JOIN users u ON u.id = t.user_id
+        WHERE t.type IN (\'Trade Buy\', \'Trade Sell\')';
+    $params = [];
+    if ($username !== '') {
+        $sql .= ' AND u.username = ?';
+        $params[] = $username;
+    }
+    $sql .= ' ORDER BY t.id DESC LIMIT 1';
+
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+    $row = $stmt->fetch();
+    if (!$row) return 0;
+
+    $status = trade_outcome_status($action);
+    $detail = substr((string)$row['detail'] . '; Outcome rule saved: ' . $action . ' at transaction ' . $trigger, 0, 255);
+    $update = db()->prepare('UPDATE transactions SET status = ?, detail = ? WHERE id = ?');
+    $update->execute([$status, $detail, (int)$row['id']]);
+    return 1;
+}
+
+function trade_simulation_config(?array $user = null): ?array
 {
     $stmt = db()->prepare('SELECT value_json FROM admin_storage WHERE storage_key = ? LIMIT 1');
     $stmt->execute(['adminTradeErrorSimulation']);
     $config = json_decode((string)$stmt->fetchColumn(), true);
     if (!is_array($config) || empty($config['enabled'])) return null;
 
+    $targetUsername = trim((string)($config['username'] ?? ''));
+    if ($user !== null) {
+        $currentUsername = trim((string)($user['username'] ?? ''));
+        if ($targetUsername !== '' && $currentUsername !== '' && strcasecmp($currentUsername, $targetUsername) !== 0) {
+            return null;
+        }
+    }
+
     $trigger = (int)($config['triggerTransaction'] ?? $config['transactionNumber'] ?? 0);
     $action = normalize_simulation_action($config['simulationAction'] ?? $config['result'] ?? $config['action'] ?? 'duplicate');
     if ($trigger < 2 || $trigger > 7) return null;
-    return ['triggerTransaction' => $trigger, 'simulationAction' => $action];
+    return ['triggerTransaction' => $trigger, 'simulationAction' => $action, 'targetUsername' => $targetUsername];
 }
 
 function trade_simulation_trigger_state(array $user): ?array
 {
-    $config = trade_simulation_config();
+    $config = trade_simulation_config($user);
     if (!$config) return null;
     $stmt = db()->prepare("SELECT COUNT(*) FROM transactions WHERE user_id = ? AND type IN ('Trade Buy', 'Trade Sell')");
     $stmt->execute([(int)$user['id']]);
@@ -1302,8 +1346,14 @@ try {
         $stmt = db()->prepare('INSERT INTO admin_storage (storage_key, value_json) VALUES (?, ?)
             ON DUPLICATE KEY UPDATE value_json = VALUES(value_json)');
         $stmt->execute(['adminTradeErrorSimulation', json_encode($config)]);
+
+        $applied = 0;
+        if ($enabled) {
+            $applied = apply_trade_outcome_to_latest_record($username, $simulationAction, $trigger);
+        }
+
         write_log($username ?: 'admin', 'admin', 'Trade Error Simulation', $enabled ? 'Configured' : 'Disabled');
-        respond(['ok' => true, 'simulation' => $config]);
+        respond(['ok' => true, 'simulation' => $config, 'applied' => $applied]);
     }
 
     if ($action === 'admin_adjust') {
