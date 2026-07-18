@@ -616,18 +616,10 @@ const DemoExchange = (() => {
       x: index * (900 / (values.length - 1)),
       y: 250 - ((value - min) / span) * 190
     }));
-    // Convert the price samples into a continuous Catmull-Rom-style Bézier curve.
-    // This keeps the graph fluid instead of drawing a sharp corner at every tick.
+    // Keep a sharp corner at every tick so the line reads as discrete market movement.
     const pointsPath = points.map((point, index) => {
       if (index === 0) return `M${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
-      const previous = points[index - 1];
-      const beforePrevious = points[index - 2] || previous;
-      const next = points[index + 1] || point;
-      const controlOneX = previous.x + (point.x - beforePrevious.x) / 6;
-      const controlOneY = previous.y + (point.y - beforePrevious.y) / 6;
-      const controlTwoX = point.x - (next.x - previous.x) / 6;
-      const controlTwoY = point.y - (next.y - previous.y) / 6;
-      return `C${controlOneX.toFixed(1)} ${controlOneY.toFixed(1)} ${controlTwoX.toFixed(1)} ${controlTwoY.toFixed(1)} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
+      return `L${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
     }).join(" ");
     return {
       line: pointsPath,
