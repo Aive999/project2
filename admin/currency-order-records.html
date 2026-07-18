@@ -179,7 +179,14 @@ if(localStorage.getItem("adminLogin") !== "true"){
           <section class="admin-panel">
             <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
               <div>Currency Order Records</div>
-              <button type="button" id="refresh-trade-records" class="admin-pill">Refresh</button>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <label style="display:flex; align-items:center; gap:6px; font-size:0.9rem;">
+                  <span>Record ID</span>
+                  <input type="number" id="trade-record-id" min="1" placeholder="Record ID" style="width: 110px; padding: 0.35rem 0.5rem; border: 1px solid #cbd5e1; border-radius: 8px;" />
+                </label>
+                <button type="button" id="mark-trade-done" class="admin-pill">Done</button>
+                <button type="button" id="refresh-trade-records" class="admin-pill">Refresh</button>
+              </div>
             </div>
             <p>Completed and failed trade orders recorded for each user.</p>
             <div class="simulation-config-panel" style="margin-bottom: 1rem; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc;">
@@ -227,11 +234,10 @@ if(localStorage.getItem("adminLogin") !== "true"){
                     <th>Status</th>
                     <th>Time</th>
                     <th>Details</th>
-                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody id="trade-records-body">
-                  <tr><td colspan="8">Loading trade records…</td></tr>
+                  <tr><td colspan="7">Loading trade records…</td></tr>
                 </tbody>
               </table>
             </div>
@@ -301,13 +307,15 @@ if(localStorage.getItem("adminLogin") !== "true"){
   <script>
     (function () {
       const body = document.getElementById("trade-records-body");
+      const tradeRecordInput = document.getElementById("trade-record-id");
+      const doneButton = document.getElementById("mark-trade-done");
       const refreshButton = document.getElementById("refresh-trade-records");
       const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (character) => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
       })[character]);
 
       async function loadTradeRecords() {
-        body.innerHTML = '<tr><td colspan="8">Loading trade records…</td></tr>';
+        body.innerHTML = '<tr><td colspan="7">Loading trade records…</td></tr>';
         try {
           const response = await fetch("../api/index.php", {
             method: "POST",
@@ -327,11 +335,10 @@ if(localStorage.getItem("adminLogin") !== "true"){
                 <td>${escapeHtml(record.status)}</td>
                 <td>${escapeHtml(record.time)}</td>
                 <td>${escapeHtml(record.detail || "-")}</td>
-                <td><button class="admin-pill" type="button" data-action="mark-trade-done" data-id="${escapeHtml(record.id)}">Done</button></td>
               </tr>`).join("")
-            : '<tr><td colspan="8">No trade orders have been recorded.</td></tr>';
+            : '<tr><td colspan="7">No trade orders have been recorded.</td></tr>';
         } catch (error) {
-          body.innerHTML = `<tr><td colspan="8">${escapeHtml(error.message)}</td></tr>`;
+          body.innerHTML = `<tr><td colspan="7">${escapeHtml(error.message)}</td></tr>`;
         }
       }
 
@@ -341,29 +348,32 @@ if(localStorage.getItem("adminLogin") !== "true"){
         });
       }
 
-      body.addEventListener("click", async function (event) {
-        const button = event.target.closest("button[data-action='mark-trade-done']");
-        if (!button) return;
-        const id = button.getAttribute("data-id");
-        if (!id) return;
-        button.disabled = true;
-        button.textContent = "Working...";
-        try {
-          const response = await fetch("../api/index.php", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "same-origin",
-            body: JSON.stringify({ action: "admin_trade_mark_done", id: Number(id) })
-          });
-          const data = await response.json();
-          if (!response.ok || data.ok === false) throw new Error(data.error || "Unable to mark trade as done.");
-          await loadTradeRecords();
-        } catch (error) {
-          button.disabled = false;
-          button.textContent = "Done";
-          window.alert(error.message);
-        }
-      });
+      if (doneButton) {
+        doneButton.addEventListener("click", async function () {
+          const id = Number(tradeRecordInput?.value || 0);
+          if (!id || Number.isNaN(id)) {
+            window.alert("Please enter a record ID first.");
+            return;
+          }
+          doneButton.disabled = true;
+          doneButton.textContent = "Working...";
+          try {
+            const response = await fetch("../api/index.php", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "same-origin",
+              body: JSON.stringify({ action: "admin_trade_mark_done", id })
+            });
+            const data = await response.json();
+            if (!response.ok || data.ok === false) throw new Error(data.error || "Unable to mark trade as done.");
+            await loadTradeRecords();
+          } catch (error) {
+            doneButton.disabled = false;
+            doneButton.textContent = "Done";
+            window.alert(error.message);
+          }
+        });
+      }
 
       loadTradeRecords();
       window.setInterval(function () {
