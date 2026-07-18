@@ -177,8 +177,9 @@ if(localStorage.getItem("adminLogin") !== "true"){
       <main class="admin-dashboard admin-menu-management">
         <div class="admin-layout-grid">
           <section class="admin-panel">
-            <div class="panel-header">
+            <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
               <div>Currency Order Records</div>
+              <button type="button" id="refresh-trade-records" class="admin-pill">Refresh</button>
             </div>
             <p>Completed and failed trade orders recorded for each user.</p>
             <div class="simulation-config-panel" style="margin-bottom: 1rem; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc;">
@@ -226,10 +227,11 @@ if(localStorage.getItem("adminLogin") !== "true"){
                     <th>Status</th>
                     <th>Time</th>
                     <th>Details</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody id="trade-records-body">
-                  <tr><td colspan="7">Loading trade records…</td></tr>
+                  <tr><td colspan="8">Loading trade records…</td></tr>
                 </tbody>
               </table>
             </div>
@@ -297,35 +299,78 @@ if(localStorage.getItem("adminLogin") !== "true"){
 <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
   <script src="admin-ui.js?v=withdrawal-approve-buttons-20260703"></script>
   <script>
-    (async function () {
+    (function () {
       const body = document.getElementById("trade-records-body");
+      const refreshButton = document.getElementById("refresh-trade-records");
       const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (character) => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
       })[character]);
-      try {
-        const response = await fetch("../api/index.php", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
-          body: JSON.stringify({ action: "admin_transactions", type: "Trade" })
-        });
-        const data = await response.json();
-        if (!response.ok || data.ok === false) throw new Error(data.error || "Unable to load trade records.");
-        const records = data.transactions || [];
-        body.innerHTML = records.length
-          ? records.map((record) => `<tr>
-              <td>${escapeHtml(record.account)}</td>
-              <td>${escapeHtml(record.type.replace("Trade ", ""))}</td>
-              <td>${escapeHtml(record.currency)}</td>
-              <td>${escapeHtml(record.amount)}</td>
-              <td>${escapeHtml(record.status)}</td>
-              <td>${escapeHtml(record.time)}</td>
-              <td>${escapeHtml(record.detail || "-")}</td>
-            </tr>`).join("")
-          : '<tr><td colspan="7">No trade orders have been recorded.</td></tr>';
-      } catch (error) {
-        body.innerHTML = `<tr><td colspan="7">${escapeHtml(error.message)}</td></tr>`;
+
+      async function loadTradeRecords() {
+        body.innerHTML = '<tr><td colspan="8">Loading trade records…</td></tr>';
+        try {
+          const response = await fetch("../api/index.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({ action: "admin_transactions", type: "Trade" })
+          });
+          const data = await response.json();
+          if (!response.ok || data.ok === false) throw new Error(data.error || "Unable to load trade records.");
+          const records = data.transactions || [];
+          body.innerHTML = records.length
+            ? records.map((record) => `<tr>
+                <td>${escapeHtml(record.account)}</td>
+                <td>${escapeHtml(record.type.replace("Trade ", ""))}</td>
+                <td>${escapeHtml(record.currency)}</td>
+                <td>${escapeHtml(record.amount)}</td>
+                <td>${escapeHtml(record.status)}</td>
+                <td>${escapeHtml(record.time)}</td>
+                <td>${escapeHtml(record.detail || "-")}</td>
+                <td><button class="admin-pill" type="button" data-action="mark-trade-done" data-id="${escapeHtml(record.id)}">Done</button></td>
+              </tr>`).join("")
+            : '<tr><td colspan="8">No trade orders have been recorded.</td></tr>';
+        } catch (error) {
+          body.innerHTML = `<tr><td colspan="8">${escapeHtml(error.message)}</td></tr>`;
+        }
       }
+
+      if (refreshButton) {
+        refreshButton.addEventListener("click", function () {
+          loadTradeRecords();
+        });
+      }
+
+      body.addEventListener("click", async function (event) {
+        const button = event.target.closest("button[data-action='mark-trade-done']");
+        if (!button) return;
+        const id = button.getAttribute("data-id");
+        if (!id) return;
+        button.disabled = true;
+        button.textContent = "Working...";
+        try {
+          const response = await fetch("../api/index.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({ action: "admin_trade_mark_done", id: Number(id) })
+          });
+          const data = await response.json();
+          if (!response.ok || data.ok === false) throw new Error(data.error || "Unable to mark trade as done.");
+          await loadTradeRecords();
+        } catch (error) {
+          button.disabled = false;
+          button.textContent = "Done";
+          window.alert(error.message);
+        }
+      });
+
+      loadTradeRecords();
+      window.setInterval(function () {
+        if (document.visibilityState === "visible") {
+          loadTradeRecords();
+        }
+      }, 10000);
     })();
   </script>
   <script>

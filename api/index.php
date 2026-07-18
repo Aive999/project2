@@ -1236,6 +1236,36 @@ try {
         respond(['ok' => true]);
     }
 
+    if ($action === 'admin_trade_mark_done') {
+        require_admin();
+        $id = (int)($data['id'] ?? 0);
+        if ($id <= 0) fail('Invalid trade record.');
+
+        $pdo = db();
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare('SELECT t.id, t.user_id, u.username, t.type, t.asset, t.amount, t.status, t.detail
+                FROM transactions t
+                JOIN users u ON u.id = t.user_id
+                WHERE t.id = ?
+                FOR UPDATE');
+            $stmt->execute([$id]);
+            $tx = $stmt->fetch();
+            if (!$tx) fail('Trade record not found.', 404);
+            if (!in_array((string)$tx['type'], ['Trade Buy', 'Trade Sell'], true)) fail('Only trade records can be marked as done.');
+
+            $detail = substr((string)$tx['detail'] . '; Admin marked done', 0, 255);
+            $update = $pdo->prepare('UPDATE transactions SET status = ?, detail = ? WHERE id = ?');
+            $update->execute(['Completed', $detail, $id]);
+            write_log((string)$tx['username'], 'admin', 'Trade Record', 'Completed');
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
+        respond(['ok' => true]);
+    }
+
     if ($action === 'admin_storage_all') {
         require_admin();
         $rows = db()->query('SELECT storage_key, value_json FROM admin_storage')->fetchAll();
