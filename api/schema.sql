@@ -29,6 +29,19 @@ CREATE TABLE IF NOT EXISTS transactions (
   INDEX idx_transactions_user_time (user_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- A request key makes a client retry safe: the same order request can only be
+-- applied once, even if a response is lost or a browser resubmits it.
+CREATE TABLE IF NOT EXISTS idempotency_keys (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  action VARCHAR(40) NOT NULL,
+  request_key VARCHAR(80) NOT NULL,
+  response_json LONGTEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_idempotency_keys_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_idempotency_request (user_id, action, request_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS login_logs (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(80) NOT NULL,

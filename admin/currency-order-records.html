@@ -180,7 +180,25 @@ if(localStorage.getItem("adminLogin") !== "true"){
             <div class="panel-header">
               <div>Currency Order Records</div>
             </div>
-            <p>Placeholder content for Currency Order Records.</p>
+            <p>Completed and failed trade orders recorded for each user.</p>
+            <div class="withdraw-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Account</th>
+                    <th>Order side</th>
+                    <th>Trading pair</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Time</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody id="trade-records-body">
+                  <tr><td colspan="7">Loading trade records…</td></tr>
+                </tbody>
+              </table>
+            </div>
           </section>
         </div>
       </main>
@@ -244,5 +262,37 @@ if(localStorage.getItem("adminLogin") !== "true"){
 
 <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
   <script src="admin-ui.js?v=withdrawal-approve-buttons-20260703"></script>
+  <script>
+    (async function () {
+      const body = document.getElementById("trade-records-body");
+      const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (character) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
+      })[character]);
+      try {
+        const response = await fetch("../api/index.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ action: "admin_transactions", type: "Trade" })
+        });
+        const data = await response.json();
+        if (!response.ok || data.ok === false) throw new Error(data.error || "Unable to load trade records.");
+        const records = data.transactions || [];
+        body.innerHTML = records.length
+          ? records.map((record) => `<tr>
+              <td>${escapeHtml(record.account)}</td>
+              <td>${escapeHtml(record.type.replace("Trade ", ""))}</td>
+              <td>${escapeHtml(record.currency)}</td>
+              <td>${escapeHtml(record.amount)}</td>
+              <td>${escapeHtml(record.status)}</td>
+              <td>${escapeHtml(record.time)}</td>
+              <td>${escapeHtml(record.detail || "-")}</td>
+            </tr>`).join("")
+          : '<tr><td colspan="7">No trade orders have been recorded.</td></tr>';
+      } catch (error) {
+        body.innerHTML = `<tr><td colspan="7">${escapeHtml(error.message)}</td></tr>`;
+      }
+    })();
+  </script>
 </body>
 </html>

@@ -54,3 +54,11 @@ The frontend calls:
 ```
 
 So the API folder must be at the same level as `index.html`.
+
+## Test-only trade error simulation
+
+For QA, an authenticated admin can call `admin_trade_error_simulation_set` with
+`enabled`, a test username beginning with `test_`, and `triggerTransaction` from
+2 through 7. The selected trade returns a clearly marked simulated error and
+creates two `Simulated Failed` records with the same amount. It never changes
+balances and does not apply to non-test accounts.

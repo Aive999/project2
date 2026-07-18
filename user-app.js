@@ -606,7 +606,13 @@ const DemoExchange = (() => {
     return value * pairMovement(base, quote).current;
   }
 
-  async function tradeOrder(baseAsset, quoteAsset, side, amount) {
+  function createRequestKey() {
+    return typeof crypto?.randomUUID === "function"
+      ? crypto.randomUUID().replaceAll("-", "")
+      : `${Date.now()}${Math.random().toString(36).slice(2)}`;
+  }
+
+  async function tradeOrder(baseAsset, quoteAsset, side, amount, idempotencyKey) {
     await syncCurrentUser();
     const user = getUser();
     if (!user) throw new Error("Please register or log in first.");
@@ -617,7 +623,7 @@ const DemoExchange = (() => {
     const quoteAmount = value * price;
 
     try {
-      const data = await apiRequest("trade_order", { baseAsset, quoteAsset, side, amount: value });
+      const data = await apiRequest("trade_order", { baseAsset, quoteAsset, side, amount: value, idempotencyKey });
       cacheServerUser(data.user);
       return data;
     } catch (error) {
@@ -1862,27 +1868,49 @@ const DemoExchange = (() => {
 
   function bindTradingPage() {
     if (!document.querySelector(".trade-ticket")) return;
+    let pendingTradeRequestKey = "";
+    const clearPendingTradeRequest = () => { pendingTradeRequestKey = ""; };
     renderTradePage();
-    document.getElementById("tradePair")?.addEventListener("change", () => renderTradePage());
-    document.getElementById("tradeAmount")?.addEventListener("input", () => renderTradePage());
+    document.getElementById("tradePair")?.addEventListener("change", () => {
+      clearPendingTradeRequest();
+      renderTradePage();
+    });
+    document.getElementById("tradeAmount")?.addEventListener("input", () => {
+      clearPendingTradeRequest();
+      renderTradePage();
+    });
     document.querySelectorAll(".trade-side").forEach((button) => {
       button.addEventListener("click", () => {
         document.querySelectorAll(".trade-side").forEach((item) => item.classList.toggle("active", item === button));
+        clearPendingTradeRequest();
         renderTradePage();
       });
     });
     document.getElementById("tradeSubmit")?.addEventListener("click", async () => {
+      const submitButton = document.getElementById("tradeSubmit");
+      if (submitButton?.disabled) return;
       const [base, quote] = document.getElementById("tradePair").value.split("/");
       const side = document.querySelector(".trade-side.active")?.dataset.side || "Buy";
       const amount = document.getElementById("tradeAmount").value;
       try {
-        const result = await tradeOrder(base, quote, side, amount);
+        if (!pendingTradeRequestKey) pendingTradeRequestKey = createRequestKey();
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.textContent = "Placing order...";
+        }
+        const result = await tradeOrder(base, quote, side, amount, pendingTradeRequestKey);
+        clearPendingTradeRequest();
         document.getElementById("tradeAmount").value = "";
         await syncCurrentUser();
         renderTradePage(`${side} order filled at ${formatRate(result?.price || pairMovement(base, quote).current)} ${quote}.`);
         renderAccount();
       } catch (error) {
         renderTradePage(error.message);
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = "Place market order";
+        }
       }
     });
   }
