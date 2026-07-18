@@ -10,7 +10,7 @@ const DemoExchange = (() => {
   let accountMode = "Balances";
   let accountPanelView = "menu";
   const CURRENCY_KEY = "demoCurrencySettings";
-  const FLUCTUATION_INTERVAL_MS = 12000;
+  const FLUCTUATION_INTERVAL_MS = 1000;
   const currentRateMap = {
     USD: 1.0000,
     EUR: 1.14760,
@@ -588,14 +588,26 @@ const DemoExchange = (() => {
     const min = Math.min(...values);
     const max = Math.max(...values);
     const span = max - min || 1;
-    const points = values.map((value, index) => {
-      const x = index * (900 / (values.length - 1));
-      const y = 250 - ((value - min) / span) * 190;
-      return `${index === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`;
+    const points = values.map((value, index) => ({
+      x: index * (900 / (values.length - 1)),
+      y: 250 - ((value - min) / span) * 190
+    }));
+    // Convert the price samples into a continuous Catmull-Rom-style Bézier curve.
+    // This keeps the graph fluid instead of drawing a sharp corner at every tick.
+    const pointsPath = points.map((point, index) => {
+      if (index === 0) return `M${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
+      const previous = points[index - 1];
+      const beforePrevious = points[index - 2] || previous;
+      const next = points[index + 1] || point;
+      const controlOneX = previous.x + (point.x - beforePrevious.x) / 6;
+      const controlOneY = previous.y + (point.y - beforePrevious.y) / 6;
+      const controlTwoX = point.x - (next.x - previous.x) / 6;
+      const controlTwoY = point.y - (next.y - previous.y) / 6;
+      return `C${controlOneX.toFixed(1)} ${controlOneY.toFixed(1)} ${controlTwoX.toFixed(1)} ${controlTwoY.toFixed(1)} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
     }).join(" ");
     return {
-      line: points,
-      area: `${points} L900 300 L0 300 Z`,
+      line: pointsPath,
+      area: `${pointsPath} L900 300 L0 300 Z`,
       positive: values[values.length - 1] >= values[0]
     };
   }
