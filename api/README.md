@@ -58,7 +58,10 @@ So the API folder must be at the same level as `index.html`.
 ## Test-only trade error simulation
 
 For QA, an authenticated admin can call `admin_trade_error_simulation_set` with
-`enabled`, a test username beginning with `test_`, and `triggerTransaction` from
-2 through 7. The selected trade returns a clearly marked simulated error and
-creates two `Simulated Failed` records with the same amount. It never changes
-balances and does not apply to non-test accounts.
+`enabled`, a test username beginning with `test_`, `triggerTransaction` from 2
+through 7, and `simulationAction` set to one of `approve`, `decline`,
+`duplicate`, or `timeout`. The selected trade uses that action when the count
+matches the configured trigger. `approve` marks the transaction as `Approved`,
+`decline` stores a `Declined` record, `duplicate` creates two `Simulated Failed`
+records with the same amount, and `timeout` records a `Timed Out` state. It
+never changes balances and does not apply to non-test accounts.

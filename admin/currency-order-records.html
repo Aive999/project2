@@ -181,6 +181,40 @@ if(localStorage.getItem("adminLogin") !== "true"){
               <div>Currency Order Records</div>
             </div>
             <p>Completed and failed trade orders recorded for each user.</p>
+            <div class="simulation-config-panel" style="margin-bottom: 1rem; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc;">
+              <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
+                <label style="display:flex; flex-direction:column; gap:4px; font-size:0.95rem;">
+                  <span>Enable Simulation</span>
+                  <input type="checkbox" id="simulation-enabled" />
+                </label>
+                <label style="display:flex; flex-direction:column; gap:4px; font-size:0.95rem;">
+                  <span>Test Username</span>
+                  <input type="text" id="simulation-username" placeholder="test_qa" style="min-width: 180px;" />
+                </label>
+                <label style="display:flex; flex-direction:column; gap:4px; font-size:0.95rem;">
+                  <span>Trigger Transaction</span>
+                  <select id="simulation-trigger">
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                  </select>
+                </label>
+                <label style="display:flex; flex-direction:column; gap:4px; font-size:0.95rem;">
+                  <span>Simulation Action</span>
+                  <select id="simulation-action">
+                    <option value="approve">Approve</option>
+                    <option value="decline">Decline</option>
+                    <option value="duplicate">Duplicate Record</option>
+                    <option value="timeout">Timeout</option>
+                  </select>
+                </label>
+                <button type="button" id="save-simulation-config" class="admin-pill">Save</button>
+              </div>
+              <div id="simulation-status" style="margin-top: 0.75rem; color: #0f766e; font-size: 0.95rem;"></div>
+            </div>
             <div class="withdraw-table">
               <table>
                 <thead>
@@ -292,6 +326,68 @@ if(localStorage.getItem("adminLogin") !== "true"){
       } catch (error) {
         body.innerHTML = `<tr><td colspan="7">${escapeHtml(error.message)}</td></tr>`;
       }
+    })();
+  </script>
+  <script>
+    (function () {
+      const enabledInput = document.getElementById("simulation-enabled");
+      const usernameInput = document.getElementById("simulation-username");
+      const triggerInput = document.getElementById("simulation-trigger");
+      const actionInput = document.getElementById("simulation-action");
+      const saveButton = document.getElementById("save-simulation-config");
+      const statusElement = document.getElementById("simulation-status");
+      if (!enabledInput || !usernameInput || !triggerInput || !actionInput || !saveButton || !statusElement) return;
+
+      async function loadSimulationConfig() {
+        try {
+          const response = await fetch("../api/index.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({ action: "admin_storage_all" })
+          });
+          const data = await response.json();
+          if (!response.ok || data.ok === false) throw new Error(data.error || "Unable to load simulation settings.");
+          const config = data.storage?.adminTradeErrorSimulation || {};
+          enabledInput.checked = Boolean(config.enabled);
+          usernameInput.value = config.username || "test_qa";
+          triggerInput.value = String(config.triggerTransaction || config.transactionNumber || 2);
+          actionInput.value = config.simulationAction || config.result || "duplicate";
+          statusElement.textContent = config.enabled
+            ? `Current action: ${config.simulationAction || config.result || "duplicate"} at transaction ${config.triggerTransaction || config.transactionNumber || 2}.`
+            : "Simulation is disabled.";
+        } catch (error) {
+          statusElement.textContent = error.message;
+        }
+      }
+
+      saveButton.addEventListener("click", async function () {
+        statusElement.textContent = "Saving...";
+        try {
+          const response = await fetch("../api/index.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({
+              action: "admin_trade_error_simulation_set",
+              enabled: enabledInput.checked,
+              username: usernameInput.value.trim(),
+              triggerTransaction: Number(triggerInput.value),
+              simulationAction: actionInput.value
+            })
+          });
+          const data = await response.json();
+          if (!response.ok || data.ok === false) throw new Error(data.error || "Unable to save simulation settings.");
+          const config = data.simulation || {};
+          statusElement.textContent = config.enabled
+            ? `Saved ${config.simulationAction || "duplicate"} for transaction ${config.triggerTransaction || 2}.`
+            : "Simulation disabled.";
+        } catch (error) {
+          statusElement.textContent = error.message;
+        }
+      });
+
+      loadSimulationConfig();
     })();
   </script>
 </body>

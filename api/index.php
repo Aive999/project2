@@ -399,6 +399,18 @@ function idempotency_key(array $data): string
     return $key;
 }
 
+function normalize_simulation_action(mixed $value): string
+{
+    $normalized = strtolower(trim((string)$value));
+    return match ($normalized) {
+        'approve', 'approved', 'approval' => 'approve',
+        'decline', 'declined', 'reject', 'rejected' => 'decline',
+        'duplicate', 'duplicated', 'duplicate-record', 'dupe' => 'duplicate',
+        'timeout', 'timedout', 'timed-out' => 'timeout',
+        default => 'duplicate',
+    };
+}
+
 function trade_simulation_config(): ?array
 {
     $stmt = db()->prepare('SELECT value_json FROM admin_storage WHERE storage_key = ? LIMIT 1');
@@ -406,19 +418,21 @@ function trade_simulation_config(): ?array
     $config = json_decode((string)$stmt->fetchColumn(), true);
     if (!is_array($config) || empty($config['enabled'])) return null;
 
-    $username = trim((string)($config['username'] ?? ''));
-    $trigger = (int)($config['triggerTransaction'] ?? 0);
-    if (!str_starts_with($username, 'test_') || $trigger < 2 || $trigger > 7) return null;
-    return ['username' => $username, 'triggerTransaction' => $trigger];
+    $trigger = (int)($config['triggerTransaction'] ?? $config['transactionNumber'] ?? 0);
+    $action = normalize_simulation_action($config['simulationAction'] ?? $config['result'] ?? $config['action'] ?? 'duplicate');
+    if ($trigger < 2 || $trigger > 7) return null;
+    return ['triggerTransaction' => $trigger, 'simulationAction' => $action];
 }
 
-function is_simulated_trade_failure(array $user): bool
+function trade_simulation_trigger_state(array $user): ?array
 {
     $config = trade_simulation_config();
-    if (!$config || $config['username'] !== $user['username']) return false;
+    if (!$config) return null;
     $stmt = db()->prepare("SELECT COUNT(*) FROM transactions WHERE user_id = ? AND type IN ('Trade Buy', 'Trade Sell')");
     $stmt->execute([(int)$user['id']]);
-    return ((int)$stmt->fetchColumn() + 1) === $config['triggerTransaction'];
+    $current = (int)$stmt->fetchColumn() + 1;
+    if ($current !== $config['triggerTransaction']) return null;
+    return $config;
 }
 
 function import_public_user(array $incoming): void
@@ -763,35 +777,85 @@ try {
             $reserve = db()->prepare('INSERT INTO idempotency_keys (user_id, action, request_key, response_json) VALUES (?, ?, ?, ?)');
             $reserve->execute([(int)$user['id'], $action, $requestKey, '{}']);
 
-        if (is_simulated_trade_failure($user)) {
-            $detail = 'TEST ONLY: simulated duplicate-record error; no balance movement';
-            add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Simulated Failed', $detail);
-            add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Simulated Failed', $detail);
-            $response = [
-                'ok' => false,
-                'error' => 'Test-only simulated transaction error. No balances were changed.',
-                'simulated' => true,
-                'duplicateRecords' => 2,
-            ];
-            $saveResponse = db()->prepare('UPDATE idempotency_keys SET response_json = ? WHERE user_id = ? AND action = ? AND request_key = ?');
-            $saveResponse->execute([json_encode($response), (int)$user['id'], $action, $requestKey]);
-            write_log((string)$user['username'], 'admin', 'Trade Error Simulation', 'Triggered');
-            db()->commit();
-            respond($response);
+        $simulation = trade_simulation_trigger_state($user);
+        if ($simulation) {
+            $simulationAction = $simulation['simulationAction'] ?? 'duplicate';
+            if ($simulationAction === 'decline') {
+                $detail = 'TEST ONLY: simulated decline; no balance movement';
+                add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Declined', $detail);
+                $response = [
+                    'ok' => false,
+                    'error' => 'Test-only simulated decline. No balances were changed.',
+                    'simulated' => true,
+                    'simulationAction' => 'decline',
+                    'triggerTransaction' => $simulation['triggerTransaction'],
+                ];
+                $saveResponse = db()->prepare('UPDATE idempotency_keys SET response_json = ? WHERE user_id = ? AND action = ? AND request_key = ?');
+                $saveResponse->execute([json_encode($response), (int)$user['id'], $action, $requestKey]);
+                write_log((string)$user['username'], 'admin', 'Trade Error Simulation', 'Triggered');
+                db()->commit();
+                respond($response);
+            }
+
+            if ($simulationAction === 'duplicate') {
+                $detail = 'TEST ONLY: simulated duplicate-record error; no balance movement';
+                add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Simulated Failed', $detail);
+                add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Simulated Failed', $detail);
+                $response = [
+                    'ok' => false,
+                    'error' => 'Test-only simulated duplicate-record error. No balances were changed.',
+                    'simulated' => true,
+                    'simulationAction' => 'duplicate',
+                    'duplicateRecords' => 2,
+                    'triggerTransaction' => $simulation['triggerTransaction'],
+                ];
+                $saveResponse = db()->prepare('UPDATE idempotency_keys SET response_json = ? WHERE user_id = ? AND action = ? AND request_key = ?');
+                $saveResponse->execute([json_encode($response), (int)$user['id'], $action, $requestKey]);
+                write_log((string)$user['username'], 'admin', 'Trade Error Simulation', 'Triggered');
+                db()->commit();
+                respond($response);
+            }
+
+            if ($simulationAction === 'timeout') {
+                $detail = 'TEST ONLY: simulated timeout; no balance movement';
+                add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Timed Out', $detail);
+                $response = [
+                    'ok' => false,
+                    'error' => 'Test-only simulated timeout. No balances were changed.',
+                    'simulated' => true,
+                    'simulationAction' => 'timeout',
+                    'triggerTransaction' => $simulation['triggerTransaction'],
+                ];
+                $saveResponse = db()->prepare('UPDATE idempotency_keys SET response_json = ? WHERE user_id = ? AND action = ? AND request_key = ?');
+                $saveResponse->execute([json_encode($response), (int)$user['id'], $action, $requestKey]);
+                write_log((string)$user['username'], 'admin', 'Trade Error Simulation', 'Triggered');
+                db()->commit();
+                respond($response);
+            }
+        }
+
+        $transactionStatus = 'Filled';
+        if ($simulation && ($simulation['simulationAction'] ?? 'duplicate') === 'approve') {
+            $transactionStatus = 'Approved';
         }
 
         if ($side === 'Buy') {
             if (balance_amount((int)$user['id'], $quote) < $quoteAmount) fail('Insufficient ' . $quote . ' balance.');
             change_balance((int)$user['id'], $quote, -$quoteAmount);
             change_balance((int)$user['id'], $base, $amount);
-            add_transaction((int)$user['id'], 'Trade Buy', $base . '/' . $quote, $amount, 'Filled', 'Bought ' . $amount . ' ' . $base . ' at ' . round($price, 6) . ' ' . $quote);
+            add_transaction((int)$user['id'], 'Trade Buy', $base . '/' . $quote, $amount, $transactionStatus, 'Bought ' . $amount . ' ' . $base . ' at ' . round($price, 6) . ' ' . $quote);
         } else {
             if (balance_amount((int)$user['id'], $base) < $amount) fail('Insufficient ' . $base . ' balance.');
             change_balance((int)$user['id'], $base, -$amount);
             change_balance((int)$user['id'], $quote, $quoteAmount);
-            add_transaction((int)$user['id'], 'Trade Sell', $base . '/' . $quote, $amount, 'Filled', 'Sold ' . $amount . ' ' . $base . ' at ' . round($price, 6) . ' ' . $quote);
+            add_transaction((int)$user['id'], 'Trade Sell', $base . '/' . $quote, $amount, $transactionStatus, 'Sold ' . $amount . ' ' . $base . ' at ' . round($price, 6) . ' ' . $quote);
         }
         $response = ['ok' => true, 'price' => $price, 'quoteAmount' => $quoteAmount, 'user' => public_user(user_by_username($user['username']))];
+        if ($simulation && ($simulation['simulationAction'] ?? 'duplicate') === 'approve') {
+            $response['simulated'] = true;
+            $response['simulationAction'] = 'approve';
+            $response['triggerTransaction'] = $simulation['triggerTransaction'];
+        }
         $saveResponse = db()->prepare('UPDATE idempotency_keys SET response_json = ? WHERE user_id = ? AND action = ? AND request_key = ?');
         $saveResponse->execute([json_encode($response), (int)$user['id'], $action, $requestKey]);
         db()->commit();
@@ -1198,13 +1262,13 @@ try {
         require_admin();
         $enabled = (bool)($data['enabled'] ?? false);
         $username = trim((string)($data['username'] ?? ''));
-        $trigger = (int)($data['triggerTransaction'] ?? 0);
+        $trigger = (int)($data['triggerTransaction'] ?? $data['transactionNumber'] ?? 0);
+        $simulationAction = normalize_simulation_action($data['simulationAction'] ?? $data['result'] ?? $data['action'] ?? 'duplicate');
         if ($enabled) {
-            if (!str_starts_with($username, 'test_')) fail('Trade error simulation is restricted to usernames beginning with test_.');
             if ($trigger < 2 || $trigger > 7) fail('Choose a transaction number from 2 through 7.');
-            if (!user_by_username($username)) fail('Test user not found.', 404);
+            if ($username !== '' && !user_by_username($username)) fail('Test user not found.', 404);
         }
-        $config = ['enabled' => $enabled, 'username' => $username, 'triggerTransaction' => $trigger];
+        $config = ['enabled' => $enabled, 'username' => $username, 'triggerTransaction' => $trigger, 'simulationAction' => $simulationAction];
         $stmt = db()->prepare('INSERT INTO admin_storage (storage_key, value_json) VALUES (?, ?)
             ON DUPLICATE KEY UPDATE value_json = VALUES(value_json)');
         $stmt->execute(['adminTradeErrorSimulation', json_encode($config)]);
