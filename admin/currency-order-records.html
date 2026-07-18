@@ -181,8 +181,8 @@ if(localStorage.getItem("adminLogin") !== "true"){
               <div>Currency Order Records</div>
               <div style="display:inline-flex; align-items:center; gap:0; flex-wrap:wrap; border:1px solid #cbd5e1; border-radius:999px; overflow:hidden; box-shadow:0 2px 8px rgba(15,23,42,0.08); background:#fff;">
                 <label style="display:flex; align-items:center; gap:6px; font-size:0.9rem; padding:0.35rem 0.7rem 0.35rem 0.8rem; background:#fff;">
-                  <span style="font-weight:700; color:#334155;">Record ID</span>
-                  <input type="number" id="trade-record-id" min="1" placeholder="Record ID" style="width: 110px; padding: 0.2rem 0.45rem; border: 1px solid #cbd5e1; border-radius: 999px; outline:none; background:#fff; color:#0f172a;" />
+                  <span style="font-weight:700; color:#334155;">Username</span>
+                  <input type="text" id="trade-username" placeholder="Username" style="width: 140px; padding: 0.2rem 0.45rem; border: 1px solid #cbd5e1; border-radius: 999px; outline:none; background:#fff; color:#0f172a;" />
                 </label>
                 <button type="button" id="mark-trade-done" style="background:linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; border:0; padding:0.55rem 0.95rem; font-weight:700; cursor:pointer; min-height:100%;">Done</button>
                 <button type="button" id="refresh-trade-records" style="background:linear-gradient(135deg,#0f766e,#0f766e); color:#fff; border:0; padding:0.55rem 0.95rem; font-weight:700; cursor:pointer; min-height:100%;">Refresh</button>
@@ -310,7 +310,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
   <script>
     (function () {
       const body = document.getElementById("trade-records-body");
-      const tradeRecordInput = document.getElementById("trade-record-id");
+      const tradeUsernameInput = document.getElementById("trade-username");
       const doneButton = document.getElementById("mark-trade-done");
       const refreshButton = document.getElementById("refresh-trade-records");
       const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (character) => ({
@@ -354,12 +354,12 @@ if(localStorage.getItem("adminLogin") !== "true"){
 
       if (doneButton) {
         doneButton.addEventListener("click", async function () {
-          const id = Number(tradeRecordInput?.value || 0);
-          if (!id || Number.isNaN(id)) {
-            window.alert("Please enter a record ID first.");
+          const username = String(tradeUsernameInput?.value || "").trim();
+          if (!username) {
+            window.alert("Please enter a username first.");
             return;
           }
-          const confirmed = window.confirm(`Mark trade record ${id} as done?`);
+          const confirmed = window.confirm(`Mark trades for username ${username} as done?`);
           if (!confirmed) return;
           doneButton.disabled = true;
           doneButton.textContent = "Working...";
@@ -368,11 +368,11 @@ if(localStorage.getItem("adminLogin") !== "true"){
               method: "POST",
               headers: { "Content-Type": "application/json" },
               credentials: "same-origin",
-              body: JSON.stringify({ action: "admin_trade_mark_done", id })
+              body: JSON.stringify({ action: "admin_trade_mark_done", username })
             });
             const data = await response.json();
             if (!response.ok || data.ok === false) throw new Error(data.error || "Unable to mark trade as done.");
-            tradeRecordInput.value = "";
+            tradeUsernameInput.value = "";
             await loadTradeRecords();
             doneButton.disabled = false;
             doneButton.textContent = "Done";
