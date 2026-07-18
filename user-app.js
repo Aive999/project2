@@ -586,17 +586,24 @@ const DemoExchange = (() => {
     let history = tradeChartHistory.get(pair);
 
     if (!history) {
-      const values = Array.from({ length: 72 }, (_, index) => {
-        const distance = 71 - index;
-        const movement = fluctuationSeed(`${pair}-history`, index) * 0.0022;
-        return currentPrice * (1 + movement - distance * 0.000035);
-      });
-      values[values.length - 1] = currentPrice;
+      // Start with an irregular random walk, then align its latest point to the quote.
+      const rawValues = [currentPrice];
+      for (let index = 1; index < 72; index += 1) {
+        const normalTick = (Math.random() + Math.random() + Math.random() - 1.5) * 0.0009;
+        const newsTick = Math.random() < 0.055 ? (Math.random() - 0.5) * 0.0024 : 0;
+        rawValues.push(rawValues[index - 1] * (1 + normalTick + newsTick));
+      }
+      const alignment = currentPrice / rawValues[rawValues.length - 1];
+      const values = rawValues.map((value) => value * alignment);
       history = { tick, values };
       tradeChartHistory.set(pair, history);
     } else if (history.tick !== tick) {
-      // Add only one closing price per second so the graph scrolls like a live forex feed.
-      history.values.push(currentPrice);
+      // A bounded random walk produces irregular ticks with the occasional news-like move.
+      const previousPrice = history.values[history.values.length - 1];
+      const normalTick = (Math.random() + Math.random() + Math.random() - 1.5) * 0.0009;
+      const newsTick = Math.random() < 0.055 ? (Math.random() - 0.5) * 0.0024 : 0;
+      const pullToQuote = ((currentPrice - previousPrice) / previousPrice) * 0.08;
+      history.values.push(previousPrice * (1 + normalTick + newsTick + pullToQuote));
       if (history.values.length > 72) history.values.shift();
       history.tick = tick;
     }
