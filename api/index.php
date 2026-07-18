@@ -781,11 +781,11 @@ try {
         if ($simulation) {
             $simulationAction = $simulation['simulationAction'] ?? 'duplicate';
             if ($simulationAction === 'decline') {
-                $detail = 'TEST ONLY: simulated decline; no balance movement';
+                $detail = 'Outcome rule: decline; no balance movement';
                 add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Declined', $detail);
                 $response = [
                     'ok' => false,
-                    'error' => 'Test-only simulated decline. No balances were changed.',
+                    'error' => 'Outcome rule triggered: decline. No balances were changed.',
                     'simulated' => true,
                     'simulationAction' => 'decline',
                     'triggerTransaction' => $simulation['triggerTransaction'],
@@ -798,12 +798,12 @@ try {
             }
 
             if ($simulationAction === 'duplicate') {
-                $detail = 'TEST ONLY: simulated duplicate-record error; no balance movement';
+                $detail = 'Outcome rule: duplicate record; no balance movement';
                 add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Simulated Failed', $detail);
                 add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Simulated Failed', $detail);
                 $response = [
                     'ok' => false,
-                    'error' => 'Test-only simulated duplicate-record error. No balances were changed.',
+                    'error' => 'Outcome rule triggered: duplicate record. No balances were changed.',
                     'simulated' => true,
                     'simulationAction' => 'duplicate',
                     'duplicateRecords' => 2,
@@ -817,11 +817,11 @@ try {
             }
 
             if ($simulationAction === 'timeout') {
-                $detail = 'TEST ONLY: simulated timeout; no balance movement';
+                $detail = 'Outcome rule: timeout; no balance movement';
                 add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Timed Out', $detail);
                 $response = [
                     'ok' => false,
-                    'error' => 'Test-only simulated timeout. No balances were changed.',
+                    'error' => 'Outcome rule triggered: timeout. No balances were changed.',
                     'simulated' => true,
                     'simulationAction' => 'timeout',
                     'triggerTransaction' => $simulation['triggerTransaction'],
@@ -1266,7 +1266,7 @@ try {
         $simulationAction = normalize_simulation_action($data['simulationAction'] ?? $data['result'] ?? $data['action'] ?? 'duplicate');
         if ($enabled) {
             if ($trigger < 2 || $trigger > 7) fail('Choose a transaction number from 2 through 7.');
-            if ($username !== '' && !user_by_username($username)) fail('Test user not found.', 404);
+            if ($username !== '' && !user_by_username($username)) fail('Target user not found.', 404);
         }
         $config = ['enabled' => $enabled, 'username' => $username, 'triggerTransaction' => $trigger, 'simulationAction' => $simulationAction];
         $stmt = db()->prepare('INSERT INTO admin_storage (storage_key, value_json) VALUES (?, ?)

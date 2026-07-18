@@ -184,12 +184,12 @@ if(localStorage.getItem("adminLogin") !== "true"){
             <div class="simulation-config-panel" style="margin-bottom: 1rem; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc;">
               <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
                 <label style="display:flex; flex-direction:column; gap:4px; font-size:0.95rem;">
-                  <span>Enable Simulation</span>
+                  <span>Enable Outcome Rule</span>
                   <input type="checkbox" id="simulation-enabled" />
                 </label>
                 <label style="display:flex; flex-direction:column; gap:4px; font-size:0.95rem;">
-                  <span>Test Username</span>
-                  <input type="text" id="simulation-username" placeholder="test_qa" style="min-width: 180px;" />
+                  <span>Apply To Username</span>
+                  <input type="text" id="simulation-username" placeholder="Optional username" style="min-width: 180px;" />
                 </label>
                 <label style="display:flex; flex-direction:column; gap:4px; font-size:0.95rem;">
                   <span>Trigger Transaction</span>
@@ -203,7 +203,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
                   </select>
                 </label>
                 <label style="display:flex; flex-direction:column; gap:4px; font-size:0.95rem;">
-                  <span>Simulation Action</span>
+                  <span>Outcome</span>
                   <select id="simulation-action">
                     <option value="approve">Approve</option>
                     <option value="decline">Decline</option>
@@ -347,15 +347,15 @@ if(localStorage.getItem("adminLogin") !== "true"){
             body: JSON.stringify({ action: "admin_storage_all" })
           });
           const data = await response.json();
-          if (!response.ok || data.ok === false) throw new Error(data.error || "Unable to load simulation settings.");
+          if (!response.ok || data.ok === false) throw new Error(data.error || "Unable to load outcome settings.");
           const config = data.storage?.adminTradeErrorSimulation || {};
           enabledInput.checked = Boolean(config.enabled);
           usernameInput.value = config.username || "test_qa";
           triggerInput.value = String(config.triggerTransaction || config.transactionNumber || 2);
           actionInput.value = config.simulationAction || config.result || "duplicate";
           statusElement.textContent = config.enabled
-            ? `Current action: ${config.simulationAction || config.result || "duplicate"} at transaction ${config.triggerTransaction || config.transactionNumber || 2}.`
-            : "Simulation is disabled.";
+            ? `Current outcome: ${config.simulationAction || config.result || "duplicate"} at transaction ${config.triggerTransaction || config.transactionNumber || 2}.`
+            : "Outcome rule is disabled.";
         } catch (error) {
           statusElement.textContent = error.message;
         }
@@ -377,11 +377,11 @@ if(localStorage.getItem("adminLogin") !== "true"){
             })
           });
           const data = await response.json();
-          if (!response.ok || data.ok === false) throw new Error(data.error || "Unable to save simulation settings.");
+          if (!response.ok || data.ok === false) throw new Error(data.error || "Unable to save outcome settings.");
           const config = data.simulation || {};
           statusElement.textContent = config.enabled
             ? `Saved ${config.simulationAction || "duplicate"} for transaction ${config.triggerTransaction || 2}.`
-            : "Simulation disabled.";
+            : "Outcome rule disabled.";
         } catch (error) {
           statusElement.textContent = error.message;
         }
