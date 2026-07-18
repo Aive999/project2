@@ -226,6 +226,7 @@ function public_user(array $user): array
     foreach ($txStmt as $row) {
         $transactions[] = [
             'id' => 'TX' . $row['id'],
+            'recordId' => (int)$row['id'],
             'type' => $row['type'],
             'asset' => $row['asset'],
             'amount' => (float)$row['amount'],
@@ -411,42 +412,6 @@ function normalize_simulation_action(mixed $value): string
     };
 }
 
-function trade_outcome_status(string $action): string
-{
-    return match ($action) {
-        'approve' => 'Approved',
-        'decline' => 'Declined',
-        'duplicate' => 'Simulated Failed',
-        'timeout' => 'Timed Out',
-        default => 'Simulated Failed',
-    };
-}
-
-function apply_trade_outcome_to_latest_record(string $username, string $action, int $trigger): int
-{
-    $sql = 'SELECT t.id, t.detail
-        FROM transactions t
-        JOIN users u ON u.id = t.user_id
-        WHERE t.type IN (\'Trade Buy\', \'Trade Sell\')';
-    $params = [];
-    if ($username !== '') {
-        $sql .= ' AND u.username = ?';
-        $params[] = $username;
-    }
-    $sql .= ' ORDER BY t.id DESC LIMIT 1';
-
-    $stmt = db()->prepare($sql);
-    $stmt->execute($params);
-    $row = $stmt->fetch();
-    if (!$row) return 0;
-
-    $status = trade_outcome_status($action);
-    $detail = substr((string)$row['detail'] . '; Outcome rule saved: ' . $action . ' at transaction ' . $trigger, 0, 255);
-    $update = db()->prepare('UPDATE transactions SET status = ?, detail = ? WHERE id = ?');
-    $update->execute([$status, $detail, (int)$row['id']]);
-    return 1;
-}
-
 function trade_simulation_config(?array $user = null): ?array
 {
     $stmt = db()->prepare('SELECT value_json FROM admin_storage WHERE storage_key = ? LIMIT 1');
@@ -465,7 +430,14 @@ function trade_simulation_config(?array $user = null): ?array
     $trigger = (int)($config['triggerTransaction'] ?? $config['transactionNumber'] ?? 0);
     $action = normalize_simulation_action($config['simulationAction'] ?? $config['result'] ?? $config['action'] ?? 'duplicate');
     if ($trigger < 2 || $trigger > 7) return null;
-    return ['triggerTransaction' => $trigger, 'simulationAction' => $action, 'targetUsername' => $targetUsername];
+    return [
+        'triggerTransaction' => $trigger,
+        'simulationAction' => $action,
+        'targetUsername' => $targetUsername,
+        // The baseline makes the selected number relative to when the admin
+        // saved the rule, rather than to every trade the user has ever made.
+        'startingTransactionCount' => max(0, (int)($config['startingTransactionCount'] ?? 0)),
+    ];
 }
 
 function trade_simulation_trigger_state(array $user): ?array
@@ -475,7 +447,8 @@ function trade_simulation_trigger_state(array $user): ?array
     $stmt = db()->prepare("SELECT COUNT(*) FROM transactions WHERE user_id = ? AND type IN ('Trade Buy', 'Trade Sell')");
     $stmt->execute([(int)$user['id']]);
     $current = (int)$stmt->fetchColumn() + 1;
-    if ($current !== $config['triggerTransaction']) return null;
+    $purchaseSinceRuleSaved = $current - $config['startingTransactionCount'];
+    if ($purchaseSinceRuleSaved !== $config['triggerTransaction']) return null;
     return $config;
 }
 
@@ -906,6 +879,37 @@ try {
         respond($response);
         } catch (Throwable $e) {
             if (db()->inTransaction()) db()->rollBack();
+            throw $e;
+        }
+    }
+
+    if ($action === 'trade_mark_done') {
+        $user = require_user();
+        $id = (int)($data['id'] ?? $data['recordId'] ?? 0);
+        if ($id <= 0) fail('Invalid trade record.');
+
+        $pdo = db();
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare('SELECT id, user_id, type, asset, amount, status, detail
+                FROM transactions
+                WHERE id = ? AND user_id = ?
+                FOR UPDATE');
+            $stmt->execute([$id, (int)$user['id']]);
+            $tx = $stmt->fetch();
+            if (!$tx) fail('Trade record not found.', 404);
+            if (!in_array((string)$tx['type'], ['Trade Buy', 'Trade Sell'], true)) fail('Only trade records can be confirmed.');
+            if (in_array(strtolower((string)$tx['status']), ['simulated failed', 'declined', 'timed out'], true)) {
+                fail('A failed trade record cannot be confirmed.', 409);
+            }
+
+            $detail = substr((string)$tx['detail'] . '; User confirmed', 0, 255);
+            $update = $pdo->prepare('UPDATE transactions SET status = ?, detail = ? WHERE id = ? AND user_id = ?');
+            $update->execute(['Completed', $detail, $id, (int)$user['id']]);
+            $pdo->commit();
+            respond(['ok' => true, 'transaction' => ['id' => $id, 'status' => 'Completed']]);
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
             throw $e;
         }
     }
@@ -1342,18 +1346,26 @@ try {
             if ($trigger < 2 || $trigger > 7) fail('Choose a transaction number from 2 through 7.');
             if ($username !== '' && !user_by_username($username)) fail('Target user not found.', 404);
         }
-        $config = ['enabled' => $enabled, 'username' => $username, 'triggerTransaction' => $trigger, 'simulationAction' => $simulationAction];
+        $startingTransactionCount = 0;
+        if ($enabled && $username !== '') {
+            $targetUser = user_by_username($username);
+            $count = db()->prepare("SELECT COUNT(*) FROM transactions WHERE user_id = ? AND type IN ('Trade Buy', 'Trade Sell')");
+            $count->execute([(int)$targetUser['id']]);
+            $startingTransactionCount = (int)$count->fetchColumn();
+        }
+        $config = [
+            'enabled' => $enabled,
+            'username' => $username,
+            'triggerTransaction' => $trigger,
+            'simulationAction' => $simulationAction,
+            'startingTransactionCount' => $startingTransactionCount,
+        ];
         $stmt = db()->prepare('INSERT INTO admin_storage (storage_key, value_json) VALUES (?, ?)
             ON DUPLICATE KEY UPDATE value_json = VALUES(value_json)');
         $stmt->execute(['adminTradeErrorSimulation', json_encode($config)]);
 
-        $applied = 0;
-        if ($enabled) {
-            $applied = apply_trade_outcome_to_latest_record($username, $simulationAction, $trigger);
-        }
-
         write_log($username ?: 'admin', 'admin', 'Trade Error Simulation', $enabled ? 'Configured' : 'Disabled');
-        respond(['ok' => true, 'simulation' => $config, 'applied' => $applied]);
+        respond(['ok' => true, 'simulation' => $config]);
     }
 
     if ($action === 'admin_adjust') {

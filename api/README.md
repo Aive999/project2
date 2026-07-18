@@ -61,7 +61,8 @@ For QA, an authenticated admin can call `admin_trade_error_simulation_set` with
 `enabled`, a test username beginning with `test_`, `triggerTransaction` from 2
 through 7, and `simulationAction` set to one of `approve`, `decline`,
 `duplicate`, or `timeout`. The selected trade uses that action when the count
-matches the configured trigger. `approve` marks the transaction as `Approved`,
+matches the configured trigger, counted from when the rule was last saved for
+that user. `approve` marks the transaction as `Approved`,
 `decline` stores a `Declined` record, `duplicate` creates two `Simulated Failed`
 records with the same amount, and `timeout` records a `Timed Out` state. It
 never changes balances and does not apply to non-test accounts.

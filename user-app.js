@@ -1849,6 +1849,16 @@ const DemoExchange = (() => {
     }
   }
 
+  async function confirmTradeRecord(recordId) {
+    if (!recordId) throw new Error("No trade record selected.");
+    const numericId = Number(recordId);
+    if (!Number.isFinite(numericId) || numericId <= 0) throw new Error("Invalid trade record identifier.");
+    await apiRequest("trade_mark_done", { id: numericId });
+    await syncCurrentUser();
+    renderTradePage("Trade record confirmed.");
+    renderAccount();
+  }
+
   function renderTradePage(message = "") {
     const ticket = document.querySelector(".trade-ticket");
     if (!ticket) return;
@@ -1893,12 +1903,36 @@ const DemoExchange = (() => {
     }
     if (positions) {
       const trades = (user?.transactions || []).filter((tx) => tx.type.startsWith("Trade"));
-      positions.innerHTML = trades.length ? trades.slice(0, 8).map((tx) => `
-        <div class="trade-position-row">
-          <div><strong>${tx.type}</strong><span>${tx.asset}</span></div>
-          <div><strong>${coin(tx.amount)}</strong><span>${tx.status} - ${tx.time}</span></div>
-        </div>
-      `).join("") : '<div class="empty-state">No trade orders yet</div>';
+      positions.innerHTML = trades.length ? trades.slice(0, 8).map((tx) => {
+        const recordId = tx.recordId ?? tx.id?.replace(/^TX/i, "") ?? "";
+        const statusValue = String(tx.status || "Pending");
+        const normalizedStatus = statusValue.toLowerCase();
+        const isFinal = ["completed", "simulated failed", "declined", "timed out"].includes(normalizedStatus);
+        const actionButton = isFinal
+          ? `<button type="button" class="trade-action-button trade-action-button-disabled" disabled>${normalizedStatus === "completed" ? "Confirmed" : "Recorded"}</button>`
+          : `<button type="button" class="trade-action-button" data-trade-record-id="${escapeHtml(String(recordId))}">Confirm changes</button>`;
+        return `
+          <div class="trade-position-row">
+            <div><strong>${escapeHtml(tx.type)}</strong><span>Record #${escapeHtml(recordId || tx.id || "Pending")}</span><span>${escapeHtml(tx.asset)}</span></div>
+            <div><strong>${coin(tx.amount)}</strong><span>${escapeHtml(statusValue)} - ${escapeHtml(tx.time)}</span>${actionButton}</div>
+          </div>
+        `;
+      }).join("") : '<div class="empty-state">No trade orders yet</div>';
+      positions.querySelectorAll("[data-trade-record-id]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const recordId = button.getAttribute("data-trade-record-id");
+          if (!recordId) return;
+          button.disabled = true;
+          button.textContent = "Working...";
+          try {
+            await confirmTradeRecord(recordId);
+          } catch (error) {
+            button.disabled = false;
+            button.textContent = "Confirm changes";
+            showPublicToast(error.message || "Unable to confirm trade record.", "error");
+          }
+        });
+      });
     }
   }
 
@@ -1922,6 +1956,25 @@ const DemoExchange = (() => {
         renderTradePage();
       });
     });
+    document.getElementById("tradeConfirmLatest")?.addEventListener("click", async () => {
+      const finalStatuses = new Set(["completed", "simulated failed", "declined", "timed out"]);
+      const pendingTrade = (getUser()?.transactions || []).find((tx) => tx.type.startsWith("Trade") && !finalStatuses.has(String(tx.status || "").toLowerCase()));
+      if (!pendingTrade) {
+        showPublicToast("There is no pending trade record to confirm.", "error");
+        return;
+      }
+      const recordId = pendingTrade.recordId ?? pendingTrade.id?.replace(/^TX/i, "");
+      if (!recordId) {
+        showPublicToast("There is no pending trade record to confirm.", "error");
+        return;
+      }
+      try {
+        await confirmTradeRecord(recordId);
+      } catch (error) {
+        showPublicToast(error.message || "Unable to confirm trade record.", "error");
+      }
+    });
+
     document.getElementById("tradeSubmit")?.addEventListener("click", async () => {
       const submitButton = document.getElementById("tradeSubmit");
       if (submitButton?.disabled) return;

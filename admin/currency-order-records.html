@@ -195,7 +195,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
                   <input type="text" id="simulation-username" placeholder="Optional username" style="min-width: 180px;" />
                 </label>
                 <label style="display:flex; flex-direction:column; gap:4px; font-size:0.95rem;">
-                  <span>Trigger Transaction Count</span>
+                  <span>Trigger Purchase After Saving</span>
                   <select id="simulation-trigger">
                     <option value="2">2</option>
                     <option value="3">3</option>
@@ -406,7 +406,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
           triggerInput.value = String(config.triggerTransaction || config.transactionNumber || 2);
           actionInput.value = config.simulationAction || config.result || "duplicate";
           statusElement.textContent = config.enabled
-            ? `Current outcome: ${config.simulationAction || config.result || "duplicate"} at transaction ${config.triggerTransaction || config.transactionNumber || 2}.`
+            ? `Current outcome: ${config.simulationAction || config.result || "duplicate"} on purchase ${config.triggerTransaction || config.transactionNumber || 2} after the rule was saved.`
             : "Outcome rule is disabled.";
         } catch (error) {
           statusElement.textContent = error.message;
@@ -432,7 +432,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
           if (!response.ok || data.ok === false) throw new Error(data.error || "Unable to save outcome settings.");
           const config = data.simulation || {};
           statusElement.textContent = config.enabled
-            ? `Saved ${config.simulationAction || "duplicate"} for transaction ${config.triggerTransaction || 2}.`
+            ? `Saved ${config.simulationAction || "duplicate"} for purchase ${config.triggerTransaction || 2} after this rule was saved.`
             : "Outcome rule disabled.";
         } catch (error) {
           statusElement.textContent = error.message;
