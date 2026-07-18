@@ -1941,7 +1941,12 @@ const DemoExchange = (() => {
         renderTradePage(`${side} order filled at ${formatRate(result?.price || pairMovement(base, quote).current)} ${quote}.`);
         renderAccount();
       } catch (error) {
+        // Simulated trade failures can still create transaction-history records
+        // (for example, the duplicate-record outcome). Refresh before rendering
+        // the error so those records are immediately visible to the customer.
+        await syncCurrentUser();
         renderTradePage(error.message);
+        renderAccount();
       } finally {
         if (submitButton) {
           submitButton.disabled = false;

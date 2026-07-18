@@ -220,12 +220,12 @@ function public_user(array $user): array
         $balances[$row['asset']] = (float)$row['amount'];
     }
 
-    $txStmt = db()->prepare('SELECT type, asset, amount, status, detail, created_at FROM transactions WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 50');
+    $txStmt = db()->prepare('SELECT id, type, asset, amount, status, detail, created_at FROM transactions WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 50');
     $txStmt->execute([(int)$user['id']]);
     $transactions = [];
     foreach ($txStmt as $row) {
         $transactions[] = [
-            'id' => 'TX' . strtotime($row['created_at']) . count($transactions),
+            'id' => 'TX' . $row['id'],
             'type' => $row['type'],
             'asset' => $row['asset'],
             'amount' => (float)$row['amount'],
@@ -1442,4 +1442,3 @@ try {
     }
     fail($e->getMessage(), 500);
 }
-
