@@ -199,6 +199,16 @@ function pair_market_price(string $base, string $quote): float
     return floating_currency_rate($base) / floating_currency_rate($quote, 3);
 }
 
+function exchange_received_amount(string $from, string $to, float $amount): float
+{
+    // GBP-to-USD account exchanges are intentionally neutral: no gain or loss
+    // is applied, so the customer receives the same numeric amount in USD.
+    if ($from === 'GBP' && $to === 'USD') return $amount;
+
+    $rates = rates_map();
+    return ($amount * ($rates[$from] ?? 1)) / ($rates[$to] ?? 1);
+}
+
 function user_by_username(string $username): ?array
 {
     $stmt = db()->prepare('SELECT * FROM users WHERE username = ? LIMIT 1');
@@ -751,9 +761,7 @@ try {
         if (!in_array($from, ASSETS, true) || !in_array($to, ASSETS, true)) fail('Unsupported asset.');
         if ($amount <= 0) fail('Enter a valid amount.');
         if (balance_amount((int)$user['id'], $from) < $amount) fail('Insufficient balance.');
-        $rates = rates_map();
-        $fromUsd = $amount * ($rates[$from] ?? 1);
-        $received = $fromUsd / ($rates[$to] ?? 1);
+        $received = exchange_received_amount($from, $to, $amount);
 
         db()->beginTransaction();
         change_balance((int)$user['id'], $from, -$amount);

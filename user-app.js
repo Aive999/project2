@@ -538,9 +538,11 @@ const DemoExchange = (() => {
   }
 
   function exchangeEstimate(fromAsset, toAsset, amount) {
-    const rates = priceMap();
     const value = Number(amount || 0);
     if (!fromAsset || !toAsset || fromAsset === toAsset || !value || value <= 0) return 0;
+    // Match the server's neutral GBP-to-USD account exchange rule.
+    if (fromAsset === "GBP" && toAsset === "USD") return value;
+    const rates = priceMap();
     return (value * (rates[fromAsset] || 1)) / (rates[toAsset] || 1);
   }
 
