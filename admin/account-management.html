@@ -178,7 +178,7 @@
                 <select id="account-select"></select>
               </label>
               <label>
-                <span>Recharge currency</span>
+                <span>Balance currency</span>
                 <select id="recharge-asset">
                   <option value="GBP">British Pound (GBP)</option>
                 </select>
@@ -189,7 +189,7 @@
               </label>
               <label>
                 <span>&nbsp;</span>
-                <button id="recharge-btn" class="primary-button" type="button">Recharge</button>
+                <button id="recharge-btn" class="primary-button" type="button">Add Balance</button>
               </label>
             </div>
             <div class="form-grid account-op-grid">
@@ -199,7 +199,7 @@
               </label>
               <label>
                 <span>&nbsp;</span>
-                <button id="reduce-btn" class="primary-button" type="button">Reduce</button>
+                <button id="reduce-btn" class="primary-button" type="button">Remove Balance</button>
               </label>
               <label>
                 <span>&nbsp;</span>
@@ -289,8 +289,22 @@
       }
     }
 
+    async function loadBalanceCurrencies() {
+      const selectedAsset = rechargeAssetSelect.value || 'GBP';
+      const data = await adminApi('admin_currencies');
+      const currencies = Array.isArray(data.currencies) ? data.currencies : [];
+      rechargeAssetSelect.innerHTML = currencies.length
+        ? currencies.map(currency => `<option value="${currency.code}">${currency.name || currency.code} (${currency.code})</option>`).join('')
+        : '<option value="">No currencies configured</option>';
+      if ([...rechargeAssetSelect.options].some(option => option.value === selectedAsset)) {
+        rechargeAssetSelect.value = selectedAsset;
+      }
+      balanceAmountLabel.textContent = `Amount (${rechargeAssetSelect.value || 'currency'})`;
+    }
+
     function bootServerUsers(attempt = 0) {
       if (window.AdminStore?.api || attempt >= 20) {
+        loadBalanceCurrencies().catch(error => showMessage(error.message || 'Unable to load currencies.', 'error'));
         syncServerUsers();
         return;
       }
@@ -371,7 +385,8 @@
       }
 
       try {
-        const asset = mode === 'recharge' ? rechargeAssetSelect.value : 'USD';
+        const asset = rechargeAssetSelect.value;
+        if (!asset) throw new Error('Choose a balance currency.');
         await adminApi(mode === 'recharge' ? 'admin_recharge' : 'admin_reduce', {
           accountId,
           amount,
@@ -380,8 +395,8 @@
         balanceAmountInput.value = '';
         await syncServerUsers();
         showMessage(mode === 'recharge'
-          ? `Recharged ${formatCurrency(amount)} ${asset} to ${account.name}.`
-          : `Reduced ${formatCurrency(amount)} USD from ${account.name}.`);
+          ? `Added ${formatCurrency(amount)} ${asset} to ${account.name}.`
+          : `Removed ${formatCurrency(amount)} ${asset} from ${account.name}.`);
       } catch (error) {
         showMessage(error.message, 'error');
       }

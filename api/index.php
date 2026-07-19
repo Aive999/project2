@@ -78,9 +78,8 @@ function write_log(string $username, string $actor, string $action, string $stat
 
 function ensure_balances(int $userId): void
 {
-    db()->prepare('DELETE FROM balances WHERE user_id = ? AND asset NOT IN ("USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "NZD", "SGD", "HKD", "CNY", "PHP")')->execute([$userId]);
     $stmt = db()->prepare('INSERT IGNORE INTO balances (user_id, asset, amount) VALUES (?, ?, 0)');
-    foreach (ASSETS as $asset) {
+    foreach (supported_assets() as $asset) {
         $stmt->execute([$userId, $asset]);
     }
 }
@@ -164,6 +163,16 @@ function currency_rows(): array
     return $rows;
 }
 
+function supported_assets(): array
+{
+    $assets = [];
+    foreach (currency_rows() as $row) {
+        $code = strtoupper(trim((string)($row['code'] ?? '')));
+        if (preg_match('/^[A-Z]{3}$/', $code)) $assets[] = $code;
+    }
+    return array_values(array_unique($assets));
+}
+
 function rates_map(): array
 {
     $rates = [];
@@ -223,9 +232,11 @@ function public_user(array $user): array
     $verification = latest_verification((int)$user['id']);
     $bankBinding = latest_bank_binding((int)$user['id']);
 
-    $balanceStmt = db()->prepare('SELECT asset, amount FROM balances WHERE user_id = ? AND asset IN ("USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "NZD", "SGD", "HKD", "CNY", "PHP") ORDER BY FIELD(asset, "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "NZD", "SGD", "HKD", "CNY", "PHP")');
-    $balanceStmt->execute([(int)$user['id']]);
-    $balances = array_fill_keys(ASSETS, 0);
+    $assets = supported_assets();
+    $placeholders = implode(',', array_fill(0, count($assets), '?'));
+    $balanceStmt = db()->prepare("SELECT asset, amount FROM balances WHERE user_id = ? AND asset IN ($placeholders) ORDER BY asset");
+    $balanceStmt->execute(array_merge([(int)$user['id']], $assets));
+    $balances = array_fill_keys($assets, 0);
     foreach ($balanceStmt as $row) {
         $balances[$row['asset']] = (float)$row['amount'];
     }
@@ -367,7 +378,7 @@ function require_admin(): void
 
 function change_balance(int $userId, string $asset, float $delta): void
 {
-    if (!in_array($asset, ASSETS, true)) fail('Unsupported asset.');
+    if (!in_array($asset, supported_assets(), true)) fail('Unsupported asset.');
     ensure_balances($userId);
     $stmt = db()->prepare('UPDATE balances SET amount = amount + ? WHERE user_id = ? AND asset = ?');
     $stmt->execute([$delta, $userId, $asset]);
@@ -478,7 +489,7 @@ function import_public_user(array $incoming): void
     ensure_balances($userId);
 
     foreach (($incoming['balances'] ?? []) as $asset => $amount) {
-        if (in_array($asset, ASSETS, true)) {
+        if (in_array($asset, supported_assets(), true)) {
             $stmt = db()->prepare('UPDATE balances SET amount = ? WHERE user_id = ? AND asset = ?');
             $stmt->execute([(float)$amount, $userId, $asset]);
         }
@@ -558,7 +569,7 @@ function admin_adjust_balance(string $accountId, string $asset, float $amount, s
     $username = preg_replace('/^USER-/', '', $accountId);
     if ($username === '') fail('User is required.');
     $asset = strtoupper($asset);
-    if (!in_array($asset, ASSETS, true)) fail('Unsupported asset.');
+    if (!in_array($asset, supported_assets(), true)) fail('Unsupported asset.');
     if ($amount == 0.0) fail('Enter a valid amount.');
     $user = user_by_username($username);
     if (!$user) fail('User not found.', 404);
@@ -698,7 +709,7 @@ try {
         $type = (string)($data['type'] ?? '');
         $asset = strtoupper((string)($data['asset'] ?? 'USD'));
         $amount = (float)($data['amount'] ?? 0);
-        if (!in_array($asset, ASSETS, true)) fail('Unsupported asset.');
+        if (!in_array($asset, supported_assets(), true)) fail('Unsupported asset.');
         if ($amount <= 0) fail('Enter a valid amount.');
 
         if ($type === 'Deposit') {
@@ -758,7 +769,7 @@ try {
         $from = (string)($data['fromAsset'] ?? 'USD');
         $to = (string)($data['toAsset'] ?? 'EUR');
         $amount = (float)($data['amount'] ?? 0);
-        if (!in_array($from, ASSETS, true) || !in_array($to, ASSETS, true)) fail('Unsupported asset.');
+        if (!in_array($from, supported_assets(), true) || !in_array($to, supported_assets(), true)) fail('Unsupported asset.');
         if ($amount <= 0) fail('Enter a valid amount.');
         if (balance_amount((int)$user['id'], $from) < $amount) fail('Insufficient balance.');
         $received = exchange_received_amount($from, $to, $amount);
@@ -790,7 +801,7 @@ try {
         $quote = strtoupper((string)($data['quoteAsset'] ?? 'USD'));
         $side = (string)($data['side'] ?? 'Buy');
         $amount = (float)($data['amount'] ?? 0);
-        if (!in_array($base, ASSETS, true) || !in_array($quote, ASSETS, true) || $base === $quote) fail('Unsupported trading pair.');
+        if (!in_array($base, supported_assets(), true) || !in_array($quote, supported_assets(), true) || $base === $quote) fail('Unsupported trading pair.');
         if (!in_array($side, ['Buy', 'Sell'], true)) fail('Invalid order side.');
         if ($amount <= 0) fail('Enter a valid order amount.');
 
@@ -1378,15 +1389,15 @@ try {
 
     if ($action === 'admin_adjust') {
         $amount = (float)($data['amount'] ?? 0);
+        $asset = strtoupper((string)($data['asset'] ?? 'USD'));
         $detail = (string)($data['detail'] ?? 'Admin adjustment');
-        $user = admin_adjust_balance((string)($data['accountId'] ?? ''), 'USD', $amount, $detail);
+        $user = admin_adjust_balance((string)($data['accountId'] ?? ''), $asset, $amount, $detail);
         respond(['ok' => true, 'user' => $user]);
     }
 
     if ($action === 'admin_recharge') {
         $amount = (float)($data['amount'] ?? 0);
         $asset = strtoupper((string)($data['asset'] ?? 'USD'));
-        if ($asset !== 'GBP') fail('Recharge currency must be GBP.');
         if ($amount <= 0) fail('Enter a valid recharge amount.');
         $user = admin_adjust_balance(
             (string)($data['accountId'] ?? ''),
@@ -1399,12 +1410,13 @@ try {
 
     if ($action === 'admin_reduce') {
         $amount = (float)($data['amount'] ?? 0);
+        $asset = strtoupper((string)($data['asset'] ?? 'USD'));
         if ($amount <= 0) fail('Enter a valid reduction amount.');
         $user = admin_adjust_balance(
             (string)($data['accountId'] ?? ''),
-            'USD',
+            $asset,
             -$amount,
-            'Admin reduced ' . $amount . ' USD'
+            'Admin reduced ' . $amount . ' ' . $asset
         );
         respond(['ok' => true, 'user' => $user]);
     }

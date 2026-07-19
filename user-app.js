@@ -45,14 +45,13 @@ const DemoExchange = (() => {
     { code: "CNY", label: "Chinese Yuan Renminbi", flag: "CN" },
     { code: "PHP", label: "Philippine Peso", flag: "PH" }
   ];
-  const supportedAssets = new Set(defaultCurrencies.map((currency) => currency.code));
-
   function emptyBalances() {
-    return Object.fromEntries(defaultCurrencies.map((currency) => [currency.code, 0]));
+    return Object.fromEntries(currencySettings().map((currency) => [currency.code, 0]));
   }
 
   function normalizeBalances(balances = {}) {
     const normalized = emptyBalances();
+    const supportedAssets = new Set(currencySettings().map((currency) => currency.code));
     Object.entries(balances || {}).forEach(([asset, amount]) => {
       const code = String(asset || "").toUpperCase();
       if (supportedAssets.has(code)) {
