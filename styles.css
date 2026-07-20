@@ -1046,8 +1046,35 @@ body {
   outline: none;
 }
 
-.identity-form input[type="file"] {
-  padding: 10px 12px;
+.identity-form .identity-upload {
+  position: relative;
+}
+
+.identity-form .identity-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.identity-file-picker {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.82);
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.identity-file-name {
+  color: #94a3b8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .identity-form button {

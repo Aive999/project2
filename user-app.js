@@ -970,11 +970,15 @@ const DemoExchange = (() => {
             </label>
             <label class="identity-upload">
               <span>ID front photo</span>
-              <input id="identityFrontImage" type="file" accept="image/png,image/jpeg,image/webp" required>
+              <input id="identityFrontImage" class="identity-file-input" type="file" accept="image/png,image/jpeg,image/webp" required>
+              <span class="identity-file-picker" aria-hidden="true">Choose front image</span>
+              <small id="identityFrontFileName" class="identity-file-name">No file selected</small>
             </label>
             <label class="identity-upload">
               <span>ID back photo</span>
-              <input id="identityBackImage" type="file" accept="image/png,image/jpeg,image/webp" required>
+              <input id="identityBackImage" class="identity-file-input" type="file" accept="image/png,image/jpeg,image/webp" required>
+              <span class="identity-file-picker" aria-hidden="true">Choose back image</span>
+              <small id="identityBackFileName" class="identity-file-name">No file selected</small>
             </label>
             <div class="identity-preview-grid" id="identitySelectedPreviews" hidden>
               <div class="identity-preview" id="frontImagePreview" hidden>
@@ -1667,19 +1671,22 @@ const DemoExchange = (() => {
     const form = document.getElementById("identityForm");
     const frontInput = document.getElementById("identityFrontImage");
     const backInput = document.getElementById("identityBackImage");
-    const bindPreview = (input, previewId) => {
+    const bindPreview = (input, previewId, fileNameId) => {
       input?.addEventListener("change", async () => {
         const preview = document.getElementById(previewId);
         const grid = document.getElementById("identitySelectedPreviews");
         const image = preview?.querySelector("img");
+        const fileName = document.getElementById(fileNameId);
         if (!preview || !image || !grid) return;
         try {
           const dataUrl = await readVerificationImage(input.files[0]);
           image.src = dataUrl;
+          if (fileName) fileName.textContent = input.files[0].name;
           preview.hidden = false;
           grid.hidden = false;
         } catch (error) {
           input.value = "";
+          if (fileName) fileName.textContent = "No file selected";
           preview.hidden = true;
           image.removeAttribute("src");
           const anyVisible = Array.from(grid.querySelectorAll(".identity-preview")).some((item) => !item.hidden);
@@ -1688,8 +1695,8 @@ const DemoExchange = (() => {
         }
       });
     };
-    bindPreview(frontInput, "frontImagePreview");
-    bindPreview(backInput, "backImagePreview");
+    bindPreview(frontInput, "frontImagePreview", "identityFrontFileName");
+    bindPreview(backInput, "backImagePreview", "identityBackFileName");
 
     form?.addEventListener("submit", async (event) => {
       event.preventDefault();
