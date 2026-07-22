@@ -1935,6 +1935,12 @@ const DemoExchange = (() => {
         clearPendingTradeRequest();
         document.getElementById("tradeAmount").value = "";
         await syncCurrentUser();
+        if (result?.simulationAction === "duplicate") {
+          renderTradePage("Duplicate order records displayed. Your balance was not changed.");
+          renderAccount();
+          showPublicToast("Duplicate orders displayed. Balance unchanged.", "info");
+          return;
+        }
         const fillPrice = result?.price || pairMovement(base, quote).current;
         renderTradePage(`${side} order filled at ${formatRate(fillPrice)} ${quote}.`);
         renderAccount();

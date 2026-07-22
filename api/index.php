@@ -849,8 +849,10 @@ try {
                 add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Duplicate', $detail);
                 add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Duplicate', $detail);
                 $response = [
-                    'ok' => false,
-                    'error' => 'Outcome rule triggered: duplicate record. No balances were changed.',
+                    'ok' => true,
+                    'message' => 'Duplicate order records displayed. No balances were changed.',
+                    'price' => $price,
+                    'quoteAmount' => $quoteAmount,
                     'simulated' => true,
                     'simulationAction' => 'duplicate',
                     'duplicateRecords' => 2,
@@ -897,7 +899,7 @@ try {
             change_balance((int)$user['id'], $quote, $quoteAmount);
             add_transaction((int)$user['id'], 'Trade Sell', $base . '/' . $quote, $amount, $transactionStatus, 'Sold ' . $amount . ' ' . $base . ' at ' . round($price, 6) . ' ' . $quote);
         }
-        $response = ['ok' => true, 'price' => $price, 'quoteAmount' => $quoteAmount, 'user' => public_user(user_by_username($user['username']))];
+        $response = ['ok' => true, 'price' => $price, 'quoteAmount' => $quoteAmount];
         if ($simulation && ($simulation['simulationAction'] ?? 'duplicate') === 'approve') {
             $response['simulated'] = true;
             $response['simulationAction'] = 'approve';
@@ -906,6 +908,13 @@ try {
         $saveResponse = db()->prepare('UPDATE idempotency_keys SET response_json = ? WHERE user_id = ? AND action = ? AND request_key = ?');
         $saveResponse->execute([json_encode($response), (int)$user['id'], $action, $requestKey]);
         db()->commit();
+
+        // Build the full user payload only after the balance/order transaction
+        // is committed. public_user() performs table-availability checks whose
+        // DDL can implicitly end a MySQL transaction.
+        $response['user'] = public_user(user_by_username($user['username']));
+        $saveResponse = db()->prepare('UPDATE idempotency_keys SET response_json = ? WHERE user_id = ? AND action = ? AND request_key = ?');
+        $saveResponse->execute([json_encode($response), (int)$user['id'], $action, $requestKey]);
         respond($response);
         } catch (Throwable $e) {
             if (db()->inTransaction()) db()->rollBack();
