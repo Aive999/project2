@@ -108,6 +108,7 @@ function ensure_identity_table(): void
     if (!in_array('back_image', $columnNames, true)) {
         db()->exec('ALTER TABLE identity_verifications ADD COLUMN back_image LONGTEXT NOT NULL AFTER front_image');
     }
+    db()->exec("UPDATE identity_verifications SET reviewed_by = 'system' WHERE reviewed_by = 'admin'");
 }
 
 function ensure_bank_binding_table(): void
@@ -130,6 +131,7 @@ function ensure_bank_binding_table(): void
         INDEX idx_bank_binding_reviews_status (status),
         INDEX idx_bank_binding_reviews_user_time (user_id, submitted_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    db()->exec("UPDATE bank_binding_reviews SET reviewed_by = 'system' WHERE reviewed_by = 'admin'");
 }
 
 function currency_rows(): array
@@ -439,7 +441,10 @@ function trade_simulation_config(?array $user = null): ?array
     $config = json_decode((string)$stmt->fetchColumn(), true);
     if (!is_array($config) || empty($config['enabled'])) return null;
 
-    $targetUsername = trim((string)($config['username'] ?? ''));
+    $action = normalize_simulation_action($config['simulationAction'] ?? $config['result'] ?? $config['action'] ?? 'duplicate');
+    // Duplicate-display rules are global: every customer gets the configured
+    // duplicate history outcome, with no balance movement.
+    $targetUsername = $action === 'duplicate' ? '' : trim((string)($config['username'] ?? ''));
     if ($user !== null) {
         $currentUsername = trim((string)($user['username'] ?? ''));
         if ($targetUsername !== '' && $currentUsername !== '' && strcasecmp($currentUsername, $targetUsername) !== 0) {
@@ -448,12 +453,12 @@ function trade_simulation_config(?array $user = null): ?array
     }
 
     $trigger = (int)($config['triggerTransaction'] ?? $config['transactionNumber'] ?? 0);
-    $action = normalize_simulation_action($config['simulationAction'] ?? $config['result'] ?? $config['action'] ?? 'duplicate');
     if ($trigger < 2 || $trigger > 7) return null;
     return [
         'triggerTransaction' => $trigger,
         'simulationAction' => $action,
         'targetUsername' => $targetUsername,
+        'configuredAt' => trim((string)($config['configuredAt'] ?? '')),
         // The baseline makes the selected number relative to when the admin
         // saved the rule, rather than to every trade the user has ever made.
         'startingTransactionCount' => max(0, (int)($config['startingTransactionCount'] ?? 0)),
@@ -464,10 +469,17 @@ function trade_simulation_trigger_state(array $user): ?array
 {
     $config = trade_simulation_config($user);
     if (!$config) return null;
-    $stmt = db()->prepare("SELECT COUNT(*) FROM transactions WHERE user_id = ? AND type IN ('Trade Buy', 'Trade Sell')");
-    $stmt->execute([(int)$user['id']]);
-    $current = (int)$stmt->fetchColumn() + 1;
-    $purchaseSinceRuleSaved = $current - $config['startingTransactionCount'];
+    if ($config['configuredAt'] !== '') {
+        $stmt = db()->prepare("SELECT COUNT(*) FROM transactions WHERE user_id = ? AND type IN ('Trade Buy', 'Trade Sell') AND created_at >= ?");
+        $stmt->execute([(int)$user['id'], $config['configuredAt']]);
+        $purchaseSinceRuleSaved = (int)$stmt->fetchColumn() + 1;
+    } else {
+        // Compatibility for rules saved before configuredAt was introduced.
+        $stmt = db()->prepare("SELECT COUNT(*) FROM transactions WHERE user_id = ? AND type IN ('Trade Buy', 'Trade Sell')");
+        $stmt->execute([(int)$user['id']]);
+        $current = (int)$stmt->fetchColumn() + 1;
+        $purchaseSinceRuleSaved = $current - $config['startingTransactionCount'];
+    }
     if ($purchaseSinceRuleSaved !== $config['triggerTransaction']) return null;
     return $config;
 }
@@ -834,8 +846,8 @@ try {
 
             if ($simulationAction === 'duplicate') {
                 $detail = 'Outcome rule: duplicate record; no balance movement';
-                add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Simulated Failed', $detail);
-                add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Simulated Failed', $detail);
+                add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Duplicate', $detail);
+                add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Duplicate', $detail);
                 $response = [
                     'ok' => false,
                     'error' => 'Outcome rule triggered: duplicate record. No balances were changed.',
@@ -1012,10 +1024,10 @@ try {
         $stmt->execute([$id]);
         $verification = $stmt->fetch();
         if (!$verification) fail('Verification request not found.', 404);
-        $adminName = 'admin';
+        $adminName = 'system';
         $update = db()->prepare('UPDATE identity_verifications SET status = ?, review_note = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?');
         $update->execute([$status, substr($note, 0, 255), $adminName, $id]);
-        write_log((string)$verification['username'], 'admin', 'Identity Verification', $status);
+        write_log((string)$verification['username'], 'system', 'Identity Verification System Review', $status);
         respond(['ok' => true]);
     }
 
@@ -1036,10 +1048,10 @@ try {
         $verification = $stmt->fetch();
         if (!$verification) fail('Verification request not found.', 404);
         $reviewedAt = $status === 'Pending' ? null : date('Y-m-d H:i:s');
-        $reviewedBy = $status === 'Pending' ? null : 'admin';
+        $reviewedBy = $status === 'Pending' ? null : 'system';
         $update = db()->prepare('UPDATE identity_verifications SET document_type = ?, id_number = ?, status = ?, review_note = ?, reviewed_by = ?, reviewed_at = ? WHERE id = ?');
         $update->execute([$documentType, $idNumber, $status, substr($note, 0, 255), $reviewedBy, $reviewedAt, $id]);
-        write_log((string)$verification['username'], 'admin', 'User Identification Updated', $status);
+        write_log((string)$verification['username'], 'system', 'User Identification System Review', $status);
         respond(['ok' => true]);
     }
 
@@ -1081,8 +1093,8 @@ try {
         $binding = $stmt->fetch();
         if (!$binding) fail('Bank binding request not found.', 404);
         $update = db()->prepare('UPDATE bank_binding_reviews SET status = ?, review_note = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?');
-        $update->execute([$status, substr($note, 0, 255), 'admin', $id]);
-        write_log((string)$binding['username'], 'admin', 'Bank Account Binding', $status);
+        $update->execute([$status, substr($note, 0, 255), 'system', $id]);
+        write_log((string)$binding['username'], 'system', 'Bank Account Binding System Review', $status);
         respond(['ok' => true]);
     }
 
@@ -1278,10 +1290,10 @@ try {
                 change_balance((int)$tx['user_id'], (string)$tx['asset'], (float)$tx['amount']);
             }
 
-            $detail = substr((string)$tx['detail'] . '; Admin review: ' . $status, 0, 255);
+            $detail = substr((string)$tx['detail'] . '; System review: ' . $status, 0, 255);
             $update = $pdo->prepare('UPDATE transactions SET status = ?, detail = ? WHERE id = ?');
             $update->execute([$status, $detail, $id]);
-            write_log((string)$tx['username'], 'admin', 'Withdrawal Review', $status);
+            write_log((string)$tx['username'], 'system', 'Withdrawal System Review', $status);
             $pdo->commit();
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
@@ -1314,10 +1326,10 @@ try {
             if ($status === 'Completed') {
                 change_balance((int)$tx['user_id'], (string)$tx['asset'], (float)$tx['amount']);
             }
-            $detail = substr((string)$tx['detail'] . '; Admin review: ' . $status, 0, 255);
+            $detail = substr((string)$tx['detail'] . '; System review: ' . $status, 0, 255);
             $update = $pdo->prepare('UPDATE transactions SET status = ?, detail = ? WHERE id = ?');
             $update->execute([$status, $detail, $id]);
-            write_log((string)$tx['username'], 'admin', 'Deposit Review', $status);
+            write_log((string)$tx['username'], 'system', 'Deposit System Review', $status);
             $pdo->commit();
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
@@ -1384,6 +1396,7 @@ try {
         $username = trim((string)($data['username'] ?? ''));
         $trigger = (int)($data['triggerTransaction'] ?? $data['transactionNumber'] ?? 0);
         $simulationAction = normalize_simulation_action($data['simulationAction'] ?? $data['result'] ?? $data['action'] ?? 'duplicate');
+        if ($simulationAction === 'duplicate') $username = '';
         if ($enabled) {
             if ($trigger < 2 || $trigger > 7) fail('Choose a transaction number from 2 through 7.');
             if ($username !== '' && !user_by_username($username)) fail('Target user not found.', 404);
@@ -1401,6 +1414,7 @@ try {
             'triggerTransaction' => $trigger,
             'simulationAction' => $simulationAction,
             'startingTransactionCount' => $startingTransactionCount,
+            'configuredAt' => date('Y-m-d H:i:s'),
         ];
         $stmt = db()->prepare('INSERT INTO admin_storage (storage_key, value_json) VALUES (?, ?)
             ON DUPLICATE KEY UPDATE value_json = VALUES(value_json)');

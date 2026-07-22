@@ -1006,7 +1006,7 @@ const DemoExchange = (() => {
             <span>Address</span>
             <input id="bankBindingAddress" type="text" placeholder="company_personal_address" autocomplete="street-address" value="${escapeHtml(bankBinding?.address || "")}" required>
           </label>
-          <button type="submit">${bankBinding ? "Submit bank review" : "Bind bank account"}</button>
+          <button type="submit">${bankBinding ? "Submit system review" : "Bind bank account"}</button>
         </form>
         ${bankBinding?.status === "Rejected" ? `<div class="identity-review-note">${bankBinding.reviewNote || "Please check your bank details and submit again."}</div>` : ""}
       </section>
@@ -1079,8 +1079,8 @@ const DemoExchange = (() => {
           address: document.getElementById("bankBindingAddress").value.trim()
         });
         accountPanelView = "bankBindingSection";
-        showPublicToast("Bank account binding submitted for admin review.", "success");
-        drawAccountPanel("Bank account binding submitted for admin review.");
+        showPublicToast("Bank account binding submitted for system review.", "success");
+        drawAccountPanel("Bank account binding submitted for system review.");
       } catch (error) {
         showPublicToast(error.message, "error");
         drawAccountPanel(error.message);
@@ -1700,7 +1700,7 @@ const DemoExchange = (() => {
         );
         accountPanelView = "identitySection";
         refresh();
-        showPublicToast("Verification submitted successfully for admin review.", "success");
+        showPublicToast("Verification submitted successfully for system review.", "success");
       } catch (error) {
         showPublicToast(error.message, "error");
         drawAccountPanel(error.message);

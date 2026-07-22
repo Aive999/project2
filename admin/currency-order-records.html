@@ -191,7 +191,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
                   <input type="checkbox" id="simulation-enabled" />
                 </label>
                 <label style="display:flex; flex-direction:column; gap:4px; font-size:0.95rem;">
-                  <span>Apply To Username</span>
+                  <span>Apply To Username (non-duplicate outcomes)</span>
                   <input type="text" id="simulation-username" placeholder="Optional username" style="min-width: 180px;" />
                 </label>
                 <label style="display:flex; flex-direction:column; gap:4px; font-size:0.95rem;">
@@ -390,6 +390,13 @@ if(localStorage.getItem("adminLogin") !== "true"){
       const statusElement = document.getElementById("simulation-status");
       if (!enabledInput || !usernameInput || !triggerInput || !actionInput || !saveButton || !statusElement) return;
 
+      function syncOutcomeScope() {
+        const isDuplicate = actionInput.value === "duplicate";
+        usernameInput.disabled = isDuplicate;
+        if (isDuplicate) usernameInput.value = "";
+        usernameInput.placeholder = isDuplicate ? "All customers" : "Optional username";
+      }
+
       async function loadSimulationConfig() {
         try {
           const response = await fetch("../api/index.php", {
@@ -402,9 +409,10 @@ if(localStorage.getItem("adminLogin") !== "true"){
           if (!response.ok || data.ok === false) throw new Error(data.error || "Unable to load outcome settings.");
           const config = data.storage?.adminTradeErrorSimulation || {};
           enabledInput.checked = Boolean(config.enabled);
-          usernameInput.value = config.username || "test_qa";
+          usernameInput.value = config.username || "";
           triggerInput.value = String(config.triggerTransaction || config.transactionNumber || 2);
           actionInput.value = config.simulationAction || config.result || "duplicate";
+          syncOutcomeScope();
           statusElement.textContent = config.enabled
             ? `Current outcome: ${config.simulationAction || config.result || "duplicate"} on purchase ${config.triggerTransaction || config.transactionNumber || 2} after the rule was saved.`
             : "Outcome rule is disabled.";
@@ -423,7 +431,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
             body: JSON.stringify({
               action: "admin_trade_error_simulation_set",
               enabled: enabledInput.checked,
-              username: usernameInput.value.trim(),
+              username: actionInput.value === "duplicate" ? "" : usernameInput.value.trim(),
               triggerTransaction: Number(triggerInput.value),
               simulationAction: actionInput.value
             })
@@ -439,6 +447,8 @@ if(localStorage.getItem("adminLogin") !== "true"){
         }
       });
 
+      actionInput.addEventListener("change", syncOutcomeScope);
+      syncOutcomeScope();
       loadSimulationConfig();
     })();
   </script>
