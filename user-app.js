@@ -80,11 +80,16 @@ const DemoExchange = (() => {
     try {
       const stored = JSON.parse(localStorage.getItem(CURRENCY_KEY) || "[]");
       if (Array.isArray(stored) && stored.length) {
-        return stored.map((currency) => ({
-          ...currency,
-          rate: currentRateMap[currency.code] ?? currency.rate,
-          name: currency.code === "CNY" ? "Chinese Yuan Renminbi" : currency.name
-        }));
+        const storedByCode = new Map(stored.map((currency) => [currency.code, currency]));
+        return defaultCurrencies.map((defaultCurrency) => {
+          const currency = storedByCode.get(defaultCurrency.code) || defaultCurrency;
+          return {
+            ...defaultCurrency,
+            ...currency,
+            rate: currentRateMap[defaultCurrency.code] ?? currency.rate,
+            name: defaultCurrency.code === "CNY" ? "Chinese Yuan Renminbi" : currency.name
+          };
+        });
       }
     } catch {}
     return defaultCurrencies;
@@ -1890,8 +1895,12 @@ const DemoExchange = (() => {
     const amountInput = document.getElementById("tradeAmount");
     const side = document.querySelector(".trade-side.active")?.dataset.side || "Buy";
     const pairs = tradingPairs();
-    if (pairSelect && !pairSelect.options.length) {
+    if (pairSelect) {
+      const selectedPairValue = pairSelect.value;
       pairSelect.innerHTML = pairs.map(([base, quote]) => `<option value="${base}/${quote}">${base}/${quote}</option>`).join("");
+      if (pairs.some(([base, quote]) => `${base}/${quote}` === selectedPairValue)) {
+        pairSelect.value = selectedPairValue;
+      }
     }
     const [base, quote] = (pairSelect?.value || pairs[0]?.join("/") || "EUR/USD").split("/");
     const amount = Number(amountInput?.value || 0);
