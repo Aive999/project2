@@ -234,7 +234,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
       source: 'Local browser',
       os: 'Stored account',
       browser: 'User account',
-      type: user.phone ? `Phone ${user.phone}` : 'Currency user'
+      type: user.email ? `Email ${user.email}` : 'Currency user'
     }));
   }
 

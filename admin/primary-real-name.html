@@ -195,7 +195,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
                   <tr>
                     <th>Request ID</th>
                     <th>Customer</th>
-                    <th>Phone</th>
+                    <th>Email</th>
                     <th>File Type</th>
                     <th>ID Number</th>
                     <th>Front Photo</th>
@@ -320,7 +320,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
         <tr>
           <td>${row.id}</td>
           <td>${row.username}</td>
-          <td>${row.phone || '-'}</td>
+          <td>${row.email || '-'}</td>
           <td>${row.documentType}</td>
           <td>${row.maskedIdNumber || row.idNumber}</td>
           <td>

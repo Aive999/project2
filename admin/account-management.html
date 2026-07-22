@@ -218,7 +218,7 @@
                   <tr>
                     <th>Account ID</th>
                     <th>Customer</th>
-                    <th>Phone</th>
+                    <th>Email</th>
                     <th>Total Assets (USD)</th>
                     <th>USD Balance</th>
                     <th>Other Currency Balances</th>
@@ -275,7 +275,7 @@
           balance: user.balance,
           balances: user.balances || {},
           status: user.status,
-          phone: user.phone || '',
+          email: user.email || '',
           created: user.created
         }));
         renderAccounts();
@@ -338,7 +338,7 @@
           <tr>
             <td>${account.id}</td>
             <td>${account.name}</td>
-            <td>${account.phone || '-'}</td>
+            <td>${account.email || '-'}</td>
             <td>${formatCurrency(account.balance)}</td>
             <td>${formatCurrency(account.balances?.USD || 0)}</td>
             <td>${formatOtherBalances(account.balances)}</td>

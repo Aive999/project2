@@ -215,7 +215,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
                       <th style="width:32px"><input id="select-all" type="checkbox" /></th>
                       <th>Username</th>
                       <th>Name</th>
-                      <th>Phone</th>
+                      <th>Email</th>
                       <th>Account Status</th>
                       <th>Organization</th>
                       <th>Post</th>
@@ -253,7 +253,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
         id: user.id,
         username: user.username || '',
         name: user.name || user.username || '',
-        phone: user.phone || '',
+        email: user.email || '',
         status,
         org: user.org || 'Registered Users',
         post: user.post || 'Currency User',
@@ -271,7 +271,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
         id: user.id,
         username: user.username,
         name: user.username,
-        phone: user.phone || '',
+        email: user.email || '',
         status: user.status || 'Active',
         org: 'Registered Users',
         post: 'Currency User',
@@ -310,7 +310,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
           `<td><input class="row-check" type="checkbox" data-id="${u.id}" /></td>`+
           `<td>${u.username}</td>`+
           `<td>${u.name}</td>`+
-          `<td>${u.phone || ''}</td>`+
+          `<td>${u.email || ''}</td>`+
           `<td><span class="status-badge ${u.status === 'Frozen' ? 'status-frozen' : 'status-active'}">${u.status}</span></td>`+
           `<td>${u.org||''}</td>`+
           `<td>${u.post||''}</td>`+
@@ -342,7 +342,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
         <div class="form-grid user-detail-grid">
           <label><span>Username</span><input id="detail-username" value="${u.username}" /></label>
           <label><span>Name</span><input id="detail-name" value="${u.name}" /></label>
-          <label><span>Phone</span><input id="detail-phone" value="${u.phone || ''}" /></label>
+          <label><span>Email</span><input id="detail-email" value="${u.email || ''}" /></label>
           <label><span>Account Status</span><select id="detail-status"><option ${u.status==='Active'?'selected':''}>Active</option><option ${u.status==='Frozen'?'selected':''}>Frozen</option></select></label>
           <label><span>Organization</span><input id="detail-org" value="${u.org||''}" /></label>
           <label><span>Post</span><input id="detail-post" value="${u.post||''}" /></label>
@@ -359,7 +359,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
             await window.AdminStore.api('admin_user_update', {
               accountId: u.id,
               username: document.getElementById('detail-username').value.trim(),
-              phone: document.getElementById('detail-phone').value.trim(),
+              email: document.getElementById('detail-email').value.trim(),
               status: nextStatus
             });
             await loadServerUsers();
@@ -372,7 +372,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
         }
         u.username = document.getElementById('detail-username').value.trim();
         u.name = document.getElementById('detail-name').value.trim();
-        u.phone = document.getElementById('detail-phone').value.trim();
+        u.email = document.getElementById('detail-email').value.trim();
         u.status = document.getElementById('detail-status').value;
         u.org = document.getElementById('detail-org').value.trim();
         u.post = document.getElementById('detail-post').value.trim();
@@ -407,7 +407,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
       const username = prompt('Username') || 'user'+Math.floor(Math.random()*9000);
       const name = prompt('Name') || username;
       const now = new Date().toLocaleString();
-      const u = { id:'U'+Math.floor(1000+Math.random()*9000), username, name, phone:'', status:'Active', org:'Registered Users', post:'Currency User', role:'User', source:'Local', created: now };
+      const u = { id:'U'+Math.floor(1000+Math.random()*9000), username, name, email:'', status:'Active', org:'Registered Users', post:'Currency User', role:'User', source:'Local', created: now };
       users.push(u); saveUsers(); renderTable(getFilters());
     }
 

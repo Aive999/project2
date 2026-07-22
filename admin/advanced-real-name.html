@@ -195,7 +195,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
                   <tr>
                     <th>Request ID</th>
                     <th>Customer</th>
-                    <th>Phone</th>
+                    <th>Email</th>
                     <th>Bank</th>
                     <th>Name</th>
                     <th>Collection Account</th>
@@ -328,7 +328,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
         <tr>
           <td>${escapeCell(row.id)}</td>
           <td>${escapeCell(row.username)}</td>
-          <td>${escapeCell(row.phone || '-')}</td>
+          <td>${escapeCell(row.email || '-')}</td>
           <td>${escapeCell(row.bank)}</td>
           <td>${escapeCell(row.name)}</td>
           <td>${escapeCell(row.collectionAccount)}</td>

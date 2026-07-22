@@ -217,7 +217,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
           </div>
         </section>
       </main>
-  <script>
+  <script type="text/plain" aria-hidden="true">
     const OU_KEY = 'adminOnlineUsers';
     let online = JSON.parse(localStorage.getItem(OU_KEY) || '[]');
 
@@ -271,6 +271,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
 
     renderOnline();
   </script>
+  <script src="online-users.js"></script>
     </div>
   </div>
 <div id="google_translate_element" style="display:none;"></div>

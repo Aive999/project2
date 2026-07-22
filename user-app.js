@@ -341,14 +341,12 @@ const DemoExchange = (() => {
     }, 0);
   }
 
-  async function createUser(username, phone, password) {
-    if (!/^\d+$/.test(phone)) throw new Error("Phone number must contain numbers only.");
-    if (password.length < 8 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
-      throw new Error("Password must be at least 8 characters and include letters and numbers.");
-    }
+  async function createUser(username, email, password) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email address.");
+    if (!/^\d{8}$/.test(password)) throw new Error("Password must contain exactly 8 digits.");
 
     try {
-      const data = await apiRequest("register", { username, phone, password });
+      const data = await apiRequest("register", { username, email, password });
       cacheServerUser(data.user);
       return;
     } catch (error) {
@@ -518,8 +516,6 @@ const DemoExchange = (() => {
   function exchangeEstimate(fromAsset, toAsset, amount) {
     const value = Number(amount || 0);
     if (!fromAsset || !toAsset || fromAsset === toAsset || !value || value <= 0) return 0;
-    // Match the server's neutral GBP-to-USD account exchange rule.
-    if (fromAsset === "GBP" && toAsset === "USD") return value;
     const rates = priceMap();
     return (value * (rates[fromAsset] || 1)) / (rates[toAsset] || 1);
   }
@@ -537,7 +533,37 @@ const DemoExchange = (() => {
       ["NZD", "USD"],
       ["CAD", "JPY"],
       ["USD", "PHP"],
-      ["CNY", "USD"]
+      ["CNY", "USD"],
+      ["EUR", "GBP"],
+      ["EUR", "CHF"],
+      ["EUR", "AUD"],
+      ["EUR", "CAD"],
+      ["EUR", "NZD"],
+      ["GBP", "JPY"],
+      ["GBP", "CHF"],
+      ["GBP", "AUD"],
+      ["GBP", "CAD"],
+      ["GBP", "NZD"],
+      ["AUD", "JPY"],
+      ["AUD", "CAD"],
+      ["AUD", "NZD"],
+      ["AUD", "CHF"],
+      ["NZD", "JPY"],
+      ["NZD", "CAD"],
+      ["CAD", "CHF"],
+      ["CHF", "JPY"],
+      ["USD", "SGD"],
+      ["USD", "HKD"],
+      ["USD", "CNY"],
+      ["SGD", "JPY"],
+      ["SGD", "HKD"],
+      ["EUR", "SGD"],
+      ["GBP", "SGD"],
+      ["AUD", "SGD"],
+      ["CNY", "JPY"],
+      ["EUR", "CNY"],
+      ["GBP", "CNY"],
+      ["PHP", "JPY"]
     ];
     const visible = new Set(visibleCurrencies().map((currency) => currency.code));
     return preferred.filter(([base, quote]) => visible.has(base) && visible.has(quote));
@@ -824,7 +850,7 @@ const DemoExchange = (() => {
         <div class="demo-panel-top">
           <div>
             <strong>${isRegister ? "Create account" : "Login"}</strong>
-            <span>${isRegister ? "Register with a phone number." : "Access your currency account."}</span>
+            <span>${isRegister ? "Register with an email address." : "Access your currency account."}</span>
           </div>
           <button type="button" class="demo-close" aria-label="Close">x</button>
         </div>
@@ -839,8 +865,8 @@ const DemoExchange = (() => {
         ${isRegister ? `
           <form class="auth-form" id="registerForm">
             <input id="registerUsername" type="text" placeholder="Username" required>
-            <input id="registerPhone" type="tel" inputmode="numeric" pattern="[0-9]*" placeholder="Phone number" required>
-            <input id="registerPassword" type="password" placeholder="Password" required>
+            <input id="registerEmail" type="email" autocomplete="email" placeholder="Email address" required>
+            <input id="registerPassword" type="password" inputmode="numeric" pattern="[0-9]{8}" minlength="8" maxlength="8" placeholder="8-digit password" required>
             <button type="submit">Register</button>
           </form>
         ` : `
@@ -864,7 +890,7 @@ const DemoExchange = (() => {
       <div class="demo-panel-top">
         <div>
           <strong>${user.username}</strong>
-          <span>ID: ${user.id || user.phone || user.username}</span>
+          <span>ID: ${user.id || user.email || user.username}</span>
         </div>
         <button type="button" class="demo-close" aria-label="Close">x</button>
       </div>
@@ -900,7 +926,7 @@ const DemoExchange = (() => {
         </div>
         <div class="settings-list">
           <div><span>Username</span><strong>${user.username}</strong></div>
-          <div><span>Phone</span><strong>${user.phone || "-"}</strong></div>
+          <div><span>Email</span><strong>${user.email || "-"}</strong></div>
           <div><span>Account status</span><strong>${user.status || "Active"}</strong></div>
           <div><span>Portfolio</span><strong>${money(portfolioValue(user))} USD</strong></div>
         </div>
@@ -1578,7 +1604,7 @@ const DemoExchange = (() => {
       try {
         await createUser(
           document.getElementById("registerUsername").value.trim(),
-          document.getElementById("registerPhone").value.trim(),
+          document.getElementById("registerEmail").value.trim(),
           document.getElementById("registerPassword").value
         );
         showPublicToast("Registration successful.", "success");
@@ -1800,10 +1826,10 @@ const DemoExchange = (() => {
     const fromSelect = document.getElementById("exchangeFrom");
     const toSelect = document.getElementById("exchangeTo");
     if (!fromSelect || !toSelect) return;
-    const fromValue = fromSelect.value || "USD";
-    const toValue = toSelect.value || "EUR";
+    const fromValue = fromSelect.value || "GBP";
+    const toValue = toSelect.value || "USD";
     fromSelect.innerHTML = currencyOptions(fromValue);
-    toSelect.innerHTML = currencyOptions(toValue === fromValue ? "EUR" : toValue);
+    toSelect.innerHTML = currencyOptions(toValue === fromValue ? "USD" : toValue);
     if (fromSelect.value === toSelect.value) {
       toSelect.value = visibleCurrencies().find((currency) => currency.code !== fromSelect.value)?.code || "";
     }

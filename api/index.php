@@ -84,6 +84,17 @@ function ensure_balances(int $userId): void
     }
 }
 
+function ensure_user_email_column(): void
+{
+    static $ready = false;
+    if ($ready) return;
+    $columns = db()->query('SHOW COLUMNS FROM users')->fetchAll();
+    if (!in_array('email', array_column($columns, 'Field'), true)) {
+        db()->exec("ALTER TABLE users ADD COLUMN email VARCHAR(190) NOT NULL DEFAULT '' AFTER phone");
+    }
+    $ready = true;
+}
+
 function ensure_identity_table(): void
 {
     db()->exec("CREATE TABLE IF NOT EXISTS identity_verifications (
@@ -212,10 +223,6 @@ function pair_market_price(string $base, string $quote): float
 
 function exchange_received_amount(string $from, string $to, float $amount): float
 {
-    // GBP-to-USD account exchanges are intentionally neutral: no gain or loss
-    // is applied, so the customer receives the same numeric amount in USD.
-    if ($from === 'GBP' && $to === 'USD') return $amount;
-
     $rates = rates_map();
     return ($amount * ($rates[$from] ?? 1)) / ($rates[$to] ?? 1);
 }
@@ -230,6 +237,7 @@ function user_by_username(string $username): ?array
 
 function public_user(array $user): array
 {
+    ensure_user_email_column();
     ensure_balances((int)$user['id']);
     $verification = latest_verification((int)$user['id']);
     $bankBinding = latest_bank_binding((int)$user['id']);
@@ -261,6 +269,7 @@ function public_user(array $user): array
 
     return [
         'username' => $user['username'],
+        'email' => $user['email'] ?? '',
         'phone' => $user['phone'],
         'status' => $user['status'],
         'created' => $user['created_at'] ?? '',
@@ -350,7 +359,42 @@ function require_user(): array
     $user = user_by_username($username);
     if (!$user) fail('User not found.', 404);
     if ($user['status'] !== 'Active') fail('Account is frozen.', 403);
+    ensure_online_sessions_table();
+    $sessionHash = hash('sha256', session_id());
+    $session = db()->prepare('SELECT id, revoked FROM online_user_sessions WHERE user_id = ? AND session_hash = ? LIMIT 1');
+    $session->execute([(int)$user['id'], $sessionHash]);
+    $presence = $session->fetch();
+    if ($presence && (int)$presence['revoked'] === 1) {
+        unset($_SESSION['username']);
+        fail('Your session has ended. Please log in again.', 401);
+    }
+    if (!$presence) {
+        $register = db()->prepare('INSERT INTO online_user_sessions (user_id, session_hash, ip_address, user_agent) VALUES (?, ?, ?, ?)');
+        $register->execute([(int)$user['id'], $sessionHash, client_ip(), substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255)]);
+    }
+    $touch = db()->prepare('UPDATE online_user_sessions SET last_seen = CURRENT_TIMESTAMP WHERE user_id = ? AND session_hash = ?');
+    $touch->execute([(int)$user['id'], $sessionHash]);
     return $user;
+}
+
+function ensure_online_sessions_table(): void
+{
+    db()->exec("CREATE TABLE IF NOT EXISTS online_user_sessions (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id INT UNSIGNED NOT NULL,
+        session_hash CHAR(64) NOT NULL UNIQUE,
+        login_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        last_seen TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        ip_address VARCHAR(80) NOT NULL DEFAULT '',
+        user_agent VARCHAR(255) NOT NULL DEFAULT '',
+        revoked TINYINT(1) NOT NULL DEFAULT 0,
+        CONSTRAINT fk_online_sessions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_online_sessions_last_seen (last_seen)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    $columns = db()->query('SHOW COLUMNS FROM online_user_sessions')->fetchAll();
+    if (!in_array('revoked', array_column($columns, 'Field'), true)) {
+        db()->exec('ALTER TABLE online_user_sessions ADD COLUMN revoked TINYINT(1) NOT NULL DEFAULT 0 AFTER user_agent');
+    }
 }
 
 function establish_user_session(string $username): void
@@ -358,16 +402,16 @@ function establish_user_session(string $username): void
     session_regenerate_id(true);
     $_SESSION['username'] = $username;
     $_SESSION['authenticated_at'] = time();
+    $user = user_by_username($username);
+    if (!$user) return;
+    ensure_online_sessions_table();
+    $stmt = db()->prepare('INSERT INTO online_user_sessions (user_id, session_hash, ip_address, user_agent, revoked) VALUES (?, ?, ?, ?, 0)');
+    $stmt->execute([(int)$user['id'], hash('sha256', session_id()), client_ip(), substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255)]);
 }
 
 function validate_password_strength(string $password): void
 {
-    if (strlen($password) < 8) {
-        fail('Password must be at least 8 characters.');
-    }
-    if (!preg_match('/[A-Za-z]/', $password) || !preg_match('/[0-9]/', $password)) {
-        fail('Password must include letters and numbers.');
-    }
+    if (!preg_match('/^[0-9]{8}$/', $password)) fail('Password must contain exactly 8 digits.');
 }
 
 function require_admin(): void
@@ -487,13 +531,15 @@ function trade_simulation_trigger_state(array $user): ?array
 function import_public_user(array $incoming): void
 {
     $username = trim((string)($incoming['username'] ?? ''));
+    $email = trim((string)($incoming['email'] ?? ''));
     $phone = trim((string)($incoming['phone'] ?? ''));
     $password = (string)($incoming['password'] ?? '');
     if ($username === '' || $password === '') return;
     if (user_by_username($username)) return;
 
-    $stmt = db()->prepare('INSERT INTO users (username, phone, password_hash) VALUES (?, ?, ?)');
-    $stmt->execute([$username, $phone ?: '', password_hash($password, PASSWORD_DEFAULT)]);
+    ensure_user_email_column();
+    $stmt = db()->prepare('INSERT INTO users (username, phone, email, password_hash) VALUES (?, ?, ?, ?)');
+    $stmt->execute([$username, '', $email, password_hash($password, PASSWORD_DEFAULT)]);
     $user = user_by_username($username);
     if (!$user) return;
     $userId = (int)$user['id'];
@@ -626,15 +672,19 @@ try {
 
     if ($action === 'register') {
         $username = trim((string)($data['username'] ?? ''));
-        $phone = trim((string)($data['phone'] ?? ''));
+        $email = strtolower(trim((string)($data['email'] ?? '')));
         $password = (string)($data['password'] ?? '');
-        if ($username === '' || $phone === '' || $password === '') fail('All fields are required.');
+        if ($username === '' || $email === '' || $password === '') fail('All fields are required.');
         if (!preg_match('/^[A-Za-z0-9_.-]{3,80}$/', $username)) fail('Username must be 3-80 letters, numbers, dots, dashes, or underscores.');
-        if (!preg_match('/^[0-9]+$/', $phone)) fail('Phone number must contain numbers only.');
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 190) fail('Enter a valid email address.');
         validate_password_strength($password);
+        ensure_user_email_column();
+        $emailCheck = db()->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+        $emailCheck->execute([$email]);
+        if ($emailCheck->fetchColumn()) fail('Email address is already registered.', 409);
         try {
-            $stmt = db()->prepare('INSERT INTO users (username, phone, password_hash) VALUES (?, ?, ?)');
-            $stmt->execute([$username, $phone, password_hash($password, PASSWORD_DEFAULT)]);
+            $stmt = db()->prepare('INSERT INTO users (username, phone, email, password_hash) VALUES (?, ?, ?, ?)');
+            $stmt->execute([$username, '', $email, password_hash($password, PASSWORD_DEFAULT)]);
         } catch (PDOException $e) {
             if ($e->getCode() === '23000') {
                 fail('Username already exists.', 409);
@@ -663,6 +713,9 @@ try {
     }
 
     if ($action === 'logout') {
+        ensure_online_sessions_table();
+        $stmt = db()->prepare('DELETE FROM online_user_sessions WHERE session_hash = ?');
+        $stmt->execute([hash('sha256', session_id())]);
         unset($_SESSION['username']);
         respond(['ok' => true]);
     }
@@ -976,6 +1029,37 @@ try {
         respond(['ok' => true]);
     }
 
+    if ($action === 'admin_online_users') {
+        require_admin();
+        ensure_online_sessions_table();
+        db()->exec("DELETE FROM online_user_sessions WHERE last_seen < (CURRENT_TIMESTAMP - INTERVAL 1 DAY)");
+        $rows = db()->query("SELECT s.id, u.username, s.login_at, s.last_seen, s.ip_address, s.user_agent
+            FROM online_user_sessions s
+            JOIN users u ON u.id = s.user_id
+            WHERE s.revoked = 0 AND s.last_seen >= (CURRENT_TIMESTAMP - INTERVAL 5 MINUTE)
+            ORDER BY s.last_seen DESC, s.id DESC")->fetchAll();
+        respond(['ok' => true, 'onlineUsers' => array_map(fn($row) => [
+            'id' => (string)$row['id'],
+            'user' => $row['username'],
+            'login' => $row['login_at'],
+            'lastSeen' => $row['last_seen'],
+            'ip' => $row['ip_address'],
+            'source' => 'Live session',
+            'userAgent' => $row['user_agent'],
+        ], $rows)]);
+    }
+
+    if ($action === 'admin_force_logout') {
+        require_admin();
+        ensure_online_sessions_table();
+        $ids = array_values(array_filter(array_map('intval', (array)($data['sessionIds'] ?? [])), fn($id) => $id > 0));
+        if (!$ids) fail('Select at least one online session.');
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = db()->prepare("UPDATE online_user_sessions SET revoked = 1 WHERE id IN ($placeholders)");
+        $stmt->execute($ids);
+        respond(['ok' => true, 'removed' => $stmt->rowCount()]);
+    }
+
     if ($action === 'admin_users') {
         require_admin();
         $rows = db()->query('SELECT * FROM users ORDER BY created_at DESC')->fetchAll();
@@ -985,7 +1069,7 @@ try {
             $users[] = [
                 'id' => 'USER-' . $public['username'],
                 'username' => $public['username'],
-                'phone' => $public['phone'],
+                'email' => $public['email'],
                 'status' => $public['status'],
                 'balance' => portfolio_value($public['balances']),
                 'balances' => $public['balances'],
@@ -999,7 +1083,7 @@ try {
         require_admin();
         ensure_identity_table();
         $status = trim((string)($data['status'] ?? ''));
-        $sql = 'SELECT v.*, u.username, u.phone
+        $sql = 'SELECT v.*, u.username, u.email
                 FROM identity_verifications v
                 JOIN users u ON u.id = v.user_id';
         $params = [];
@@ -1014,7 +1098,7 @@ try {
         foreach ($stmt as $row) {
             $verification = public_verification($row, true);
             $verification['username'] = $row['username'];
-            $verification['phone'] = $row['phone'];
+            $verification['email'] = $row['email'];
             $verification['maskedIdNumber'] = mask_id_number($row['id_number']);
             $verifications[] = $verification;
         }
@@ -1068,7 +1152,7 @@ try {
         require_admin();
         ensure_bank_binding_table();
         $status = trim((string)($data['status'] ?? ''));
-        $sql = 'SELECT b.*, u.username, u.phone
+        $sql = 'SELECT b.*, u.username, u.email
                 FROM bank_binding_reviews b
                 JOIN users u ON u.id = b.user_id';
         $params = [];
@@ -1083,7 +1167,7 @@ try {
         foreach ($stmt as $row) {
             $binding = public_bank_binding($row);
             $binding['username'] = $row['username'];
-            $binding['phone'] = $row['phone'];
+            $binding['email'] = $row['email'];
             $bindings[] = $binding;
         }
         respond(['ok' => true, 'bindings' => $bindings]);
@@ -1417,13 +1501,16 @@ try {
             $count->execute([(int)$targetUser['id']]);
             $startingTransactionCount = (int)$count->fetchColumn();
         }
+        // Use the database clock because the trigger is compared with
+        // transactions.created_at (also generated by MySQL).
+        $configuredAt = (string)db()->query('SELECT CURRENT_TIMESTAMP')->fetchColumn();
         $config = [
             'enabled' => $enabled,
             'username' => $username,
             'triggerTransaction' => $trigger,
             'simulationAction' => $simulationAction,
             'startingTransactionCount' => $startingTransactionCount,
-            'configuredAt' => date('Y-m-d H:i:s'),
+            'configuredAt' => $configuredAt,
         ];
         $stmt = db()->prepare('INSERT INTO admin_storage (storage_key, value_json) VALUES (?, ?)
             ON DUPLICATE KEY UPDATE value_json = VALUES(value_json)');
@@ -1487,15 +1574,17 @@ try {
         require_admin();
         $original = preg_replace('/^USER-/', '', (string)($data['accountId'] ?? ''));
         $username = trim((string)($data['username'] ?? $original));
-        $phone = trim((string)($data['phone'] ?? ''));
+        $email = strtolower(trim((string)($data['email'] ?? '')));
         $status = (string)($data['status'] ?? 'Active');
         if ($username === '') fail('Username is required.');
         if (!in_array($status, ['Active', 'Frozen'], true)) fail('Invalid status.');
         $user = user_by_username($original);
         if (!$user) fail('User not found.', 404);
         if ($username !== $original && user_by_username($username)) fail('Username already exists.');
-        $stmt = db()->prepare('UPDATE users SET username = ?, phone = ?, status = ? WHERE username = ?');
-        $stmt->execute([$username, $phone ?: $user['phone'], $status, $original]);
+        if ($email !== '' && (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 190)) fail('Enter a valid email address.');
+        ensure_user_email_column();
+        $stmt = db()->prepare('UPDATE users SET username = ?, email = ?, status = ? WHERE username = ?');
+        $stmt->execute([$username, $email ?: ($user['email'] ?? ''), $status, $original]);
         respond(['ok' => true, 'user' => public_user(user_by_username($username))]);
     }
 
