@@ -98,7 +98,7 @@ nav_groups = [
         'label': 'Certification Management',
         'href': 'certification-audit.html',
         'children': [
-            ('primary-real-name.html', 'Primary Real Name'),
+            ('primary-real-name.html', 'User Identification'),
             ('advanced-real-name.html', 'Advanced Real Name'),
         ],
     },

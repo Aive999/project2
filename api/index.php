@@ -337,9 +337,6 @@ function validate_verification_image(string $dataUrl): void
     if (!preg_match('/^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+\/=]+$/', $dataUrl)) {
         fail('Upload a PNG, JPG, or WEBP identity document image.');
     }
-    if (strlen($dataUrl) > 950000) {
-        fail('Identity document image must be under 700 KB.');
-    }
 }
 
 function require_user(): array
@@ -1017,6 +1014,30 @@ try {
         $update = db()->prepare('UPDATE identity_verifications SET status = ?, review_note = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?');
         $update->execute([$status, substr($note, 0, 255), $adminName, $id]);
         write_log((string)$verification['username'], 'admin', 'Identity Verification', $status);
+        respond(['ok' => true]);
+    }
+
+    if ($action === 'admin_identity_update') {
+        require_admin();
+        ensure_identity_table();
+        $id = (int)preg_replace('/^VER-/', '', (string)($data['verificationId'] ?? ''));
+        $documentType = trim((string)($data['documentType'] ?? ''));
+        $idNumber = trim((string)($data['idNumber'] ?? ''));
+        $status = trim((string)($data['status'] ?? ''));
+        $note = trim((string)($data['note'] ?? ''));
+        if ($id <= 0) fail('Verification request is required.');
+        if ($documentType === '' || strlen($documentType) > 80) fail('Enter a valid document type.');
+        if ($idNumber === '' || strlen($idNumber) > 120) fail('Enter a valid ID number.');
+        if (!in_array($status, ['Pending', 'Approved', 'Rejected'], true)) fail('Choose Pending, Approved, or Rejected.');
+        $stmt = db()->prepare('SELECT v.id, u.username FROM identity_verifications v JOIN users u ON u.id = v.user_id WHERE v.id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        $verification = $stmt->fetch();
+        if (!$verification) fail('Verification request not found.', 404);
+        $reviewedAt = $status === 'Pending' ? null : date('Y-m-d H:i:s');
+        $reviewedBy = $status === 'Pending' ? null : 'admin';
+        $update = db()->prepare('UPDATE identity_verifications SET document_type = ?, id_number = ?, status = ?, review_note = ?, reviewed_by = ?, reviewed_at = ? WHERE id = ?');
+        $update->execute([$documentType, $idNumber, $status, substr($note, 0, 255), $reviewedBy, $reviewedAt, $id]);
+        write_log((string)$verification['username'], 'admin', 'User Identification Updated', $status);
         respond(['ok' => true]);
     }
 

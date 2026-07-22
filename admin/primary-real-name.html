@@ -11,7 +11,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Primary Real-Name</title>
+  <title>User Identification</title>
   <link rel="stylesheet" href="../styles.css?v=withdrawal-approve-buttons-20260703" />
 </head>
 <body>
@@ -137,7 +137,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
             <span class="menu-arrow"></span>
           </summary>
           <div class="admin-submenu">
-            <a href="primary-real-name.html" class="admin-submenu-item active">Primary Real Name</a>
+            <a href="primary-real-name.html" class="admin-submenu-item active">User Identification</a>
             <a href="advanced-real-name.html" class="admin-submenu-item">Advanced Real Name</a>
           </div>
         </details>
@@ -169,8 +169,8 @@ if(localStorage.getItem("adminLogin") !== "true"){
       </header>
       <div class="admin-page-header">
         <div>
-          <div class="admin-page-title">Primary Real-Name</div>
-          <div class="admin-breadcrumb">Home / Certification Management / Primary Real-Name</div>
+          <div class="admin-page-title">User Identification</div>
+          <div class="admin-breadcrumb">Home / Certification Management / User Identification</div>
         </div>
       </div>
       <main class="admin-dashboard admin-menu-management">
@@ -312,7 +312,10 @@ if(localStorage.getItem("adminLogin") !== "true"){
       return `<span class="status-badge ${className}">${status}</span>`;
     }
 
+    let verificationRows = [];
+
     function renderVerifications(rows) {
+      verificationRows = rows;
       verificationBody.innerHTML = rows.length ? rows.map((row) => `
         <tr>
           <td>${row.id}</td>
@@ -334,6 +337,7 @@ if(localStorage.getItem("adminLogin") !== "true"){
           <td>${row.submittedAt || '-'}</td>
           <td>${row.reviewNote || '-'}</td>
           <td>
+            <button class="row-action" type="button" onclick="editIdentity('${row.id}')">Edit</button>
             ${row.status === 'Pending' ? `
               <button class="row-action account-action-enable" type="button" onclick="reviewIdentity('${row.id}', 'Approved')">Approve</button>
               <button class="row-action account-action-delete" type="button" onclick="reviewIdentity('${row.id}', 'Rejected')">Reject</button>
@@ -375,9 +379,36 @@ if(localStorage.getItem("adminLogin") !== "true"){
       }
     }
 
+    async function editIdentity(id) {
+      const row = verificationRows.find((item) => item.id === id);
+      if (!row) return;
+      const documentType = prompt('Document type', row.documentType || 'ID Card');
+      if (documentType === null) return;
+      const idNumber = prompt('ID number', row.idNumber || '');
+      if (idNumber === null) return;
+      const status = prompt('Verification status: Pending, Approved, or Rejected', row.status || 'Pending');
+      if (status === null) return;
+      const note = prompt('Review note', row.reviewNote || '');
+      if (note === null) return;
+      try {
+        await verificationApi('admin_identity_update', {
+          verificationId: id,
+          documentType,
+          idNumber,
+          status,
+          note
+        });
+        await loadVerifications();
+        showVerificationMessage('User identification updated.');
+      } catch (error) {
+        showVerificationMessage(error.message || 'Unable to update user identification.', 'error');
+      }
+    }
+
     refreshVerificationsBtn.addEventListener('click', loadVerifications);
     statusFilter.addEventListener('change', loadVerifications);
     window.reviewIdentity = reviewIdentity;
+    window.editIdentity = editIdentity;
     setTimeout(loadVerifications, 200);
   </script>
   <script src="admin-ui.js?v=withdrawal-approve-buttons-20260703"></script>

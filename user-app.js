@@ -395,10 +395,6 @@ const DemoExchange = (() => {
         reject(new Error("Upload a PNG, JPG, or WEBP image."));
         return;
       }
-      if (file.size > 700 * 1024) {
-        reject(new Error("Image must be under 700 KB."));
-        return;
-      }
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
       reader.onerror = () => reject(new Error("Unable to read selected image."));
@@ -423,18 +419,10 @@ const DemoExchange = (() => {
       });
       cacheServerUser(data.user);
     } catch (error) {
-      if (!backendUnavailable(error)) throw error;
-      user.verification = {
-        id: "LOCAL-VER-" + Date.now(),
-        documentType,
-        idNumber: cleanId,
-        frontImage,
-        backImage,
-        status: "Pending",
-        reviewNote: "",
-        submittedAt: new Date().toLocaleString()
-      };
-      saveUser(user);
+      if (backendUnavailable(error)) {
+        throw new Error("Verification was not submitted because the database is unavailable. Please try again later.");
+      }
+      throw error;
     }
   }
 
@@ -1788,7 +1776,9 @@ const DemoExchange = (() => {
             renderExchangeQuote();
             return;
           }
-          refresh(`${action} transaction recorded.`);
+          const successMessage = `${action} transaction completed successfully.`;
+          showPublicToast(successMessage, "success");
+          refresh(successMessage);
         } catch (error) {
           refresh(error.message);
         }
@@ -1843,6 +1833,7 @@ const DemoExchange = (() => {
       if (!from || !to || from === to) throw new Error("Choose two different currencies.");
       await exchange(from, to, amount);
       document.getElementById("exchangeAmount").value = "";
+      showPublicToast(`Transaction successful: exchanged ${coin(Number(amount))} ${from} to ${to}.`, "success");
       refresh("Exchange completed.");
     } catch (error) {
       refresh(error.message);
@@ -1942,8 +1933,10 @@ const DemoExchange = (() => {
         clearPendingTradeRequest();
         document.getElementById("tradeAmount").value = "";
         await syncCurrentUser();
-        renderTradePage(`${side} order filled at ${formatRate(result?.price || pairMovement(base, quote).current)} ${quote}.`);
+        const fillPrice = result?.price || pairMovement(base, quote).current;
+        renderTradePage(`${side} order filled at ${formatRate(fillPrice)} ${quote}.`);
         renderAccount();
+        showPublicToast(`Transaction successful: ${side.toLowerCase()} order filled at ${formatRate(fillPrice)} ${quote}.`, "success");
       } catch (error) {
         // Simulated trade failures can still create transaction-history records
         // (for example, the duplicate-record outcome). Refresh before rendering

@@ -242,7 +242,7 @@
     "Reserved Currency": "\u9884\u7559\u8d27\u5e01",
     "Copywriting Management": "\u6587\u6848\u7ba1\u7406",
     "Certification Management": "\u8ba4\u8bc1\u7ba1\u7406",
-    "Primary Real Name": "\u521d\u7ea7\u5b9e\u540d\u8ba4\u8bc1",
+    "User Identification": "\u7528\u6237\u8eab\u4efd\u8ba4\u8bc1",
     "Advanced Real Name": "\u9ad8\u7ea7\u5b9e\u540d\u8ba4\u8bc1",
     "Search Menu": "\u641c\u7d22\u83dc\u5355",
     "Start voice broadcast": "\u5f00\u542f\u8bed\u97f3\u64ad\u62a5",
@@ -793,7 +793,7 @@
     document.addEventListener("click", (event) => {
       const action = event.target.closest(".row-action");
       if (!action) return;
-      if (action.closest("#ll-body") || action.closest("#user-table-body") || action.closest("#account-table-body")) return;
+      if (action.closest("#ll-body") || action.closest("#user-table-body") || action.closest("#account-table-body") || action.closest("#verification-table-body")) return;
       const row = action.closest("tr");
       if (!row) return;
       const table = row.closest("table");
