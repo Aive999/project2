@@ -2,7 +2,6 @@ const DemoExchange = (() => {
   const USERS_KEY = "demoExchangeUsers";
   const SESSION_KEY = "demoExchangeSession";
   const USER_LOG_KEY = "userLoginLog";
-  const BANK_BINDINGS_KEY = "demoExchangeBankBindings";
   const SUPPORT_MESSAGES_KEY = "demoSupportMessages";
   const API_URL = "api/index.php";
   let accountNotice = "";
@@ -242,33 +241,8 @@ const DemoExchange = (() => {
     return localStorage.getItem(SESSION_KEY);
   }
 
-  function readBankBindings() {
-    try {
-      return JSON.parse(localStorage.getItem(BANK_BINDINGS_KEY) || "{}");
-    } catch {
-      return {};
-    }
-  }
-
-  function getBankBinding(username = currentUsername()) {
-    if (!username) return null;
-    return getUser()?.bankBinding || readBankBindings()[username] || null;
-  }
-
-  function saveBankBinding(username, binding) {
-    if (!username) return;
-    const bindings = readBankBindings();
-    bindings[username] = {
-      bank: binding.bank || "",
-      name: binding.name || "",
-      collectionAccount: binding.collectionAccount || "",
-      routing: binding.routing || "",
-      address: binding.address || "",
-      status: binding.status || "Pending",
-      reviewNote: binding.reviewNote || "",
-      updatedAt: new Date().toLocaleString()
-    };
-    localStorage.setItem(BANK_BINDINGS_KEY, JSON.stringify(bindings));
+  function getBankBinding() {
+    return getUser()?.bankBinding || null;
   }
 
   async function submitBankBinding(binding) {
@@ -289,9 +263,11 @@ const DemoExchange = (() => {
       const data = await apiRequest("submit_bank_binding", cleanBinding);
       cacheServerUser(data.user);
     } catch (error) {
-      if (!backendUnavailable(error)) throw error;
+      if (backendUnavailable(error)) {
+        throw new Error("Bank binding was not submitted because the database is unavailable. Please try again later.");
+      }
+      throw error;
     }
-    saveBankBinding(user.username, { ...cleanBinding, status: "Pending" });
   }
 
   function getUser() {
@@ -2272,6 +2248,9 @@ const DemoExchange = (() => {
   }
 
   async function init() {
+    // Bank bindings are database-only; discard data created by the retired
+    // browser fallback so it can never be mistaken for a server record.
+    localStorage.removeItem("demoExchangeBankBindings");
     await syncCurrencies();
     await migrateLocalUsersToMysql();
     await syncCurrentUser();
