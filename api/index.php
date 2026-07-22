@@ -264,7 +264,9 @@ function public_user(array $user): array
         'created' => $user['created_at'] ?? '',
         'balances' => $balances,
         'transactions' => $transactions,
-        'verification' => $verification ? public_verification($verification, true) : null,
+        // Identity photos stay in MySQL and are returned only to the protected
+        // admin verification endpoint, never to the browser's user cache.
+        'verification' => $verification ? public_verification($verification, false) : null,
         'bankBinding' => $bankBinding ? public_bank_binding($bankBinding) : null,
     ];
 }

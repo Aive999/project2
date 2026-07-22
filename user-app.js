@@ -63,11 +63,17 @@ const DemoExchange = (() => {
 
   function normalizeUser(user) {
     if (!user) return user;
+    let verification = user.verification || null;
+    if (verification) {
+      const { frontImage, backImage, ...verificationMetadata } = verification;
+      verification = verificationMetadata;
+    }
     return {
       ...user,
       balances: normalizeBalances(user.balances),
       transactions: Array.isArray(user.transactions) ? user.transactions : [],
-      bankBinding: user.bankBinding || null
+      bankBinding: user.bankBinding || null,
+      verification
     };
   }
 
@@ -130,7 +136,10 @@ const DemoExchange = (() => {
   }
 
   function writeUsers(users) {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    const compactUsers = Object.fromEntries(
+      Object.entries(users || {}).map(([username, user]) => [username, normalizeUser(user)])
+    );
+    localStorage.setItem(USERS_KEY, JSON.stringify(compactUsers));
   }
 
   async function apiRequest(action, payload = {}) {
