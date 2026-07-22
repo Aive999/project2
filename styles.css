@@ -1050,16 +1050,6 @@ body {
   position: relative;
 }
 
-/* Prevent iOS Safari from enlarging the page when an editable field receives
-   focus. Controls below 16px trigger its automatic focus zoom. */
-@media (max-width: 768px) {
-  input:not([type="checkbox"]):not([type="radio"]),
-  select,
-  textarea {
-    font-size: 16px !important;
-  }
-}
-
 .identity-form .identity-file-input {
   position: absolute;
   width: 1px;
@@ -6802,5 +6792,16 @@ body:not(.account-page):not(.admin-body) .support-button {
         width: 34px !important;
         height: 34px !important;
         font-size: 1.35rem !important;
+    }
+}
+
+/* iOS Safari automatically zooms focused controls whose computed font size is
+   below 16px. Keep this final rule after all component/mobile overrides. The
+   repeated :root raises priority over legacy !important form declarations. */
+@media screen and (max-width: 768px) {
+    :root:root:root:root input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    :root:root:root:root select,
+    :root:root:root:root textarea {
+        font-size: 16px !important;
     }
 }

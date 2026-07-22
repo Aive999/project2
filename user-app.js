@@ -1038,6 +1038,7 @@ const DemoExchange = (() => {
     document.getElementById("logoutDemo").addEventListener("click", () => {
       accountPanelView = "menu";
       logout();
+      showPublicToast("Logged out successfully.", "info");
       refresh("Logged out.");
     });
     bindProfileMenu();
@@ -1096,8 +1097,10 @@ const DemoExchange = (() => {
           address: document.getElementById("bankBindingAddress").value.trim()
         });
         accountPanelView = "bankBindingSection";
+        showPublicToast("Bank account binding submitted for admin review.", "success");
         drawAccountPanel("Bank account binding submitted for admin review.");
       } catch (error) {
+        showPublicToast(error.message, "error");
         drawAccountPanel(error.message);
       }
     });
@@ -1596,8 +1599,10 @@ const DemoExchange = (() => {
           document.getElementById("registerPhone").value.trim(),
           document.getElementById("registerPassword").value
         );
+        showPublicToast("Registration successful.", "success");
         refresh("Registration successful.");
       } catch (error) {
+        showPublicToast(error.message, "error");
         drawAccountPanel(error.message);
       }
     });
@@ -1609,8 +1614,10 @@ const DemoExchange = (() => {
           document.getElementById("loginUsername").value.trim(),
           document.getElementById("loginPassword").value
         );
+        showPublicToast("Logged in successfully.", "success");
         refresh("Logged in.");
       } catch (error) {
+        showPublicToast(error.message, "error");
         drawAccountPanel(error.message);
       }
     });
@@ -1710,8 +1717,10 @@ const DemoExchange = (() => {
           document.getElementById("identityBackImage").files[0]
         );
         accountPanelView = "identitySection";
+        showPublicToast("Verification submitted successfully for admin review.", "success");
         refresh("Verification submitted for admin review.");
       } catch (error) {
+        showPublicToast(error.message, "error");
         drawAccountPanel(error.message);
       }
     });
@@ -1789,6 +1798,7 @@ const DemoExchange = (() => {
           showPublicToast(successMessage, "success");
           refresh(successMessage);
         } catch (error) {
+          showPublicToast(`Transaction failed: ${error.message}`, "error");
           refresh(error.message);
         }
       });
@@ -1845,6 +1855,7 @@ const DemoExchange = (() => {
       showPublicToast(`Transaction successful: exchanged ${coin(Number(amount))} ${from} to ${to}.`, "success");
       refresh("Exchange completed.");
     } catch (error) {
+      showPublicToast(`Exchange failed: ${error.message}`, "error");
       refresh(error.message);
     }
   }
@@ -1953,6 +1964,7 @@ const DemoExchange = (() => {
         await syncCurrentUser();
         renderTradePage(error.message);
         renderAccount();
+        showPublicToast(`Transaction failed: ${error.message}`, "error");
       } finally {
         if (submitButton) {
           submitButton.disabled = false;
