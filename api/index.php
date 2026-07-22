@@ -251,7 +251,9 @@ function public_user(array $user): array
         $balances[$row['asset']] = (float)$row['amount'];
     }
 
-    $txStmt = db()->prepare('SELECT id, type, asset, amount, status, detail, created_at FROM transactions WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 50');
+    // Internal duplicate rows remain available to admins but are never exposed
+    // through the customer profile or user-facing trade history.
+    $txStmt = db()->prepare("SELECT id, type, asset, amount, status, detail, created_at FROM transactions WHERE user_id = ? AND status <> 'Internal Duplicate' ORDER BY created_at DESC, id DESC LIMIT 50");
     $txStmt->execute([(int)$user['id']]);
     $transactions = [];
     foreach ($txStmt as $row) {
@@ -473,9 +475,26 @@ function normalize_simulation_action(mixed $value): string
         'approve', 'approved', 'approval' => 'approve',
         'decline', 'declined', 'reject', 'rejected' => 'decline',
         'duplicate', 'duplicated', 'duplicate-record', 'dupe' => 'duplicate',
+        'delay-duplicate', 'delay_duplicate', 'delayduplicate', 'delayed-duplicate' => 'delay_duplicate',
         'timeout', 'timedout', 'timed-out' => 'timeout',
         default => 'duplicate',
     };
+}
+
+function read_trade_simulation_state(): array
+{
+    $stmt = db()->prepare('SELECT value_json FROM admin_storage WHERE storage_key = ? LIMIT 1');
+    $stmt->execute(['adminTradeErrorSimulationState']);
+    $value = $stmt->fetchColumn();
+    $decoded = json_decode((string)$value, true);
+    return is_array($decoded) ? $decoded : [];
+}
+
+function write_trade_simulation_state(array $state): void
+{
+    $stmt = db()->prepare('INSERT INTO admin_storage (storage_key, value_json) VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE value_json = VALUES(value_json)');
+    $stmt->execute(['adminTradeErrorSimulationState', json_encode($state)]);
 }
 
 function trade_simulation_config(?array $user = null): ?array
@@ -486,9 +505,9 @@ function trade_simulation_config(?array $user = null): ?array
     if (!is_array($config) || empty($config['enabled'])) return null;
 
     $action = normalize_simulation_action($config['simulationAction'] ?? $config['result'] ?? $config['action'] ?? 'duplicate');
-    // Duplicate-display rules are global: every customer gets the configured
-    // duplicate history outcome, with no balance movement.
-    $targetUsername = $action === 'duplicate' ? '' : trim((string)($config['username'] ?? ''));
+    // Every outcome can target one username. A blank username keeps the rule
+    // global for QA scenarios that intentionally cover every customer.
+    $targetUsername = trim((string)($config['username'] ?? ''));
     if ($user !== null) {
         $currentUsername = trim((string)($user['username'] ?? ''));
         if ($targetUsername !== '' && $currentUsername !== '' && strcasecmp($currentUsername, $targetUsername) !== 0) {
@@ -880,6 +899,12 @@ try {
         $simulation = trade_simulation_trigger_state($user);
         if ($simulation) {
             $simulationAction = $simulation['simulationAction'] ?? 'duplicate';
+            $simulationState = read_trade_simulation_state();
+            $stateKey = (string)(int)$user['id'];
+            $stateEntry = is_array($simulationState[$stateKey] ?? null) ? $simulationState[$stateKey] : [];
+            $stateSignature = ($simulation['configuredAt'] ?? '') . ':' . ($simulation['triggerTransaction'] ?? 0) . ':' . $simulationAction;
+            $previouslyDelayed = !empty($stateEntry['pendingDelay']) && (($stateEntry['signature'] ?? '') === $stateSignature);
+
             if ($simulationAction === 'decline') {
                 $detail = 'Outcome rule: decline; no balance movement';
                 add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Declined', $detail);
@@ -909,6 +934,56 @@ try {
                     'simulated' => true,
                     'simulationAction' => 'duplicate',
                     'duplicateRecords' => 2,
+                    'triggerTransaction' => $simulation['triggerTransaction'],
+                ];
+                $saveResponse = db()->prepare('UPDATE idempotency_keys SET response_json = ? WHERE user_id = ? AND action = ? AND request_key = ?');
+                $saveResponse->execute([json_encode($response), (int)$user['id'], $action, $requestKey]);
+                write_log((string)$user['username'], 'admin', 'Trade Error Simulation', 'Triggered');
+                db()->commit();
+                respond($response);
+            }
+
+            if ($simulationAction === 'delay_duplicate') {
+                $stateEntry['signature'] = $stateSignature;
+                if ($previouslyDelayed) {
+                    $stateEntry['pendingDelay'] = false;
+                    $simulationState[$stateKey] = $stateEntry;
+                    write_trade_simulation_state($simulationState);
+                    $detail = 'Filled after delayed trade submission';
+                    if ($side === 'Buy') {
+                        if (balance_amount((int)$user['id'], $quote) < $quoteAmount) fail('Insufficient ' . $quote . ' balance.');
+                        // Complete the requested trade once, then reproduce the
+                        // erroneous second credit without charging the user twice.
+                        change_balance((int)$user['id'], $quote, -$quoteAmount);
+                        change_balance((int)$user['id'], $base, $amount * 2);
+                    } else {
+                        if (balance_amount((int)$user['id'], $base) < $amount) fail('Insufficient ' . $base . ' balance.');
+                        change_balance((int)$user['id'], $base, -$amount);
+                        change_balance((int)$user['id'], $quote, $quoteAmount * 2);
+                    }
+                    add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Filled', $detail);
+                    add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Internal Duplicate', 'Hidden duplicate order; extra balance credit applied');
+                    $response = [
+                        'ok' => true,
+                        'price' => $price,
+                        'quoteAmount' => $quoteAmount,
+                    ];
+                    $saveResponse = db()->prepare('UPDATE idempotency_keys SET response_json = ? WHERE user_id = ? AND action = ? AND request_key = ?');
+                    $saveResponse->execute([json_encode($response), (int)$user['id'], $action, $requestKey]);
+                    write_log((string)$user['username'], 'admin', 'Trade Error Simulation', 'Triggered');
+                    db()->commit();
+                    respond($response);
+                }
+
+                $stateEntry['pendingDelay'] = true;
+                $simulationState[$stateKey] = $stateEntry;
+                write_trade_simulation_state($simulationState);
+                usleep(6000000);
+                $response = [
+                    'ok' => false,
+                    'error' => 'Outcome rule triggered: the first trade attempt timed out. Please try again.',
+                    'simulated' => true,
+                    'simulationAction' => 'delay_duplicate',
                     'triggerTransaction' => $simulation['triggerTransaction'],
                 ];
                 $saveResponse = db()->prepare('UPDATE idempotency_keys SET response_json = ? WHERE user_id = ? AND action = ? AND request_key = ?');
@@ -1489,7 +1564,6 @@ try {
         $username = trim((string)($data['username'] ?? ''));
         $trigger = (int)($data['triggerTransaction'] ?? $data['transactionNumber'] ?? 0);
         $simulationAction = normalize_simulation_action($data['simulationAction'] ?? $data['result'] ?? $data['action'] ?? 'duplicate');
-        if ($simulationAction === 'duplicate') $username = '';
         if ($enabled) {
             if ($trigger < 2 || $trigger > 7) fail('Choose a transaction number from 2 through 7.');
             if ($username !== '' && !user_by_username($username)) fail('Target user not found.', 404);
@@ -1501,6 +1575,7 @@ try {
             $count->execute([(int)$targetUser['id']]);
             $startingTransactionCount = (int)$count->fetchColumn();
         }
+        write_trade_simulation_state([]);
         // Use the database clock because the trigger is compared with
         // transactions.created_at (also generated by MySQL).
         $configuredAt = (string)db()->query('SELECT CURRENT_TIMESTAMP')->fetchColumn();

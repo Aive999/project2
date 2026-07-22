@@ -150,7 +150,9 @@ const DemoExchange = (() => {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.ok === false) {
-      throw new Error(data.error || "Server request failed.");
+      const error = new Error(data.error || "Server request failed.");
+      error.responseData = data;
+      throw error;
     }
     return data;
   }
@@ -661,6 +663,12 @@ const DemoExchange = (() => {
       cacheServerUser(data.user);
       return data;
     } catch (error) {
+      if (error?.responseData?.simulated && error.responseData.simulationAction === "delay_duplicate") {
+        return error.responseData;
+      }
+      if (error?.message?.includes("Failed to fetch") || error?.message?.includes("NetworkError")) {
+        throw error;
+      }
       if (!backendUnavailable(error)) throw error;
       if (side === "Buy" && (user.balances[quoteAsset] || 0) < quoteAmount) {
         throw new Error(`Insufficient ${quoteAsset} balance. Need ${coin(quoteAmount)} ${quoteAsset}.`);
@@ -1959,6 +1967,11 @@ const DemoExchange = (() => {
         }
         const result = await tradeOrder(base, quote, side, amount, pendingTradeRequestKey);
         clearPendingTradeRequest();
+        if (result?.simulationAction === "delay_duplicate" && result?.ok === false) {
+          // The configured first click is intentionally silent. Keep the order
+          // amount in place so the user can click Trade again.
+          return;
+        }
         document.getElementById("tradeAmount").value = "";
         await syncCurrentUser();
         if (result?.simulationAction === "duplicate") {
@@ -1967,11 +1980,18 @@ const DemoExchange = (() => {
           showPublicToast("Duplicate orders displayed. Balance unchanged.", "info");
           return;
         }
+        if (result?.simulationAction === "delay_duplicate") {
+          renderTradePage("Duplicate order records displayed and an extra balance credit was applied.");
+          renderAccount();
+          showPublicToast("Duplicate orders displayed. Balance was unexpectedly credited.", "warning");
+          return;
+        }
         const fillPrice = result?.price || pairMovement(base, quote).current;
         renderTradePage(`${side} order filled at ${formatRate(fillPrice)} ${quote}.`);
         renderAccount();
         showPublicToast(`Transaction successful: ${side.toLowerCase()} order filled at ${formatRate(fillPrice)} ${quote}.`, "success");
       } catch (error) {
+        clearPendingTradeRequest();
         // Simulated trade failures can still create transaction-history records
         // (for example, the duplicate-record outcome). Refresh before rendering
         // the error so those records are immediately visible to the customer.

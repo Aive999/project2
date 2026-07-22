@@ -60,9 +60,12 @@ So the API folder must be at the same level as `index.html`.
 For QA, an authenticated admin can call `admin_trade_error_simulation_set` with
 `enabled`, a test username beginning with `test_`, `triggerTransaction` from 2
 through 7, and `simulationAction` set to one of `approve`, `decline`,
-`duplicate`, or `timeout`. The selected trade uses that action when the count
+`duplicate`, `delay_duplicate`, or `timeout`. The selected trade uses that action when the count
 matches the configured trigger, counted from when the rule was last saved for
 that user. `approve` marks the transaction as `Approved`,
 `decline` stores a `Declined` record, `duplicate` creates two `Simulated Failed`
-records with the same amount, and `timeout` records a `Timed Out` state. It
-never changes balances and does not apply to non-test accounts.
+records with the same amount, and `timeout` records a `Timed Out` state.
+`delay_duplicate` makes the first click return no visible result; the retry
+completes the trade and credits the trade output twice while charging the input
+only once. Both records remain visible to admins, while the internal duplicate
+record is omitted from the customer's transaction history.
