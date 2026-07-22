@@ -455,10 +455,16 @@ const DemoExchange = (() => {
     if (!toast) {
       toast = document.createElement("div");
       toast.className = "public-toast";
+      toast.setAttribute("role", "alert");
+      toast.setAttribute("aria-live", "assertive");
+      toast.setAttribute("aria-atomic", "true");
       document.body.appendChild(toast);
     }
     toast.textContent = message;
-    toast.className = `public-toast ${type} show`;
+    toast.className = `public-toast ${type}`;
+    // Restart the transition so repeated notifications always visibly pop up.
+    void toast.offsetWidth;
+    toast.classList.add("show");
     clearTimeout(showPublicToast.timer);
     showPublicToast.timer = setTimeout(() => {
       toast.classList.remove("show");
@@ -1693,8 +1699,8 @@ const DemoExchange = (() => {
           document.getElementById("identityBackImage").files[0]
         );
         accountPanelView = "identitySection";
+        refresh();
         showPublicToast("Verification submitted successfully for admin review.", "success");
-        refresh("Verification submitted for admin review.");
       } catch (error) {
         showPublicToast(error.message, "error");
         drawAccountPanel(error.message);
