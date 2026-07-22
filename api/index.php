@@ -10,7 +10,7 @@ const ASSETS = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'NZD', 'SGD', '
 const PRICES = [
     'USD' => 1.0000,
     'EUR' => 1.14760,
-    'GBP' => 1.32321,
+    'GBP' => 1.33,
     'JPY' => 0.00619959,
     'AUD' => 0.701083,
     'CAD' => 0.70608,
@@ -200,7 +200,7 @@ function rates_map(): array
 
 function fluctuation_seed(string $code, float $offset = 0.0, int $tickShift = 0): float
 {
-    $tick = floor((microtime(true) * 1000) / 12000) + $offset + $tickShift;
+    $tick = floor((microtime(true) * 1000) / 1800000) + $offset + $tickShift;
     $codeValue = 0;
     foreach (str_split($code) as $char) {
         $codeValue += ord($char);
@@ -212,12 +212,15 @@ function floating_currency_rate(string $asset, float $offset = 0.0, int $tickShi
 {
     $rates = rates_map();
     $base = (float)($rates[$asset] ?? 1);
+    if ($asset === 'GBP') return $base;
     $move = fluctuation_seed($asset, $offset, $tickShift) * 0.0018;
     return $base * (1 + $move);
 }
 
 function pair_market_price(string $base, string $quote): float
 {
+    if ($base === 'GBP' && $quote === 'USD') return 1.33;
+    if ($base === 'USD' && $quote === 'GBP') return 1 / 1.33;
     return floating_currency_rate($base) / floating_currency_rate($quote, 3);
 }
 

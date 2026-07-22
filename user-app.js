@@ -9,11 +9,11 @@ const DemoExchange = (() => {
   let accountMode = "Balances";
   let accountPanelView = "menu";
   const CURRENCY_KEY = "demoCurrencySettings";
-  const FLUCTUATION_INTERVAL_MS = 1000;
+  const FLUCTUATION_INTERVAL_MS = 30 * 60 * 1000;
   const currentRateMap = {
     USD: 1.0000,
     EUR: 1.14760,
-    GBP: 1.32321,
+    GBP: 1.33,
     JPY: 0.00619959,
     AUD: 0.701083,
     CAD: 0.70608,
@@ -118,6 +118,7 @@ const DemoExchange = (() => {
 
   function floatingRate(currency, offset = 0, tickShift = 0) {
     const base = Number(currency.rate) || 1;
+    if (currency.code === "GBP") return base;
     const move = fluctuationSeed(currency.code, offset, tickShift) * 0.0018;
     return base * (1 + move);
   }
@@ -577,6 +578,12 @@ const DemoExchange = (() => {
   }
 
   function pairMovement(base, quote, offset = 0) {
+    if (base === "GBP" && quote === "USD") {
+      return { current: 1.33, percent: 0 };
+    }
+    if (base === "USD" && quote === "GBP") {
+      return { current: 1 / 1.33, percent: 0 };
+    }
     const baseCurrency = currencyByCode(base);
     const quoteCurrency = currencyByCode(quote);
     const current = floatingRate(baseCurrency, offset) / floatingRate(quoteCurrency, offset + 3);
@@ -2257,7 +2264,7 @@ const DemoExchange = (() => {
         const activeHomeTab = document.querySelector(".market-toggle .market-filter-item.active")?.textContent.trim() || "Deal";
         const dealRows = [
           { base: "EUR", quote: "USD", price: pairMovement("EUR", "USD", 1).current, dayPrice: 1.14760, volume: 11099596.432, change: pairMovement("EUR", "USD", 1).percent, icon: "FX" },
-          { base: "GBP", quote: "USD", price: pairMovement("GBP", "USD", 2).current, dayPrice: 1.32321, volume: Math.abs(fluctuationSeed("GBPUSD", 2)) * 900000 + 548563.803, change: pairMovement("GBP", "USD", 2).percent, icon: "FX" },
+          { base: "GBP", quote: "USD", price: pairMovement("GBP", "USD", 2).current, dayPrice: 1.33, volume: Math.abs(fluctuationSeed("GBPUSD", 2)) * 900000 + 548563.803, change: pairMovement("GBP", "USD", 2).percent, icon: "FX" },
           { base: "USD", quote: "JPY", price: pairMovement("USD", "JPY", 3).current, dayPrice: 161.301, volume: Math.abs(fluctuationSeed("USDJPY", 3)) * 900000 + 20291.498, change: pairMovement("USD", "JPY", 3).percent, icon: "FX" },
           { base: "EUR", quote: "JPY", price: pairMovement("EUR", "JPY", 5).current, dayPrice: 185.110, volume: Math.abs(fluctuationSeed("EURJPY", 5)) * 900000 + 17940.211, change: pairMovement("EUR", "JPY", 5).percent, icon: "FX" },
           { base: "AUD", quote: "USD", price: pairMovement("AUD", "USD", 4).current, dayPrice: 0.70108, volume: Math.abs(fluctuationSeed("AUDUSD", 4)) * 900000 + 170922.925, change: -Math.abs(pairMovement("AUD", "USD", 4).percent || 0.42), icon: "FX" }
