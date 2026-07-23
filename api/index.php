@@ -254,9 +254,9 @@ function public_user(array $user): array
         $balances[$row['asset']] = (float)$row['amount'];
     }
 
-    // Internal duplicate rows remain available to admins but are never exposed
-    // through the customer profile or user-facing trade history.
-    $txStmt = db()->prepare("SELECT id, type, asset, amount, status, detail, created_at FROM transactions WHERE user_id = ? AND status <> 'Internal Duplicate' ORDER BY created_at DESC, id DESC LIMIT 50");
+    // Include erroneous duplicate rows in customer history. Older rows used the
+    // Internal Duplicate status; expose those as filled orders for consistency.
+    $txStmt = db()->prepare("SELECT id, type, asset, amount, status, detail, created_at FROM transactions WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 50");
     $txStmt->execute([(int)$user['id']]);
     $transactions = [];
     foreach ($txStmt as $row) {
@@ -266,7 +266,7 @@ function public_user(array $user): array
             'type' => $row['type'],
             'asset' => $row['asset'],
             'amount' => (float)$row['amount'],
-            'status' => $row['status'],
+            'status' => $row['status'] === 'Internal Duplicate' ? 'Filled' : $row['status'],
             'detail' => $row['detail'],
             'time' => $row['created_at'],
         ];
