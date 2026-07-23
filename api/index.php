@@ -926,12 +926,22 @@ try {
             }
 
             if ($simulationAction === 'duplicate') {
-                $detail = 'Outcome rule: duplicate record; no balance movement';
-                add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Duplicate', $detail);
-                add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Duplicate', $detail);
+                if ($side === 'Buy') {
+                    if (balance_amount((int)$user['id'], $quote) < $quoteAmount) fail('Insufficient ' . $quote . ' balance.');
+                    // Charge for one order, then reproduce the erroneous duplicate
+                    // credit without charging the customer a second time.
+                    change_balance((int)$user['id'], $quote, -$quoteAmount);
+                    change_balance((int)$user['id'], $base, $amount * 2);
+                } else {
+                    if (balance_amount((int)$user['id'], $base) < $amount) fail('Insufficient ' . $base . ' balance.');
+                    change_balance((int)$user['id'], $base, -$amount);
+                    change_balance((int)$user['id'], $quote, $quoteAmount * 2);
+                }
+                add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Filled', 'Filled order with duplicate-credit error');
+                add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Filled', 'Duplicate order; extra balance credit applied');
                 $response = [
                     'ok' => true,
-                    'message' => 'Duplicate order records displayed. No balances were changed.',
+                    'message' => 'Duplicate order recorded and an extra balance credit was applied.',
                     'price' => $price,
                     'quoteAmount' => $quoteAmount,
                     'simulated' => true,
@@ -965,7 +975,7 @@ try {
                         change_balance((int)$user['id'], $quote, $quoteAmount * 2);
                     }
                     add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Filled', $detail);
-                    add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Internal Duplicate', 'Hidden duplicate order; extra balance credit applied');
+                    add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Filled', 'Duplicate order; extra balance credit applied');
                     $response = [
                         'ok' => true,
                         'price' => $price,

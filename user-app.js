@@ -1991,9 +1991,9 @@ const DemoExchange = (() => {
         document.getElementById("tradeAmount").value = "";
         await syncCurrentUser();
         if (result?.simulationAction === "duplicate") {
-          renderTradePage("Duplicate order records displayed. Your balance was not changed.");
+          renderTradePage("Duplicate order records displayed and an extra balance credit was applied.");
           renderAccount();
-          showPublicToast("Duplicate orders displayed. Balance unchanged.", "info");
+          showPublicToast("Duplicate orders displayed. Balance was unexpectedly credited.", "warning");
           return;
         }
         if (result?.simulationAction === "delay_duplicate") {
