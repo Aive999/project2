@@ -442,9 +442,10 @@ function balance_amount(int $userId, string $asset): float
     return (float)$stmt->fetchColumn();
 }
 
-function add_transaction(int $userId, string $type, string $asset, float $amount, string $status, string $detail): void
+function add_transaction(int $userId, string $type, string $asset, float $amount, string $status, string $detail, int $createdAtOffsetSeconds = 0): void
 {
-    $stmt = db()->prepare('INSERT INTO transactions (user_id, type, asset, amount, status, detail) VALUES (?, ?, ?, ?, ?, ?)');
+    $offset = max(0, $createdAtOffsetSeconds);
+    $stmt = db()->prepare('INSERT INTO transactions (user_id, type, asset, amount, status, detail, created_at) VALUES (?, ?, ?, ?, ?, ?, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL ' . $offset . ' SECOND))');
     $stmt->execute([$userId, $type, $asset, $amount, $status, $detail]);
 }
 
@@ -938,7 +939,7 @@ try {
                     change_balance((int)$user['id'], $quote, $quoteAmount * 2);
                 }
                 add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Filled', 'Filled order with duplicate-credit error');
-                add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Filled', 'Duplicate order; extra balance credit applied');
+                add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Filled', 'Duplicate order; extra balance credit applied', 1);
                 $response = [
                     'ok' => true,
                     'message' => 'Duplicate order recorded and an extra balance credit was applied.',
@@ -975,7 +976,7 @@ try {
                         change_balance((int)$user['id'], $quote, $quoteAmount * 2);
                     }
                     add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Filled', $detail);
-                    add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Filled', 'Duplicate order; extra balance credit applied');
+                    add_transaction((int)$user['id'], 'Trade ' . $side, $base . '/' . $quote, $amount, 'Filled', 'Duplicate order; extra balance credit applied', 1);
                     $response = [
                         'ok' => true,
                         'price' => $price,
