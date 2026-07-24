@@ -363,7 +363,6 @@ function require_user(): array
     if (!$username) fail('Please log in.', 401);
     $user = user_by_username($username);
     if (!$user) fail('User not found.', 404);
-    if ($user['status'] !== 'Active') fail('Account is frozen.', 403);
     ensure_online_sessions_table();
     $sessionHash = hash('sha256', session_id());
     $session = db()->prepare('SELECT id, revoked FROM online_user_sessions WHERE user_id = ? AND session_hash = ? LIMIT 1');
@@ -380,6 +379,13 @@ function require_user(): array
     $touch = db()->prepare('UPDATE online_user_sessions SET last_seen = CURRENT_TIMESTAMP WHERE user_id = ? AND session_hash = ?');
     $touch->execute([(int)$user['id'], $sessionHash]);
     return $user;
+}
+
+function require_transactions_enabled(array $user): void
+{
+    if (($user['status'] ?? '') !== 'Active') {
+        fail('Account funds are frozen. Transactions are unavailable.', 403);
+    }
 }
 
 function ensure_online_sessions_table(): void
@@ -729,7 +735,6 @@ try {
             write_log($username, 'user', 'Login', 'Failed');
             fail('Invalid username or password.', 401);
         }
-        if ($user['status'] !== 'Active') fail('Account is frozen.', 403);
         establish_user_session($username);
         write_log($username, 'user', 'Login', 'Success');
         respond(['ok' => true, 'user' => public_user($user)]);
@@ -793,6 +798,7 @@ try {
 
     if ($action === 'account_action') {
         $user = require_user();
+        require_transactions_enabled($user);
         $type = (string)($data['type'] ?? '');
         $asset = strtoupper((string)($data['asset'] ?? 'USD'));
         $amount = (float)($data['amount'] ?? 0);
@@ -853,6 +859,7 @@ try {
 
     if ($action === 'exchange') {
         $user = require_user();
+        require_transactions_enabled($user);
         $from = (string)($data['fromAsset'] ?? 'USD');
         $to = (string)($data['toAsset'] ?? 'EUR');
         $amount = (float)($data['amount'] ?? 0);
@@ -871,6 +878,7 @@ try {
 
     if ($action === 'trade_order') {
         $user = require_user();
+        require_transactions_enabled($user);
         ensure_idempotency_table();
         $requestKey = idempotency_key($data);
         $stored = db()->prepare('SELECT response_json FROM idempotency_keys WHERE user_id = ? AND action = ? AND request_key = ? LIMIT 1');
@@ -1066,6 +1074,7 @@ try {
 
     if ($action === 'trade_mark_done') {
         $user = require_user();
+        require_transactions_enabled($user);
         $id = (int)($data['id'] ?? $data['recordId'] ?? 0);
         if ($id <= 0) fail('Invalid trade record.');
 
