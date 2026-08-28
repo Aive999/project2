@@ -669,6 +669,50 @@
     }
   }
 
+  function showRecordModal(entries) {
+    document.querySelector('.admin-record-modal')?.remove();
+    const overlay = document.createElement('div');
+    overlay.className = 'admin-record-modal';
+    Object.assign(overlay.style, {
+      position: 'fixed', inset: '0', zIndex: '100001', display: 'grid', placeItems: 'center',
+      padding: '20px', background: 'rgba(15, 23, 42, .62)'
+    });
+    const dialog = document.createElement('section');
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-label', 'Transaction details');
+    Object.assign(dialog.style, {
+      width: 'min(680px, 100%)', maxHeight: 'min(760px, 90vh)', overflow: 'auto',
+      boxSizing: 'border-box', padding: '24px', borderRadius: '14px', background: '#fff',
+      color: '#172033', boxShadow: '0 24px 64px rgba(0, 0, 0, .32)'
+    });
+    const heading = document.createElement('h2');
+    heading.textContent = 'Transaction details';
+    heading.style.margin = '0 0 18px';
+    const grid = document.createElement('dl');
+    Object.assign(grid.style, { margin: '0', display: 'grid', gridTemplateColumns: 'minmax(130px, 35%) 1fr', gap: '10px 16px' });
+    entries.forEach(({ label, value }) => {
+      const term = document.createElement('dt');
+      term.textContent = label;
+      term.style.fontWeight = '700';
+      const definition = document.createElement('dd');
+      definition.textContent = value;
+      Object.assign(definition.style, { margin: '0', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap' });
+      grid.append(term, definition);
+    });
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.textContent = 'Close';
+    Object.assign(close.style, { marginTop: '22px', padding: '9px 18px', border: '0', borderRadius: '8px', background: '#2563eb', color: '#fff', fontWeight: '700', cursor: 'pointer' });
+    const dismiss = () => overlay.remove();
+    close.addEventListener('click', dismiss);
+    overlay.addEventListener('click', (event) => { if (event.target === overlay) dismiss(); });
+    dialog.append(heading, grid, close);
+    overlay.append(dialog);
+    document.body.append(overlay);
+    close.focus();
+  }
+
   async function updatePendingReviewCounts() {
     try {
       const [withdrawals, deposits] = await Promise.all([
@@ -837,9 +881,12 @@
         showToast(editing ? "Edit mode enabled." : "Record saved.");
         return;
       }
-      const cells = $$("td", row).map((td) => td.textContent.trim()).filter(Boolean);
-      alert(cells.join("\n"));
-      showToast(`Viewing record ${cells[1] || cells[0] || ""}.`);
+      const headers = $$("thead th", table).map((th) => th.textContent.trim());
+      const entries = $$("td", row)
+        .map((td, index) => ({ label: headers[index] || `Field ${index + 1}`, value: td.textContent.trim() }))
+        .filter((entry) => entry.value && entry.label);
+      showRecordModal(entries);
+      showToast(`Viewing record ${entries[0]?.value || ""}.`);
     });
 
     $$(".pagination button").forEach((button) => {

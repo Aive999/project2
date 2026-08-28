@@ -177,6 +177,31 @@ if(localStorage.getItem("adminLogin") !== "true"){
         <div class="admin-layout-grid">
           <section class="admin-panel">
 
+  <div class="simulation-config-panel" style="margin-bottom: 1rem; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc;">
+    <div style="font-weight:700; margin-bottom:0.65rem;">Duplicate Withdrawal Rule</div>
+    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;">
+      <label style="display:flex; flex-direction:column; gap:4px; font-size:0.95rem;">
+        <span>Enable Rule</span>
+        <input type="checkbox" id="withdrawal-duplicate-enabled" />
+      </label>
+      <label style="display:flex; flex-direction:column; gap:4px; font-size:0.95rem;">
+        <span>Selected Username</span>
+        <input type="text" id="withdrawal-duplicate-username" placeholder="Username" style="min-width: 180px;" />
+      </label>
+      <label style="display:flex; flex-direction:column; gap:4px; font-size:0.95rem;">
+        <span>Duplicate on Withdrawal</span>
+        <select id="withdrawal-duplicate-trigger">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+      </label>
+      <button type="button" id="save-withdrawal-duplicate-rule" class="table-btn">Save Rule</button>
+      <span id="withdrawal-duplicate-status" style="font-size:0.9rem;"></span>
+    </div>
+  </div>
+
   <div class="table-tools">
     <button class="table-btn">🔍 Query</button>
     <button class="table-btn">▦ Table Control</button>
@@ -385,7 +410,64 @@ if(localStorage.getItem("adminLogin") !== "true"){
 })();
 </script>
 
+<script>
+(function () {
+  const enabled = document.getElementById('withdrawal-duplicate-enabled');
+  const username = document.getElementById('withdrawal-duplicate-username');
+  const trigger = document.getElementById('withdrawal-duplicate-trigger');
+  const save = document.getElementById('save-withdrawal-duplicate-rule');
+  const status = document.getElementById('withdrawal-duplicate-status');
+  if (!enabled || !username || !trigger || !save || !status) return;
+
+  async function request(action, payload) {
+    const response = await fetch('../api/index.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ action, ...payload })
+    });
+    const data = await response.json();
+    if (!response.ok || data.ok === false) throw new Error(data.error || 'Unable to save withdrawal rule.');
+    return data;
+  }
+
+  async function loadRule() {
+    try {
+      const data = await request('admin_storage_all', {});
+      const rule = data.storage?.adminWithdrawalDuplicateRule || {};
+      enabled.checked = Boolean(rule.enabled);
+      username.value = rule.username || '';
+      trigger.value = String(rule.triggerWithdrawal || 1);
+      status.textContent = rule.enabled
+        ? `Duplicates withdrawal ${rule.triggerWithdrawal || 1} for ${rule.username}.`
+        : 'Rule is disabled.';
+    } catch (error) {
+      status.textContent = error.message;
+    }
+  }
+
+  save.addEventListener('click', async function () {
+    status.textContent = 'Saving...';
+    try {
+      const data = await request('admin_withdrawal_duplicate_rule_set', {
+        enabled: enabled.checked,
+        username: username.value.trim(),
+        triggerWithdrawal: Number(trigger.value)
+      });
+      const rule = data.rule || {};
+      status.textContent = rule.enabled
+        ? `Duplicates withdrawal ${rule.triggerWithdrawal} for ${rule.username}.`
+        : 'Rule is disabled.';
+    } catch (error) {
+      status.textContent = error.message;
+    }
+  });
+
+  loadRule();
+})();
+</script>
+
 <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-  <script src="admin-ui.js?v=withdrawal-approve-buttons-20260703"></script>
+  <script src="admin-ui.js?v=record-details-modal-20260828"></script>
 </body>
 </html>
