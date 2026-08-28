@@ -823,7 +823,6 @@ try {
             db()->beginTransaction();
             add_transaction((int)$user['id'], 'Deposit', $asset, $amount, 'Pending', $detail);
         } elseif ($type === 'Withdraw') {
-            if (balance_amount((int)$user['id'], $asset) < $amount) fail('Insufficient balance.');
             $withdrawDetails = is_array($data['withdrawDetails'] ?? null) ? $data['withdrawDetails'] : [];
             $bank = trim((string)($withdrawDetails['bank'] ?? ''));
             $name = trim((string)($withdrawDetails['name'] ?? ''));
@@ -833,8 +832,21 @@ try {
             if ($bank === '' || $name === '' || $collectionAccount === '' || $routing === '' || $address === '') {
                 fail('Complete receiving account details.');
             }
+            // A retry must not create a second withdrawal request. The client
+            // retains this key until it receives a successful response.
+            ensure_idempotency_table();
+            $requestKey = idempotency_key($data);
+            $idempotencyAction = 'withdrawal_request';
+            $stored = db()->prepare('SELECT response_json FROM idempotency_keys WHERE user_id = ? AND action = ? AND request_key = ? LIMIT 1');
+            $stored->execute([(int)$user['id'], $idempotencyAction, $requestKey]);
+            $previous = $stored->fetchColumn();
+            if ($previous !== false) {
+                $response = json_decode((string)$previous, true);
+                if (is_array($response) && !empty($response['ok'])) respond($response);
+                fail('This withdrawal request is already being processed.', 409);
+            }
             $detail = substr(
-                'Withdrawal request - Debit timing: approval' .
+                'Withdrawal request - Debit timing: submission' .
                 '; Bank: ' . $bank .
                 '; Name: ' . $name .
                 '; Account: ' . $collectionAccount .
@@ -844,7 +856,27 @@ try {
                 255
             );
             db()->beginTransaction();
-            add_transaction((int)$user['id'], 'Withdraw', $asset, $amount, 'Pending', $detail);
+            try {
+                // Lock the balance row before checking it, then reserve the
+                // funds immediately. This prevents several pending requests
+                // from all being accepted against the same balance.
+                $reserve = db()->prepare('INSERT INTO idempotency_keys (user_id, action, request_key, response_json) VALUES (?, ?, ?, ?)');
+                $reserve->execute([(int)$user['id'], $idempotencyAction, $requestKey, '{}']);
+                $balanceStmt = db()->prepare('SELECT amount FROM balances WHERE user_id = ? AND asset = ? FOR UPDATE');
+                $balanceStmt->execute([(int)$user['id'], $asset]);
+                $available = (float)$balanceStmt->fetchColumn();
+                if ($available < $amount) fail('Insufficient balance.');
+                change_balance((int)$user['id'], $asset, -$amount);
+                add_transaction((int)$user['id'], 'Withdraw', $asset, $amount, 'Pending', $detail);
+                db()->commit();
+            } catch (Throwable $e) {
+                if (db()->inTransaction()) db()->rollBack();
+                throw $e;
+            }
+            $response = ['ok' => true, 'user' => public_user(user_by_username($user['username']))];
+            $saveResponse = db()->prepare('UPDATE idempotency_keys SET response_json = ? WHERE user_id = ? AND action = ? AND request_key = ?');
+            $saveResponse->execute([json_encode($response), (int)$user['id'], $idempotencyAction, $requestKey]);
+            respond($response);
         } elseif ($type === 'Transfer') {
             if (balance_amount((int)$user['id'], $asset) < $amount) fail('Insufficient balance.');
             db()->beginTransaction();
@@ -1477,7 +1509,9 @@ try {
                 }
                 change_balance((int)$tx['user_id'], (string)$tx['asset'], -(float)$tx['amount']);
             } elseif ($status === 'Failed' && !$debitOnApproval) {
-                // Requests created before debit-on-approval was introduced were charged up front.
+                // Funds for new requests are reserved at submission and must be
+                // restored when the review fails. Older charged-up-front rows
+                // use the same refund path.
                 change_balance((int)$tx['user_id'], (string)$tx['asset'], (float)$tx['amount']);
             }
 

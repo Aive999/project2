@@ -1542,6 +1542,11 @@ const DemoExchange = (() => {
       routing: document.getElementById("withdrawRouting").value.trim(),
       address: document.getElementById("withdrawAddress").value.trim()
     };
+    // Keep the same key if the customer submits again after a network error.
+    // It makes that retry return the original result rather than create a
+    // second withdrawal.
+    const idempotencyKey = form.dataset.withdrawalRequestKey || createRequestKey();
+    form.dataset.withdrawalRequestKey = idempotencyKey;
     try {
       if (Object.values(details).some((value) => !value)) {
         throw new Error("Complete all receiving account fields.");
@@ -1556,7 +1561,8 @@ const DemoExchange = (() => {
       }
       showPublicToast("Submitting withdrawal request...", "info");
       await accountAction("Withdraw", document.getElementById("withdrawAmount").value, "USD", {
-        withdrawDetails: details
+        withdrawDetails: details,
+        idempotencyKey
       });
       if (message) {
         message.textContent = "Withdrawal submitted successfully.";
@@ -1564,6 +1570,7 @@ const DemoExchange = (() => {
       }
       showPublicToast("Withdrawal submitted successfully. Status: Pending review.", "success");
       form.reset();
+      delete form.dataset.withdrawalRequestKey;
       setTimeout(() => {
         closeWithdrawalPanel();
         refresh("Withdrawal submitted successfully. Status: Pending review.");
